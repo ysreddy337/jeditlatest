@@ -50,7 +50,7 @@ import org.gjt.sp.jedit.msg.PositionChanging;
  *
  * @author Slava Pestov
  * @author John Gellene (API documentation)
- * @version $Id: JEditTextArea.java 18919 2010-11-04 10:52:55Z kpouer $
+ * @version $Id: JEditTextArea.java 21374 2012-03-14 23:52:09Z ezust $
  */
 public class JEditTextArea extends TextArea
 {
@@ -66,6 +66,14 @@ public class JEditTextArea extends TextArea
 		this.view = view;
 		painter.setLineExtraSpacing(jEdit.getIntegerProperty("options.textarea.lineSpacing", 0));
 		EditBus.addToBus(this);
+	} //}}}
+
+	//{{{ dispose() method
+	@Override
+	public void dispose()
+	{
+		EditBus.removeFromBus(this);
+		super.dispose();
 	} //}}}
 
 	//{{{ getFoldPainter() method

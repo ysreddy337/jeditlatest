@@ -37,7 +37,7 @@ import org.gjt.sp.util.ThreadUtilities;
 //}}}
 
 /**
- * @version $Id: PluginManager.java 19778 2011-08-10 08:01:31Z kpouer $
+ * @version $Id: PluginManager.java 21267 2012-03-07 21:37:39Z ezust $
  */
 public class PluginManager extends JFrame
 {
@@ -66,7 +66,7 @@ public class PluginManager extends JFrame
 	@EBHandler
 	public void handlePropertiesChanged(PropertiesChanged message)
 	{
-		if (shouldUpdatePluginList())
+		if (pluginList != null && shouldUpdatePluginList())
 		{
 			pluginList = null;
 			updatePluginList();

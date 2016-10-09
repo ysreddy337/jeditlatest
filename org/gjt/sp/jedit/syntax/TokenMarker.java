@@ -25,6 +25,7 @@ package org.gjt.sp.jedit.syntax;
 
 //{{{ Imports
 import javax.swing.text.Segment;
+import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -39,7 +40,7 @@ import org.gjt.sp.util.StandardUtilities;
  * or font style for painting that token.
  *
  * @author Slava Pestov, mike dillon
- * @version $Id: TokenMarker.java 19476 2011-03-22 12:16:42Z kpouer $
+ * @version $Id: TokenMarker.java 21339 2012-03-12 05:39:19Z ezust $
  *
  * @see org.gjt.sp.jedit.syntax.Token
  * @see org.gjt.sp.jedit.syntax.TokenHandler
@@ -901,7 +902,8 @@ unwind:		while(context.parent != null)
 	 */
 	public static class LineContext
 	{
-		private static final Map<LineContext, LineContext> intern = new HashMap<LineContext, LineContext>();
+		private static final WeakHashMap<LineContext, WeakReference<LineContext>> intern =
+			new WeakHashMap<LineContext, WeakReference<LineContext>>();
 
 		public LineContext parent;
 		public ParserRule inRule;
@@ -935,25 +937,29 @@ unwind:		while(context.parent != null)
 		//{{{ intern() method
 		public LineContext intern()
 		{
-			LineContext obj = intern.get(this);
-			if(obj == null)
+			WeakReference<LineContext> ref = intern.get(this);
+			if(ref != null)
 			{
-				intern.put(this,this);
-				return this;
+				LineContext obj = ref.get();
+				if(obj != null)
+				{
+					return obj;
+				}
 			}
-			else
-				return obj;
+			intern.put(this, new WeakReference<LineContext>(this));
+			return this;
 		} //}}}
 
 		//{{{ hashCode() method
 		public int hashCode()
 		{
-			if(inRule != null)
-				return inRule.hashCode();
-			else if(rules != null)
-				return rules.hashCode();
-			else
-				return 0;
+			int code = 0;
+			code += (parent != null) ? parent.hashCode() : 0;
+			code += (inRule != null) ? inRule.hashCode() : 0;
+			code += (rules != null) ? rules.hashCode() : 0;
+			code += (spanEndSubst != null) ? spanEndSubst.hashCode() : 0;
+			code += (spanEndSubstRegex != null) ? spanEndSubstRegex.hashCode() : 0;
+			return code;
 		} //}}}
 
 		//{{{ equals() method

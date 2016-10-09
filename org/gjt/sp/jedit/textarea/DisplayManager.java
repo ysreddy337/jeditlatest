@@ -35,7 +35,7 @@ import org.gjt.sp.util.Log;
  * 
  * @since jEdit 4.2pre1
  * @author Slava Pestov
- * @version $Id: DisplayManager.java 20560 2011-12-07 04:16:05Z ezust $
+ * @version $Id: DisplayManager.java 21374 2012-03-14 23:52:09Z ezust $
  */
 public class DisplayManager
 {
@@ -465,25 +465,34 @@ public class DisplayManager
 	final FirstLine firstLine;
 	final ScrollLineCount scrollLineCount;
 	final ScreenLineManager screenLineMgr;
-	RangeMap folds;
+	final RangeMap folds;
 
 	//{{{ init() method
 	void init()
 	{
-		if(initialized)
+		// Needs information available in textArea only when a
+		// DisplayManager is active in it.
+		assert textArea.getDisplayManager() == this;
+
+		if(buffer.isLoading())
+			// init() will be called later from bufferLoaded().
+			return;
+
+		if(!initialized)
 		{
-			if(!buffer.isLoading())
-				resetAnchors();
+			folds.reset(buffer.getLineCount());
+			resetAnchors();
+			int collapseFolds = buffer.getIntegerProperty(
+				"collapseFolds",0);
+			if(collapseFolds != 0)
+				expandFolds(collapseFolds);
+			initialized = true;
 		}
 		else
 		{
-			initialized = true;
-			folds = new RangeMap();
-			if(buffer.isLoading())
-				folds.reset(buffer.getLineCount());
-			else
-				bufferHandler.foldHandlerChanged(buffer);
-			notifyScreenLineChanges();
+			// Already initialized.
+			// Just make the scroll bar updated.
+			resetAnchors();
 		}
 	} //}}}
 
@@ -493,10 +502,10 @@ public class DisplayManager
 		if(Debug.SCROLL_DEBUG)
 			Log.log(Log.DEBUG,this,"notifyScreenLineChanges()");
 
-		// when the text area switches to us, it will do
-		// a reset anyway
-		if(textArea.getDisplayManager() != this)
-			return;
+		// Screen line change must be issued when the textArea
+		// has information of wrap mode for the buffer.
+		// Otherwise, the screen line calculation will be incorrect.
+		assert textArea.getDisplayManager() == this;
 
 		try
 		{
@@ -622,6 +631,14 @@ public class DisplayManager
 	//{{{ updateScreenLineCount() method
 	void updateScreenLineCount(int line)
 	{
+		// If this DisplayManager is not current visible one,
+		// screen line count can't be determined since the wrap
+		// mode and the wrap margin (and chunkCache) for the
+		// buffer are not available.
+		// Maybe, those information should be in DisplayManager
+		// instead of textArea.
+		assert textArea.getDisplayManager() == this;
+
 		if(!screenLineMgr.isScreenLineCountValid(line))
 		{
 			int newCount = textArea.chunkCache
@@ -634,34 +651,43 @@ public class DisplayManager
 	//{{{ bufferLoaded() method
 	void bufferLoaded()
 	{
+		initialized = false;
 		folds.reset(buffer.getLineCount());
 		screenLineMgr.reset();
-
 		if(textArea.getDisplayManager() == this)
 		{
 			textArea.propertiesChanged();
 			init();
 		}
-
-		int collapseFolds = buffer.getIntegerProperty(
-			"collapseFolds",0);
-		if(collapseFolds != 0)
-			expandFolds(collapseFolds);
+		else
+		{
+			// init() will be called later when the buffer
+			// is set in the textArea.
+		}
 	} //}}}
 
 	//{{{ foldHandlerChanged() method
 	void foldHandlerChanged()
 	{
 		if(buffer.isLoading())
+			// Happens once before bufferLoaded() is called.
+			// It seems violating the javadoc on BufferListener,
+			// but it's not a problem in DisplayManager because
+			// this is called later on init(), possibly via
+			// bufferLoaded().
 			return;
 
+		initialized = false;
 		folds.reset(buffer.getLineCount());
-		resetAnchors();
-
-		int collapseFolds = buffer.getIntegerProperty(
-			"collapseFolds",0);
-		if(collapseFolds != 0)
-			expandFolds(collapseFolds);
+		if(textArea.getDisplayManager() == this)
+		{
+			init();
+		}
+		else
+		{
+			// init() will be called later when the buffer
+			// is set in the textArea.
+		}
 	} //}}}
 
 	//}}}
@@ -672,6 +698,7 @@ public class DisplayManager
 	private final JEditBuffer buffer;
 	private final TextArea textArea;
 	private final BufferHandler bufferHandler;
+	private final ElasticTabStopBufferListener elasticTabStopListener;
 
 	//{{{ DisplayManager constructor
 	private DisplayManager(JEditBuffer buffer, TextArea textArea,
@@ -685,8 +712,8 @@ public class DisplayManager
 		firstLine = new FirstLine(this,textArea);
 		bufferHandler = new BufferHandler(this,textArea,buffer);
 		//TODO:invoke ElasticTabStopBufferListener methods from inside BufferHandler to avoid chunking same line twice
-		ElasticTabStopBufferListener listener = new ElasticTabStopBufferListener(textArea);
-		buffer.addBufferListener(listener, JEditBuffer.HIGH_PRIORITY);
+		elasticTabStopListener = new ElasticTabStopBufferListener(textArea);
+		buffer.addBufferListener(elasticTabStopListener, JEditBuffer.HIGH_PRIORITY);
 		// this listener priority thing is a bad hack...
 		buffer.addBufferListener(bufferHandler, JEditBuffer.HIGH_PRIORITY);
 
@@ -694,6 +721,11 @@ public class DisplayManager
 		{
 			folds = new RangeMap(copy.folds);
 			initialized = true;
+		}
+		else
+		{
+			folds = new RangeMap();
+			folds.reset(0);
 		}
 	} //}}}
 
@@ -709,6 +741,7 @@ public class DisplayManager
 	private void dispose()
 	{
 		buffer.removeBufferListener(bufferHandler);
+		buffer.removeBufferListener(elasticTabStopListener);
 	} //}}}
 
 	//{{{ showLineRange() method
