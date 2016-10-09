@@ -135,7 +135,7 @@ import org.gjt.sp.util.StandardUtilities;
  *
  * @author Slava Pestov
  * @author John Gellene (API documentation)
- * @version $Id: View.java 16772 2009-12-29 15:41:55Z k_satoda $
+ * @version $Id: View.java 19537 2011-05-17 15:45:40Z jchoyt $
  */
 public class View extends JFrame implements EBComponent, InputHandlerProvider
 {
@@ -911,6 +911,7 @@ public class View extends JFrame implements EBComponent, InputHandlerProvider
 		{
 			Component comp = restoreSplitConfig(buffer,splitConfig);
 			setMainContent(comp);
+			updateTitle();
 		}
 		catch(IOException e)
 		{
@@ -1578,6 +1579,14 @@ public class View extends JFrame implements EBComponent, InputHandlerProvider
 			mainPanel.remove(mainContent);
 		mainContent = c;
 		mainPanel.add(mainContent, BorderLayout.CENTER);
+		if (c instanceof JSplitPane) {
+			splitPane = (JSplitPane)c;	
+			editPane = null;
+		}
+		else {
+			splitPane = null;
+			editPane = (EditPane)c;
+		}
 		mainPanel.revalidate();
 		mainPanel.repaint();
 	} //}}}

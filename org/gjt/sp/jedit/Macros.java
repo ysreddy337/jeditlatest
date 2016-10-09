@@ -58,7 +58,7 @@ import java.util.regex.Pattern;
  * the methods in the {@link GUIUtilities} class instead.
  *
  * @author Slava Pestov
- * @version $Id: Macros.java 14091 2008-11-22 20:31:20Z kpouer $
+ * @version $Id: Macros.java 19538 2011-05-17 16:46:28Z jchoyt $
  */
 public class Macros
 {
@@ -252,10 +252,10 @@ file_loop:			for(int i = 0; i < paths.length; i++)
 	 */
 	public static void loadMacros()
 	{
+		jEdit.removeActionSet(macroActionSet);
 		macroActionSet.removeAllActions();
 		macroHierarchy.removeAllElements();
 		macroHash.clear();
-
 		// since subsequent macros with the same name are ignored,
 		// load user macros first so that they override the system
 		// macros.
@@ -274,7 +274,7 @@ file_loop:			for(int i = 0; i < paths.length; i++)
 				jEdit.getJEditHome(),"macros");
 			loadMacros(macroHierarchy,"",new File(systemMacroPath));
 		}
-
+		jEdit.addActionSet(macroActionSet);
 		EditBus.send(new DynamicMenuChanged("macros"));
 	} //}}}
 

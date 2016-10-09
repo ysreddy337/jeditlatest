@@ -65,7 +65,7 @@ import org.gjt.sp.util.StandardUtilities;
  *
  * @author Slava Pestov
  * @author kpouer (rafactoring into standalone text area)
- * @version $Id: TextArea.java 17580 2010-04-03 16:10:08Z Vampire0 $
+ * @version $Id: TextArea.java 18693 2010-09-30 23:53:52Z jchoyt $
  */
 public abstract class TextArea extends JComponent
 {
@@ -5854,7 +5854,7 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 		else if(startCommentStart != null && startCommentEnd != null)
 		{
 			start = startCommentStart + "{{{  " + startCommentEnd;
-			caretBack = 1 + startCommentStart.length();
+			caretBack = 2 + startCommentEnd.length();
 		}
 		else
 			start = "{{{ ";
@@ -5885,7 +5885,7 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 		String line = buffer.getLineText(lineStart);
 		String whitespace = line.substring(0,
 			StandardUtilities.getLeadingWhiteSpace(line));
-
+		caretBack += whitespace.length(); 
 		if (endLineComment != null)
 		{
 			// if we're inserting a line comment into a non-empty
