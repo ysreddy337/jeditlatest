@@ -38,7 +38,7 @@ import static org.gjt.sp.jedit.io.FileVFS.recursiveDelete;
 //}}}
 
 /**
- * @author $Id: Roster.java 23222 2013-09-29 20:43:34Z shlomy $
+ * @author $Id: Roster.java 24071 2015-09-16 19:51:55Z kerik-sf $
  */
 class Roster
 {
@@ -64,6 +64,12 @@ class Roster
 		int size)
 	{
 		addOperation(new Install(installed,url,installDirectory,size));
+	} //}}}
+
+	//{{{ addLoad() method
+	void addLoad(String path)
+	{
+		toLoad.add(path);
 	} //}}}
 
 	//{{{ getOperation() method
@@ -203,27 +209,29 @@ class Roster
 
 			toLoad.remove(this.jar);
 
-			// move JAR first
 			File jarFile = new File(this.jar);
 			File srcFile = new File(this.jar.substring(0, this.jar.length() - 4));
 
-			Log.log(Log.NOTICE,this,"Deleting " + jarFile);
-
-			boolean ok = jarFile.delete();
-			if (ok) 
+			if(jarFile.exists())
 			{
-				EditBus.send(new PluginUpdate(jarFile, PluginUpdate.REMOVED, false));	
-			}
+				Log.log(Log.NOTICE,this,"Deleting " + jarFile);
 
-			if(srcFile.exists())
-			{
-				ok &= recursiveDelete(srcFile);
-			}
+				boolean ok = jarFile.delete();
+				if (ok)
+				{
+					EditBus.send(new PluginUpdate(jarFile, PluginUpdate.REMOVED, false));
+				}
 
-			if(!ok)
-			{
-				String[] args = {this.jar};
-				GUIUtilities.error(comp,"plugin-manager.remove-failed",args);
+				if(srcFile.exists())
+				{
+					ok &= recursiveDelete(srcFile);
+				}
+
+				if(!ok)
+				{
+					String[] args = {this.jar};
+					GUIUtilities.error(comp,"plugin-manager.remove-failed",args);
+				}
 			}
 		} //}}}
 
@@ -299,9 +307,29 @@ class Roster
 			if(path == null)
 				return;
 
-			// if download OK, remove existing version
+			/* if download OK, remove existing version
+			 * and bundled jars and files */
 			if(installed != null)
-				new Remove(installed).runInAWTThread(comp);
+			{
+				PluginJAR pluginJar = jEdit.getPluginJAR(installed);
+				Collection<String> libs = new LinkedList<>();
+				libs.add(installed);
+				if(pluginJar == null)
+				{
+					Log.log(Log.ERROR, Roster.Remove.class,
+						 "unable to get PluginJAR for "+installed);
+				}
+				else
+				{
+					 libs.addAll(pluginJar.getJars());
+					 libs.addAll(pluginJar.getFiles());
+				}
+
+				for(String lib: libs)
+				{
+					new Remove(lib).runInAWTThread(comp);
+				}
+			}
 
 			ZipFile zipFile = null;
 

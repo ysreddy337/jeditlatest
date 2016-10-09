@@ -40,7 +40,7 @@ import org.gjt.sp.jedit.*;
 /**
  * Plugin list downloaded from server.
  * @since jEdit 3.2pre2
- * @version $Id: PluginList.java 23224 2013-09-30 20:51:42Z shlomy $
+ * @version $Id: PluginList.java 24084 2015-09-17 18:44:47Z kerik-sf $
  */
 class PluginList
 {
@@ -49,11 +49,11 @@ class PluginList
 	 */
 	public static final int GZIP_MAGIC_1 = 0x1f;
 	public static final int GZIP_MAGIC_2 = 0x8b;
-	public static final long MILLISECONDS_PER_MINUTE = 60L * 1000;
+	public static final long MILLISECONDS_PER_MINUTE = 60L * 1000L;
 
-	final List<Plugin> plugins = new ArrayList<Plugin>();
-	final Map<String, Plugin> pluginHash = new HashMap<String, Plugin>();
-	final List<PluginSet> pluginSets = new ArrayList<PluginSet>();
+	final List<Plugin> plugins = new ArrayList<>();
+	final Map<String, Plugin> pluginHash = new HashMap<>();
+	final List<PluginSet> pluginSets = new ArrayList<>();
 
 	/**
 	 * The mirror id.
@@ -233,7 +233,6 @@ class PluginList
 	//{{{ addPlugin() method
 	void addPlugin(Plugin plugin)
 	{
-		plugin.checkIfInstalled();
 		plugins.add(plugin);
 		pluginHash.put(plugin.name,plugin);
 	} //}}}
@@ -289,7 +288,7 @@ class PluginList
 	static class PluginSet
 	{
 		String name;
-		final List<String> plugins = new ArrayList<String>();
+		final List<String> plugins = new ArrayList<>();
 
 		public String toString()
 		{
@@ -304,67 +303,54 @@ class PluginList
 		String name;
 		String description;
 		String author;
-		final List<Branch> branches = new ArrayList<Branch>();
-		//String installed;
-		//String installedVersion;
+		final List<Branch> branches = new ArrayList<>();
+		String installedVersion = null;
+		String installedPath = null;
+		boolean loaded = false;
 
-		void checkIfInstalled()
+		String getInstalledVersion()
 		{
-			/* // check if the plugin is already installed.
-			// this is a bit of hack
+			this.loaded = false;
 			PluginJAR[] jars = jEdit.getPluginJARs();
 			for(int i = 0; i < jars.length; i++)
 			{
 				String path = jars[i].getPath();
-				if(!new File(path).exists())
-					continue;
 
 				if(MiscUtilities.getFileName(path).equals(jar))
 				{
-					installed = path;
-
 					EditPlugin plugin = jars[i].getPlugin();
 					if(plugin != null)
 					{
 						installedVersion = jEdit.getProperty(
 							"plugin." + plugin.getClassName()
 							+ ".version");
-					}
-					break;
-				}
-			}
-
-			String[] notLoaded = jEdit.getNotLoadedPluginJARs();
-			for(int i = 0; i < notLoaded.length; i++)
-			{
-				String path = notLoaded[i];
-
-				if(MiscUtilities.getFileName(path).equals(jar))
-				{
-					installed = path;
-					break;
-				}
-			} */
-		}
-
-		String getInstalledVersion()
-		{
-			PluginJAR[] jars = jEdit.getPluginJARs();
-			for(int i = 0; i < jars.length; i++)
-			{
-				String path = jars[i].getPath();
-
-				if(MiscUtilities.getFileName(path).equals(jar))
-				{
-					EditPlugin plugin = jars[i].getPlugin();
-					if(plugin != null)
-					{
-						return jEdit.getProperty(
-							"plugin." + plugin.getClassName()
-							+ ".version");
+						this.loaded = true;
+						return installedVersion;
 					}
 					else
 						return null;
+				}
+			}
+			String[] notLoadedJars = jEdit.getNotLoadedPluginJARs();
+			for(String path: notLoadedJars){
+				if(MiscUtilities.getFileName(path).equals(jar))
+				{
+					try
+					{
+						PluginJAR.PluginCacheEntry cacheEntry = PluginJAR.getPluginCacheEntry(path);
+						if(cacheEntry != null)
+						{
+							String versionKey = "plugin." + cacheEntry.pluginClass + ".version";
+							installedVersion = cacheEntry.cachedProperties.getProperty(versionKey);
+							Log.log(Log.DEBUG, PluginList.class, "found installed but not loaded "+ jar + " version=" + installedVersion);
+							installedPath = path; 
+							return installedVersion;
+						}
+					}
+					catch (IOException e)
+					{
+						Log.log(Log.WARNING, "Unable to access cache for "+jar, e);
+					}
 				}
 			}
 
@@ -373,6 +359,14 @@ class PluginList
 
 		String getInstalledPath()
 		{
+			if(installedPath != null){
+				if(new File(installedPath).exists()){
+					return installedPath;
+				}else{
+					installedPath = null;
+				}
+			}
+
 			PluginJAR[] jars = jEdit.getPluginJARs();
 			for(int i = 0; i < jars.length; i++)
 			{
@@ -406,7 +400,7 @@ class PluginList
 				&& branch.canSatisfyDependencies();
 		}
 
-		void install(Roster roster, String installDirectory, boolean downloadSource)
+		void install(Roster roster, String installDirectory, boolean downloadSource, boolean asDependency)
 		{
 			String installed = getInstalledPath();
 
@@ -420,6 +414,12 @@ class PluginList
 
 			//branch.satisfyDependencies(roster,installDirectory,
 			//	downloadSource);
+
+			if(installedVersion != null && installedPath!= null && !loaded && asDependency)
+			{
+				roster.addLoad(installedPath);
+				return;
+			}
 
 			if(installed != null)
 			{
@@ -451,7 +451,7 @@ class PluginList
 		int downloadSourceSize;
 		String downloadSource;
 		boolean obsolete;
-		final List<Dependency> deps = new ArrayList<Dependency>();
+		final List<Dependency> deps = new ArrayList<>();
 
 		boolean canSatisfyDependencies()
 		{
@@ -593,7 +593,7 @@ class PluginList
 						      branch.version,to,false) <= 0))
 					{
 						plugin.install(roster,installDirectory,
-							downloadSource);
+							downloadSource, false);
 						return;
 					}
 				}

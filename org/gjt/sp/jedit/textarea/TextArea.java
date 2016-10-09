@@ -71,7 +71,7 @@ import org.gjt.sp.util.ThreadUtilities;
  *
  * @author Slava Pestov
  * @author kpouer (rafactoring into standalone text area)
- * @version $Id: TextArea.java 23661 2014-08-17 01:12:29Z ezust $
+ * @version $Id: TextArea.java 24095 2015-09-25 21:31:41Z daleanson $
  */
 public abstract class TextArea extends JPanel
 {
@@ -1095,8 +1095,7 @@ public abstract class TextArea extends JPanel
 
 		ChunkCache.LineInfo info = chunkCache.getLineInfo(screenLine);
 
-		retVal.x = (int)(horizontalOffset + Chunk.offsetToX(
-			info.chunks,offset));
+		retVal.x = (int)(horizontalOffset + Chunk.offsetToX(info.chunks, offset));
 
 		return retVal;
 	} //}}}
@@ -1355,6 +1354,8 @@ public abstract class TextArea extends JPanel
 	{
 		int offset = -getHorizontalOffset();
 		ChunkCache.LineInfo lineInfo = chunkCache.getLineInfo(screenLine);
+		if (lineInfo.physicalLine == -1)
+			return "";
 		int lineStartOffset = getLineStartOffset(lineInfo.physicalLine);
 		Point point = offsetToXY(lineStartOffset + lineInfo.offset);
 		int begin = xyToOffset(offset + point.x, point.y);
@@ -1372,6 +1373,8 @@ public abstract class TextArea extends JPanel
 	{
 		int offset = -getHorizontalOffset();
 		ChunkCache.LineInfo lineInfo = chunkCache.getLineInfo(screenLine);
+		if (lineInfo.physicalLine == -1)
+			return;
 		int lineStartOffset = getLineStartOffset(lineInfo.physicalLine);
 		Point point = offsetToXY(lineStartOffset + lineInfo.offset);
 		int begin = xyToOffset(offset + point.x, point.y);
@@ -1392,6 +1395,8 @@ public abstract class TextArea extends JPanel
 	{
 		int offset = -getHorizontalOffset();
 		ChunkCache.LineInfo lineInfo = chunkCache.getLineInfo(screenLine);
+		if (lineInfo.physicalLine == -1)
+			return "";
 		int lineStartOffset = getLineStartOffset(lineInfo.physicalLine);
 		Point point = offsetToXY(lineStartOffset + lineInfo.offset);
 		int begin = xyToOffset(offset + point.x, point.y);
@@ -4872,10 +4877,12 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 
 		// Calculate an average to use a reasonable value for
 		// propotional fonts.
-		String charWidthSample = " 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-		charWidth = (int)Math.round(
+		String charWidthSample = "mix";
+		charWidthDouble =
 			painter.getFont().getStringBounds(charWidthSample,
-				painter.getFontRenderContext()).getWidth() / charWidthSample.length());
+				painter.getFontRenderContext()).getWidth() / charWidthSample.length();
+	    charWidth = (int)Math.round(charWidthDouble);
+
 
 		String oldWrap = wrap;
 		wrap = buffer.getStringProperty("wrap");
@@ -4959,6 +4966,7 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 	int wrapMargin;
 	float tabSize;
 	int charWidth;
+	double charWidthDouble;
 
 	boolean scrollBarsInitialized;
 
@@ -5760,14 +5768,14 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 		for(int i = visibleLines - 1; i >= 0; i--)
 		{
 			ChunkCache.LineInfo info = chunkCache.getLineInfo(i);
-			if(info.physicalLine != -1)
+			if(info.physicalLine > -1)
 			{
 				physLastLine = info.physicalLine;
 				screenLastLine = i;
 				break;
 			}
 		}
-		invalidateScreenLineRange(oldScreenLastLine,screenLastLine);
+		invalidateScreenLineRange(oldScreenLastLine, screenLastLine);
 	} //}}}
 
 	//{{{ getRectParams() method
@@ -6007,7 +6015,7 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 		}
 		else
 		{
-			int estimate = charWidth * maxLineLen;
+			int estimate = (int)Math.ceil(charWidthDouble * maxLineLen);
 			if (softWrap && painter.getWidth() < estimate)
 			{
 				wrapToWidth = true;

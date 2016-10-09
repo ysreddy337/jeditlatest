@@ -100,8 +100,8 @@ public class EnhancedCheckBoxMenuItem extends JCheckBoxMenuItem
 
 		if(shortcut != null)
 		{
-			d.width += (getFontMetrics(EnhancedMenuItem.acceleratorFont)
-				.stringWidth(shortcut) + 15);
+			FontMetrics fm = getFontMetrics(EnhancedMenuItem.acceleratorFont);
+			d.width += (fm.stringWidth(shortcut) + fm.stringWidth("AAAA"));
 		}
 		return d;
 	} //}}}
@@ -114,7 +114,9 @@ public class EnhancedCheckBoxMenuItem extends JCheckBoxMenuItem
 
 		if(shortcut != null)
 		{
+			Graphics2D g2 = (Graphics2D)g;
 			g.setFont(EnhancedMenuItem.acceleratorFont);
+			g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 			g.setColor(getModel().isArmed() ?
 				EnhancedMenuItem.acceleratorSelectionForeground :
 				EnhancedMenuItem.acceleratorForeground);
@@ -122,9 +124,7 @@ public class EnhancedCheckBoxMenuItem extends JCheckBoxMenuItem
 			Insets insets = getInsets();
 			g.drawString(shortcut,getWidth() - (fm.stringWidth(
 				shortcut) + insets.right + insets.left + 5),
-				getFont().getSize() + (insets.top - 
-				(OperatingSystem.isMacOSLF() ? 0 : 1))
-				/* XXX magic number */);
+				fm.getAscent() + insets.top);
 		}
 	} //}}}
 

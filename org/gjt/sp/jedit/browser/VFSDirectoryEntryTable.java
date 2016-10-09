@@ -49,7 +49,7 @@ import org.gjt.sp.util.ThreadUtilities;
 
 /**
  * @author Slava Pestov
- * @version $Id: VFSDirectoryEntryTable.java 23222 2013-09-29 20:43:34Z shlomy $
+ * @version $Id: VFSDirectoryEntryTable.java 24021 2015-08-14 18:36:19Z makarius $
  * @since jEdit 4.2pre1
  */
 public class VFSDirectoryEntryTable extends JTable
@@ -67,7 +67,7 @@ public class VFSDirectoryEntryTable extends JTable
 			renderer = new FileCellRenderer());
 
 		header = getTableHeader();
-		header.setReorderingAllowed(false);
+		header.setReorderingAllowed(true);
 		addMouseListener(new MainMouseHandler());
 		header.addMouseListener(new MouseHandler());
 		header.setDefaultRenderer(new HeaderRenderer(
@@ -495,8 +495,7 @@ public class VFSDirectoryEntryTable extends JTable
 	{
 		VFSDirectoryEntryTableModel model = (VFSDirectoryEntryTableModel)getModel();
 
-		FontRenderContext fontRenderContext = new FontRenderContext(
-			null,false,false);
+		FontRenderContext fontRenderContext = new FontRenderContext(null,true,false);
 		int[] widths = new int[model.getColumnCount()];
 		for(int i = 0; i < widths.length; i++)
 		{
@@ -576,7 +575,9 @@ public class VFSDirectoryEntryTable extends JTable
 	{
 		public void columnAdded(TableColumnModelEvent e) {}
 		public void columnRemoved(TableColumnModelEvent e) {}
-		public void columnMoved(TableColumnModelEvent e) {}
+		public void columnMoved(TableColumnModelEvent e) {
+			((VFSDirectoryEntryTableModel)getModel()).columnMoved(e.getFromIndex(), e.getToIndex());
+		}
 		public void columnSelectionChanged(ListSelectionEvent e) {}
 
 		public void columnMarginChanged(ChangeEvent e)

@@ -84,7 +84,7 @@ import org.gjt.sp.util.SyntaxUtilities;
 /**
  * The main class of the jEdit text editor.
  * @author Slava Pestov
- * @version $Id: jEdit.java 23842 2015-02-02 01:11:51Z elberry $
+ * @version $Id: jEdit.java 24112 2015-10-20 17:54:36Z vampire0 $
  */
 public class jEdit
 {
@@ -105,7 +105,7 @@ public class jEdit
 	public static String getBuild()
 	{
 		// (major).(minor).(<99 = preX, 99 = "final").(bug fix)
-		return "05.02.99.00";
+		return "05.03.99.00";
 	} //}}}
 
 	//{{{ main() method
@@ -1423,11 +1423,11 @@ public class jEdit
 
 		//{{{ Load the global catalog first
 		if(jEditHome == null)
-			loadModeCatalog("/modes/catalog",true);
+			loadModeCatalog("/modes/catalog", true, false);
 		else
 		{
 			loadModeCatalog(MiscUtilities.constructPath(jEditHome,
-				"modes","catalog"),false);
+				"modes","catalog"), false, false);
 		} //}}}
 
 		//{{{ Load user catalog second so user modes override global modes.
@@ -1460,7 +1460,7 @@ public class jEdit
 				}
 			}
 
-			loadModeCatalog(userCatalog.getPath(),false);
+			loadModeCatalog(userCatalog.getPath(), false, true);
 		} //}}}
 
 		Buffer buffer = buffersFirst;
@@ -2141,6 +2141,11 @@ public class jEdit
 					buffer.getMode().getName());
 			}
 
+			if(!isExiting)
+			{
+				EditBus.send(new BufferUpdate(buffer,view,BufferUpdate.CLOSING));
+			}
+
 			buffer.close();
 			DisplayManager.bufferClosed(buffer);
 			if(!isExiting)
@@ -2179,30 +2184,47 @@ public class jEdit
 	 */
 	public static void saveAllBuffers(View view, boolean confirm)
 	{
-		if(confirm)
+		List<Buffer> buffers = new ArrayList<Buffer>();
+		List<String> selectedBuffers = new ArrayList<String>();
+
 		{
-			int result = GUIUtilities.confirm(view,"saveall",null,
+			Buffer buffer = buffersFirst;
+			while (buffer != null) {
+				if (buffer.isDirty()) {
+					buffers.add(buffer);
+					selectedBuffers.add(buffer.getPath());
+				}
+				buffer = buffer.next;
+			}
+		}
+
+		if (confirm && !buffers.isEmpty())
+		{
+			DefaultListModel<String> listModel = new DefaultListModel<String>();
+			for (Buffer buffer : buffers) listModel.addElement(buffer.getPath());
+
+			JList<String> bufferList = new JList<String>(listModel);
+			bufferList.setVisibleRowCount(Math.min(listModel.getSize(), 10));
+			bufferList.setSelectionInterval(0, listModel.getSize() - 1);
+
+			int result = JOptionPane.showConfirmDialog(view,
+				new Object[]{ new JLabel(jEdit.getProperty("saveall.message")), new JScrollPane(bufferList) },
+				jEdit.getProperty("saveall.title"),
 				JOptionPane.YES_NO_OPTION,
 				JOptionPane.QUESTION_MESSAGE);
 			if(result != JOptionPane.YES_OPTION)
 				return;
+
+			selectedBuffers = bufferList.getSelectedValuesList();
 		}
 
 		Buffer current = view.getBuffer();
-
-		Buffer buffer = buffersFirst;
-		while(buffer != null)
-		{
-			if(buffer.isDirty())
-			{
-				if(buffer.isNewFile())
-					view.setBuffer(buffer);
-				buffer.save(view,null,true,true);
+		for (Buffer buffer : buffers) {
+			if (selectedBuffers.contains(buffer.getPath())) {
+				if (buffer.isNewFile()) view.setBuffer(buffer);
+				buffer.save(view, null, true, true);
 			}
-
-			buffer = buffer.next;
 		}
-
 		view.setBuffer(current);
 	} //}}}
 
@@ -3781,12 +3803,6 @@ public class jEdit
 		if (lfOld != null)
 			sLfOld = lfOld.getClass().getName();
 
-		// do not change anything if Look and Feel did not change
-		if (isStartupDone() && sLf.equals(sLfOld))
-		{
-			return;
-		}
-
 		Font primaryFont = jEdit.getFontProperty(
 			"metal.primary.font");
 		if(primaryFont != null)
@@ -3931,6 +3947,8 @@ public class jEdit
 
 		defaults.remove("SplitPane.border");
 		defaults.remove("SplitPaneDivider.border");
+		
+		defaults.put("Tree.rowHeight", 0);
 
 		JFrame.setDefaultLookAndFeelDecorated(
 			getBooleanProperty("decorate.frames"));
@@ -4547,7 +4565,7 @@ loop:
 	 * Loads a mode catalog file.
 	 * @since jEdit 3.2pre2
 	 */
-	private static void loadModeCatalog(String path, boolean resource)
+	private static void loadModeCatalog(String path, boolean resource, final boolean userMode)
 	{
 		Log.log(Log.MESSAGE,jEdit.class,"Loading mode catalog file " + path);
 
@@ -4557,7 +4575,9 @@ loop:
 			@Override
 			protected Mode instantiateMode(String modeName)
 			{
-				return new JEditMode(modeName);
+				Mode mode = new JEditMode(modeName);
+				mode.setUserMode(userMode);
+				return mode;
 			}
 		};
 		try

@@ -32,7 +32,7 @@ import org.gjt.sp.jedit.*;
 /** The default input handler maps sequences of keystrokes into actions and inserts key typed events into the text area.
  *
  * @author Slava Pestov
- * @version $Id: DefaultInputHandler.java 21831 2012-06-18 22:54:17Z ezust $
+ * @version $Id: DefaultInputHandler.java 24092 2015-09-24 02:36:15Z ezust $
  */
 public class DefaultInputHandler extends InputHandler
 {
@@ -166,13 +166,6 @@ public class DefaultInputHandler extends InputHandler
 					{ // let user input be only local
 						userInput(input);
 					}
-				}
-				else
-				{
-					// this is retarded. excuse me while I drool
-					// and make stupid noises
-					if(KeyEventWorkaround.isNumericKeypad(keyStroke.key))
-						KeyEventWorkaround.numericKeypadKey();
 				}
 				sendShortcutPrefixOff();
 			}

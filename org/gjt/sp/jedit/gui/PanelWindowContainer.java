@@ -72,7 +72,7 @@ import org.gjt.sp.util.StandardUtilities;
 /** A container for dockable windows. This class should never be used
  * directly.
  * @author Slava Pestov
- * @version $Id: PanelWindowContainer.java 23221 2013-09-29 20:03:32Z shlomy $
+ * @version $Id: PanelWindowContainer.java 23717 2014-11-02 19:42:53Z ezust $
  * @since jEdit 4.0pre1
  */
 public class PanelWindowContainer implements DockableWindowContainer, DockingArea
@@ -95,6 +95,7 @@ public class PanelWindowContainer implements DockableWindowContainer, DockingAre
 			closeBox.putClientProperty("JButton.buttonType","toolbar");
 
 		closeBox.setMargin(new Insets(0,0,0,0));
+		GUIUtilities.setButtonContentMargin(closeBox, closeBox.getMargin());
 
 		closeBox.addActionListener(new ActionHandler());
 
@@ -105,6 +106,7 @@ public class PanelWindowContainer implements DockableWindowContainer, DockingAre
 			menuBtn.putClientProperty("JButton.buttonType","toolbar");
 
 		menuBtn.setMargin(new Insets(0,0,0,0));
+		GUIUtilities.setButtonContentMargin(menuBtn, menuBtn.getMargin());
 
 		menuBtn.addMouseListener(new MenuMouseHandler());
 
@@ -148,6 +150,7 @@ public class PanelWindowContainer implements DockableWindowContainer, DockingAre
 
 		JToggleButton button = new JToggleButton();
 		button.setMargin(new Insets(1,1,1,1));
+		GUIUtilities.setButtonContentMargin(button, new Insets(6,6,6,6));
 		button.setRequestFocusEnabled(false);
 		button.setIcon(new RotatedTextIcon(rotation,button.getFont(),
 			entry.shortTitle()));

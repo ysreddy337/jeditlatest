@@ -50,7 +50,7 @@ import org.gjt.sp.util.TaskManager;
 /**
  * HyperSearch results window.
  * @author Slava Pestov
- * @version $Id: HyperSearchResults.java 22942 2013-04-22 11:27:52Z thomasmey $
+ * @version $Id: HyperSearchResults.java 23925 2015-05-24 05:13:52Z ezust $
  */
 public class HyperSearchResults extends JPanel implements DefaultFocusComponent
 {
@@ -104,6 +104,7 @@ public class HyperSearchResults extends JPanel implements DefaultFocusComponent
 		resultTreeRoot = new DefaultMutableTreeNode();
 		resultTreeModel = new DefaultTreeModel(resultTreeRoot);
 		resultTree = new HighlightingTree(resultTreeModel);
+		resultTree.setRowHeight(0);
 		resultTree.setToolTipText(null);
 		resultTree.setCellRenderer(new ResultCellRenderer());
 		resultTree.setVisibleRowCount(16);

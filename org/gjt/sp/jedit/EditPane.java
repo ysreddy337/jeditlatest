@@ -89,7 +89,7 @@ import org.gjt.sp.util.ThreadUtilities;
  * @see View#getEditPanes()
  *
  * @author Slava Pestov
- * @version $Id: EditPane.java 23701 2014-10-26 14:09:49Z ezust $
+ * @version $Id: EditPane.java 23981 2015-08-10 14:56:24Z daleanson $
  */
 public class EditPane extends JPanel implements BufferSetListener
 {
@@ -494,6 +494,7 @@ public class EditPane extends JPanel implements BufferSetListener
 	//{{{ goToNextMarker() method
 	/**
 	 * Moves the caret to the next marker.
+	 * @param select whether to select the marker
 	 * @since jEdit 4.3pre3
 	 */
 	public void goToNextMarker(boolean select)
@@ -531,6 +532,7 @@ public class EditPane extends JPanel implements BufferSetListener
 	//{{{ goToPrevMarker() method
 	/**
 	 * Moves the caret to the previous marker.
+	 * @param select whether to select the marker
 	 * @since jEdit 2.7pre2
 	 */
 	public void goToPrevMarker(boolean select)
@@ -770,36 +772,36 @@ public class EditPane extends JPanel implements BufferSetListener
 	EditPane(@Nonnull View view, @Nullable BufferSet bufferSetSource, @Nonnull Buffer buffer)
 	{
 		super(new BorderLayout());
-        BufferSet.Scope scope = jEdit.getBufferSetManager().getScope();
-        BufferSet source = bufferSetSource;
-        switch (scope)
-        {
-            case editpane:
-                // do nothing
-                break;
-            case view:
-                {
-                    EditPane editPane = view.getEditPane();
-                    if (editPane != null)
-                    {
-                        // if we have an editpane we copy it
-                        source = editPane.getBufferSet();
-                    }
-                }
-                break;
-            case global:
-                View activeView = jEdit.getActiveView();
-                if (activeView != null)
-                {
-                    EditPane editPane = activeView.getEditPane();
-                    if (editPane != null)
-                    {
-                        source = editPane.getBufferSet();
-                    }
-                }
-                break;
-        }
-        bufferSet = new BufferSet(source);
+		BufferSet.Scope scope = jEdit.getBufferSetManager().getScope();
+		BufferSet source = bufferSetSource;
+		switch (scope)
+		{
+			case editpane:
+				// do nothing
+				break;
+			case view:
+				{
+					EditPane editPane = view.getEditPane();
+					if (editPane != null)
+					{
+						// if we have an editpane we copy it
+						source = editPane.getBufferSet();
+					}
+				}
+				break;
+			case global:
+				View activeView = jEdit.getActiveView();
+				if (activeView != null)
+				{
+					EditPane editPane = activeView.getEditPane();
+					if (editPane != null)
+					{
+						source = editPane.getBufferSet();
+					}
+				}
+				break;
+		}
+		bufferSet = new BufferSet(source);
 
 		init = true;
 
@@ -999,6 +1001,8 @@ public class EditPane extends JPanel implements BufferSetListener
 			jEdit.getColorProperty("view.structureHighlightColor"));
 		painter.setEOLMarkersPainted(jEdit.getBooleanProperty(
 			"view.eolMarkers"));
+		painter.setEOLMarkerChar(
+			jEdit.getProperty("view.eolMarkerChar", "·"));
 		painter.setEOLMarkerColor(
 			jEdit.getColorProperty("view.eolMarkerColor"));
 		painter.setWrapGuidePainted(jEdit.getBooleanProperty(

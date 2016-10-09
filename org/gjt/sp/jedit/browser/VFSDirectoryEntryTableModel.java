@@ -36,7 +36,7 @@ import org.gjt.sp.util.StandardUtilities;
 
 /**
  * @author Slava Pestov
- * @version $Id: VFSDirectoryEntryTableModel.java 23336 2013-11-16 12:05:40Z ezust $
+ * @version $Id: VFSDirectoryEntryTableModel.java 23970 2015-08-08 18:10:36Z daleanson $
  * @since jEdit 4.2pre1
  */
 public class VFSDirectoryEntryTableModel extends AbstractTableModel
@@ -270,6 +270,18 @@ public class VFSDirectoryEntryTableModel extends AbstractTableModel
 		String extAttr = getExtendedAttribute(i);
 		jEdit.setIntegerProperty("vfs.browser."
 			+ extAttr + ".width",w);
+	} //}}}
+	
+	//{{{ columnMoved() method
+	protected void columnMoved(int from, int to) {
+		if (from == to)
+			return;
+		if (from < 1 || from > getColumnCount())
+			return;
+		if (to < 1 || to > getColumnCount())
+			return;
+		ExtendedAttribute ea = extAttrs.remove(from - 1);
+		extAttrs.add(to - 1, ea);
 	} //}}}
 	
 	//{{{ getFiles() method

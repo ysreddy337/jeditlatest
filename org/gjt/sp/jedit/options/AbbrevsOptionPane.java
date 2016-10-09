@@ -41,7 +41,7 @@ import org.gjt.sp.util.StandardUtilities;
 /**
  * Abbrev editor.
  * @author Slava Pestov
- * @version $Id: AbbrevsOptionPane.java 23221 2013-09-29 20:03:32Z shlomy $
+ * @version $Id: AbbrevsOptionPane.java 23920 2015-05-22 08:03:45Z ezust $
  */
 public class AbbrevsOptionPane extends AbstractOptionPane
 {
@@ -96,6 +96,7 @@ public class AbbrevsOptionPane extends AbstractOptionPane
 
 		globalAbbrevs = new AbbrevsModel(Abbrevs.getGlobalAbbrevs());
 		abbrevsTable = new JTable(globalAbbrevs);
+		abbrevsTable.setRowHeight(GUIUtilities.defaultRowHeight());
 		abbrevsTable.getColumnModel().getColumn(1).setCellRenderer(
 			new Renderer());
 		abbrevsTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);

@@ -39,7 +39,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Stack;
@@ -134,7 +134,7 @@ import org.gjt.sp.util.StandardUtilities;
  *
  * @author Slava Pestov
  * @author John Gellene (API documentation)
- * @version $Id: View.java 23412 2014-02-11 05:06:18Z ezust $
+ * @version $Id: View.java 23878 2015-02-26 18:30:45Z ezust $
  */
 public class View extends JFrame implements InputHandlerProvider
 {
@@ -282,7 +282,7 @@ public class View extends JFrame implements InputHandlerProvider
 			if (dockingFrameworkProvider == null)
 			{
 				Log.log(Log.ERROR, View.class, "No docking framework " + framework +
-							       " available, using the original one");
+								   " available, using the original one");
 				dockingFrameworkProvider = (DockingFrameworkProvider)
 				ServiceManager.getService(
 					DOCKING_FRAMEWORK_PROVIDER_SERVICE, ORIGINAL_DOCKING_FRAMEWORK);
@@ -967,7 +967,8 @@ public class View extends JFrame implements InputHandlerProvider
 	//{{{ getBuffers() method
 	/**
 	 * Returns all Buffers opened in this View,
-	 * sorted according to View options. (as of jEdit 5.2)
+	 * Sorted according to View options. (as of jEdit 5.2)
+	 * With order preserved for unsorted buffersets (as of jEdit 5.3)
 	 * @since jEdit 5.1
 	 */
 	public Buffer[] getBuffers()
@@ -980,7 +981,7 @@ public class View extends JFrame implements InputHandlerProvider
 			if (retval == null) {
 				Comparator<Buffer> sorter = bs.getSorter();
 				if (sorter == null)
-					retval = new HashSet<Buffer>();
+					retval = new LinkedHashSet<Buffer>();
 				else
 					retval = new TreeSet<Buffer>(sorter);
 			}
@@ -1309,7 +1310,7 @@ public class View extends JFrame implements InputHandlerProvider
 
 	// {{{ closeAllMenus()
 	/** closes any popup menus that may have been opened
-	    @since jEdit 4.4pre1
+		@since jEdit 4.4pre1
 	*/
 	public void closeAllMenus()
 	{
@@ -1452,6 +1453,7 @@ public class View extends JFrame implements InputHandlerProvider
 		closeAllMenus();
 		// so you can keep typing in your editpane afterwards...
 		editPane.getTextArea().requestFocus();
+		EditBus.send(new ViewUpdate(this,ViewUpdate.FULL_SCREEN_TOGGLED));
 	} //}}}
 
 	//{{{ confirmToCloseDirty() methods
@@ -1784,7 +1786,7 @@ loop:		while (true)
 						if (buffer == null)
 						{
 							buffer = jEdit.openTemporary(jEdit.getActiveView(), null,
-											    path, true, null);
+												path, true, null);
 							jEdit.commitTemporary(buffer);
 						}
 					}
@@ -1885,7 +1887,7 @@ loop:		while (true)
 		getContentPane().remove(status);
 
 		boolean showStatus = plainView ? jEdit.getBooleanProperty("view.status.plainview.visible") :
-				    jEdit.getBooleanProperty("view.status.visible");
+					jEdit.getBooleanProperty("view.status.visible");
 		if (jEdit.getBooleanProperty("view.toolbar.alternateLayout"))
 		{
 			getContentPane().add(BorderLayout.NORTH,topToolBars);
@@ -2131,7 +2133,7 @@ loop:		while (true)
 	//{{{ getOpenBuffers() method
 	private Set<Buffer> getOpenBuffers()
 	{
-		Set<Buffer> openBuffers = new HashSet<Buffer>();
+		Set<Buffer> openBuffers = new LinkedHashSet<Buffer>();
 		for (EditPane editPane: getEditPanes())
 		{
 			openBuffers.addAll(Arrays.asList(

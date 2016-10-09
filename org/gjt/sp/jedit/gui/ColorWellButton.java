@@ -26,6 +26,8 @@ package org.gjt.sp.jedit.gui;
 import javax.swing.*;
 import java.awt.event.*;
 import java.awt.*;
+import java.awt.font.FontRenderContext;
+import java.awt.geom.Rectangle2D;
 import org.gjt.sp.jedit.jEdit;
 import org.gjt.sp.jedit.GUIUtilities;
 import org.gjt.sp.jedit.OperatingSystem;
@@ -36,7 +38,7 @@ import org.gjt.sp.jedit.OperatingSystem;
  * You can get and set the currently selected color using
  * {@link #getSelectedColor()} and {@link #setSelectedColor(Color)}.
  * @author Slava Pestov
- * @version $Id: ColorWellButton.java 21831 2012-06-18 22:54:17Z ezust $
+ * @version $Id: ColorWellButton.java 24021 2015-08-14 18:36:19Z makarius $
  */
 public class ColorWellButton extends JButton
 {
@@ -76,14 +78,18 @@ public class ColorWellButton extends JButton
 			this.color = color;
 		}
 
+		private Rectangle2D bounds =
+				new JLabel("").getFont().createGlyphVector(
+						new FontRenderContext(null, true, false), "AAAA").getVisualBounds();
+
 		public int getIconWidth()
 		{
-			return 35;
+			return (int)Math.ceil(bounds.getWidth());
 		}
 
 		public int getIconHeight()
 		{
-			return 10;
+			return (int)Math.ceil(bounds.getHeight());
 		}
 
 		public void paintIcon(Component c, Graphics g, int x, int y)

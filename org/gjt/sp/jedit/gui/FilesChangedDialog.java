@@ -37,7 +37,7 @@ import org.gjt.sp.util.EnhancedTreeCellRenderer;
  * Files changed on disk dialog.
  *
  * @author Slava Pestov
- * @version $Id: FilesChangedDialog.java 23221 2013-09-29 20:03:32Z shlomy $
+ * @version $Id: FilesChangedDialog.java 23923 2015-05-22 14:10:47Z ezust $
  */
 public class FilesChangedDialog extends EnhancedDialog
 {
@@ -113,6 +113,7 @@ public class FilesChangedDialog extends EnhancedDialog
 
 		bufferTreeModel = new DefaultTreeModel(root);
 		bufferTree = new JTree(bufferTreeModel);
+		bufferTree.setRowHeight(0);
 		bufferTree.setRootVisible(false);
 		bufferTree.setVisibleRowCount(10);
 		bufferTree.setCellRenderer(new Renderer());

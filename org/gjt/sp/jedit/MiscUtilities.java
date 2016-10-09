@@ -57,7 +57,7 @@ import org.gjt.sp.util.StringList;
  * <li>{@link #constructPath(String,String)}</li>
  * </ul>
  *
- * @version $Id: MiscUtilities.java 23749 2014-12-04 19:51:43Z ezust $
+ * @version $Id: MiscUtilities.java 23981 2015-08-10 14:56:24Z daleanson $
  */
 public class MiscUtilities
 {
@@ -198,7 +198,7 @@ public class MiscUtilities
 	 *
 	 *	@return an abbreviated path, replacing values with variables, if a prefix exists.
 	 *  @see #expandVariables
-	 *  @since jEdit 4.3pre16
+	 *  @since jEdit 4.3
 	 */
 	public static String abbreviate(String path)
 	{
@@ -756,7 +756,7 @@ public class MiscUtilities
 	 * Checks whether the last backup was not earlier than
 	 * <code>backupTimeDistance</code> ms ago.
 	 * @param path The file to back up.
-	 * @param backups The number of backups. Must be >= 1. If > 1, backup
+	 * @param backups The number of backups. Must be &gt;= 1. If &gt; 1, backup
 	 * files will be numbered.
 	 * @param backupDirectory The directory determined externally or
 	 * obtained from <code>prepareBackupDirectory</code>.
@@ -848,7 +848,7 @@ public class MiscUtilities
 	/**
 	 * Saves a backup (optionally numbered) of a file.
 	 * @param file A local file
-	 * @param backups The number of backups. Must be >= 1. If > 1, backup
+	 * @param backups The number of backups. Must be &gt;= 1. If &gt; 1, backup
 	 * files will be numbered.
 	 * @param backupPrefix The backup file name prefix
 	 * @param backupSuffix The backup file name suffix
@@ -867,7 +867,7 @@ public class MiscUtilities
 	 * Saves a backup (optionally numbered) of a file. Requires
 	 * specifying the backup directory and generates the backup filename.
 	 * @param file A local file
-	 * @param backups The number of backups. Must be >= 1. If > 1, backup
+	 * @param backups The number of backups. Must be &gt;= 1. If &gt; 1, backup
 	 * files will be numbered.
 	 * @param backupPrefix The backup file name prefix
 	 * @param backupSuffix The backup file name suffix
@@ -1504,6 +1504,27 @@ loop:		for(;;)
 	} //}}}
 
 	//}}}
+
+	//{{{ storeProperties() method
+	/**
+	 * Stores properties with sorted keys.
+     * @param props  Given properties.
+     * @param out  Output stream.
+     * @param comments  Description of the property list.
+     * @since jEdit 5.3
+	 */
+	public static void storeProperties(Properties props, OutputStream out, String comments)
+        throws IOException
+	{
+		Properties sorted = new Properties() {
+			@Override
+			public synchronized Enumeration<Object> keys() {
+				return Collections.enumeration(new TreeSet<Object>(super.keySet()));
+			}
+		};
+		sorted.putAll(props);
+		sorted.store(out, comments);
+	} //}}}
 
 	static VarCompressor svc = null;
 

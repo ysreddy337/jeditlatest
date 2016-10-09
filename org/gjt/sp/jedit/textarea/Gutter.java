@@ -50,7 +50,7 @@ import org.gjt.sp.util.Log;
  * @see TextArea
  *
  * @author Mike Dillon and Slava Pestov
- * @version $Id: Gutter.java 23461 2014-04-06 18:00:29Z ezust $
+ * @version $Id: Gutter.java 23977 2015-08-08 22:01:12Z daleanson $
  */
 public class Gutter extends JComponent implements SwingConstants
 {
@@ -185,6 +185,8 @@ public class Gutter extends JComponent implements SwingConstants
 		}
 	
 		int y = clip.y - clip.y % lineHeight;
+		if (y == 0)
+			y = textArea.getPainter().getLineExtraSpacing();
 
 		extensionMgr.paintScreenLineRange(textArea,gfx,
 			firstLine,lastLine,y,lineHeight);

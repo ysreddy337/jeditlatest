@@ -56,7 +56,7 @@ import java.awt.*;
  *
  * @author Slava Pestov
  * @author John Gellene (API documentation)
- * @version $Id: AbstractOptionPane.java 21831 2012-06-18 22:54:17Z ezust $
+ * @version $Id: AbstractOptionPane.java 23981 2015-08-10 14:56:24Z daleanson $
  */
 // even though this class is called AbstractOptionPane, it is not really
 // abstract, since BufferOptions uses an instance of it to lay out its
@@ -119,6 +119,8 @@ public class AbstractOptionPane extends JPanel implements OptionPane
 
 	//{{{ newLabel()
 	/**
+	 * @param label The label to associate with comp
+	 * @param comp The component to associate the label
 	 * @return a label which has the same tooltiptext as the Component
 	 *    that it is a label for. This is used to create labels from inside
 	 *    AbstractOptionPane.

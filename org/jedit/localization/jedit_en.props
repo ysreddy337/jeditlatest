@@ -1247,6 +1247,7 @@ options.general.checkModStatusUpon.none=none
 options.general.recentFiles=Recent files to remember:
 options.general.hypersearch.maxWarningResults=Max Hypersearch Results:
 options.general.sortRecent=Sort recent file list
+options.general.hideOpen=Hide open files from recent file list
 options.general.saveCaret=Save caret positions in recent file list
 options.general.persistentMarkers=Save marker positions
 options.general.resetUndo=Reset undo history on save
@@ -1358,18 +1359,22 @@ options.editing.elasticTabstops=Indent using elastic tabstops
 options.editing.elasticTabstops.tooltip=Columns in lines above and below a "cell" are kept aligned on tab stops that can grow or shrink depending on the width of the cell.
 options.editing.deepIndent=Deep indent
 options.editing.autoIndent=Automatic indentation:
-options.editing.largefilemode.title=Large file mode
-options.editing.largefilemode=What should I do about very big files:
-options.editing.largefilemode.option.ask=<html><b>Ask</b> what to do when opening a large file</html>
-options.editing.largefilemode.option.full=<html><b>Keep Full syntax</b> : jEdit's syntax highlight will work as usual, jEdit \
-                                               	may become<br/><b>very slow, this is not recommended</b></html>
-options.editing.largefilemode.option.limited=<html><b>Context insensitive syntax highlight</b>: In this case jEdit will \
-		do fast highlighting, but the<br/>result may not be perfect. The \
-		buffer is highlighted line by line without taking care of the<br/>context \
-		of the previous line. It is possible that the syntax is not accurate \
-		if you have<br/>tokens on multiple lines (multiline comments, xml tags ...) \
-		Soft wrap is also deactivated<br/><b>(best choice)</b></html>
-options.editing.largefilemode.option.nohighlight=No syntax highlight, no soft wrap
+options.editing.deleteMode=Delete this mode
+options.editing.addMode=Add Mode
+options.editing.addMode.dialog.title=Add Mode
+options.editing.addMode.dialog.browse=Browse
+options.editing.addMode.dialog.modeName=Mode Name:
+options.editing.addMode.dialog.modeFile=Select Mode File:
+options.editing.addMode.dialog.filenameGlob=File Name Glob:
+options.editing.addMode.dialog.firstLineGlob=First Line Glob:
+options.editing.addMode.dialog.warning.title=Confirm Mode Replace:
+options.editing.addMode.dialog.warning.message=This mode already exists. Do you want to replace it?
+options.editing.addMode.dialog.warning.message1=Unable to copy mode file
+options.editing.deleteMode.dialog.title=Confirm Mode Delete
+options.editing.deleteMode.dialog.message=Are you sure you want to delete this mode? It cannot be undone.
+options.editing.deleteMode.dialog.message1=Unable to delete mode file
+options.editing.deleteMode.dialog.message2=for mode
+
 #}}}
 
 #{{{ Encodings pane
@@ -1408,6 +1413,23 @@ options.gutter.foldStyleNames.Triangle=Triangle
 options.gutter.foldStyleNames.Square=Square
 options.gutter.foldStyleNames.Circle=Circle
 #}}}
+
+#{{{ Large files pane
+options.large-files.label=Large files
+options.editing.largefilemode.title=Large file mode
+options.editing.largefilemode=What should I do about very big files:
+options.editing.largefilemode.option.ask=<html><b>Ask</b> what to do when opening a large file</html>
+options.editing.largefilemode.option.full=<html><b>Keep Full syntax</b> : jEdit's syntax highlight will work as usual, jEdit \
+                                               	may become<br/><b>very slow, this is not recommended</b></html>
+options.editing.largefilemode.option.limited=<html><b>Context insensitive syntax highlight</b>: In this case jEdit will \
+		do fast highlighting, but the<br/>result may not be perfect. The \
+		buffer is highlighted line by line without taking care of the<br/>context \
+		of the previous line. It is possible that the syntax is not accurate \
+		if you have<br/>tokens on multiple lines (multiline comments, xml tags ...) \
+		Soft wrap is also deactivated<br/><b>(best choice)</b></html>
+options.editing.largefilemode.option.nohighlight=No syntax highlight, no soft wrap
+#}}}
+
 
 #{{{ Mouse pane
 options.mouse.label=Mouse
@@ -1646,6 +1668,8 @@ options.view.showFullPath=Show full path of buffer in title bar
 options.view.showSearchbar=Always show search bar
 options.view.beepOnSearchAutoWrap=Beep when searching automatically wraps
 options.view.showBufferSwitcher=Show buffer switcher
+options.view.bufferswitcher.sortBuffers=Sort Buffer Switcher
+options.view.bufferswitcher.sortByName=Sort Buffer Switcher by file name instead of path name
 options.view.bufferSwitcherMaxRowsCount=Visible rows in buffer switcher:
 options.view.sortBuffers=Sort buffer sets
 options.view.sortByName=Sort buffer sets by file name, instead of path name

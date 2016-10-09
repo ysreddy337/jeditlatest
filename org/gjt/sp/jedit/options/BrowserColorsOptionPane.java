@@ -40,7 +40,7 @@ import org.gjt.sp.jedit.*;
 /**
  * Browser color editor.
  * @author Slava Pestov
- * @version $Id: BrowserColorsOptionPane.java 22665 2013-01-11 16:25:33Z kpouer $
+ * @version $Id: BrowserColorsOptionPane.java 23920 2015-05-22 08:03:45Z ezust $
  */
 public class BrowserColorsOptionPane extends AbstractOptionPane
 {
@@ -59,6 +59,7 @@ public class BrowserColorsOptionPane extends AbstractOptionPane
 
 		colorsModel = new BrowserColorsModel();
 		colorsTable = new JTable(colorsModel);
+		colorsTable.setRowHeight(GUIUtilities.defaultRowHeight());
 		colorsTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
 		colorsTable.getTableHeader().setReorderingAllowed(false);
 		colorsTable.addMouseListener(new MouseHandler());

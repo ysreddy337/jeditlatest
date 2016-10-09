@@ -41,7 +41,7 @@ import org.gjt.sp.util.Log;
 
 /** An abstract options dialog box.
  * @author Slava Pestov
- * @version $Id: OptionsDialog.java 23516 2014-04-24 03:50:48Z ezust $
+ * @version $Id: OptionsDialog.java 23923 2015-05-22 14:10:47Z ezust $
  * @todo refactor to use OptionGroupPane
  */
 public abstract class OptionsDialog extends EnhancedDialog
@@ -306,6 +306,7 @@ public abstract class OptionsDialog extends EnhancedDialog
 		stage = new JScrollPane();
 
 		paneTree = new JTree(createOptionTreeModel());
+		paneTree.setRowHeight(0);
 		paneTree.setVisibleRowCount(1);
 		paneTree.setCellRenderer(new PaneNameRenderer());
 

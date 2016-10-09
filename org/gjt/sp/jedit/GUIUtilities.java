@@ -60,18 +60,27 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
-import javax.swing.JSplitPane;
 import javax.swing.JTextPane;
 import javax.swing.JToolBar;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
+import javax.swing.UIDefaults;
+import javax.swing.UIManager;
 
 
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.font.FontRenderContext;
+import java.awt.font.LineMetrics;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 //}}}
 
-/** Various GUI utility functions related to icons, menus, toolbars, keyboard shortcuts, etc. 
+/** Various GUI utility functions related to icons, menus, toolbars, keyboard shortcuts, etc.
  *
  * The most frequently used members of this class are:
  *
@@ -88,7 +97,7 @@ import java.awt.event.*;
  * </ul>
  *
  * @author Slava Pestov
- * @version $Id: GUIUtilities.java 23449 2014-03-30 19:14:26Z kerik-sf $
+ * @version $Id: GUIUtilities.java 24110 2015-10-19 16:23:13Z vampire0 $
  */
 public class GUIUtilities
 {
@@ -97,6 +106,7 @@ public class GUIUtilities
 	//{{{ setIconPath() method
 	/**
 	 * Sets the path where jEdit looks for icons.
+	 * @param iconPath the icon path
 	 * @since jEdit 4.2pre5
 	 */
 	public static void setIconPath(String iconPath)
@@ -109,6 +119,7 @@ public class GUIUtilities
 	/**
 	 * Loads an icon.
 	 * @param iconName The icon name
+	 * @return the icon
 	 * @since jEdit 2.6pre7
 	 */
 	public static Icon loadIcon(String iconName)
@@ -168,7 +179,7 @@ public class GUIUtilities
 
 	//{{{ getEditorIcon() method
 	/**
-	 * Returns the default editor window image.
+	 * @return the default editor window image.
 	 */
 	public static Image getEditorIcon()
 	{
@@ -177,7 +188,7 @@ public class GUIUtilities
 
 	//{{{ getPluginIcon() method
 	/**
-	 * Returns the default plugin window image.
+	 * @return the default plugin window image.
 	 */
 	public static Image getPluginIcon()
 	{
@@ -192,6 +203,7 @@ public class GUIUtilities
 	/**
 	 * Creates a menubar. Plugins should not need to call this method.
 	 * @param name The menu bar name
+	 * @return the menu bar
 	 * @since jEdit 3.2pre5
 	 */
 	public static JMenuBar loadMenuBar(String name)
@@ -204,6 +216,7 @@ public class GUIUtilities
 	 * Creates a menubar. Plugins should not need to call this method.
 	 * @param context An action context
 	 * @param name The menu bar name
+	 * @return the menu bar
 	 * @since jEdit 4.2pre1
 	 */
 	public static JMenuBar loadMenuBar(ActionContext context, String name)
@@ -230,6 +243,7 @@ public class GUIUtilities
 	 * separated list of action names. An action name of <code>-</code>
 	 * inserts a separator in the menu.
 	 * @param name The menu name
+	 * @return a menu
 	 * @see #loadMenuItem(String)
 	 * @since jEdit 2.6pre2
 	 */
@@ -249,6 +263,7 @@ public class GUIUtilities
 	 * <code>jEdit.getActionContext()</code> or
 	 * <code>VFSBrowser.getActionContext()</code>.
 	 * @param name The menu name
+	 * @return a menu
 	 * @see #loadMenuItem(String)
 	 * @since jEdit 4.2pre1
 	 */
@@ -263,6 +278,9 @@ public class GUIUtilities
 	/**
 	 * Creates a popup menu.
 	 * @param name The menu name
+	 * @param evt mouse event
+	 * @param textArea the text area
+	 * @return a popup menu
 	 * @since jEdit 2.6pre2
 	 */
 	public static JPopupMenu loadPopupMenu(String name, JEditTextArea textArea, MouseEvent evt)
@@ -272,8 +290,7 @@ public class GUIUtilities
 
 	//{{{ loadPopupMenu() method
 	/**
-	 * Creates a popup menu.
-
+	 * @return a popup menu.
 	 * @param name The menu name
 	 * @since jEdit 2.6pre2
 	 */
@@ -290,6 +307,7 @@ public class GUIUtilities
 	 * <code>jEdit.getActionContext()</code> or
 	 * <code>VFSBrowser.getActionContext()</code>.
 	 * @param name The menu name
+	 * @return a popup menu
 	 * @since jEdit 4.2pre1
 	 */
 	public static JPopupMenu loadPopupMenu(ActionContext context, String name)
@@ -307,6 +325,7 @@ public class GUIUtilities
 	 * @param textArea the textArea wanting to show the popup.
 	 * 	If not null, include context menu items defined by services.
 	 * @param evt additional context info about where the mouse was when menu was requested
+	 * @return the popup menu
 	 * @since jEdit 4.3pre15
 	 */
 	public static JPopupMenu loadPopupMenu(ActionContext context, String name, JEditTextArea textArea, MouseEvent evt)
@@ -348,6 +367,7 @@ public class GUIUtilities
 	 * @return a list of menu items defined by services.
 	 *
 	 * @param textArea the TextArea desiring to display these menu items
+	 * @param evt a mouse event
 	 * @since jEdit 4.3pre15
 	 */
 	public static List<JMenuItem> getServiceContextMenuItems(JEditTextArea textArea, MouseEvent evt)
@@ -381,6 +401,7 @@ public class GUIUtilities
 	 * {@link EditAction#getLabel()} method.
 	 *
 	 * @param name The menu item name
+	 * @return the menu item
 	 * @see #loadMenu(String)
 	 * @since jEdit 2.6pre1
 	 */
@@ -394,6 +415,7 @@ public class GUIUtilities
 	 * Creates a menu item.
 	 * @param name The menu item name
 	 * @param setMnemonic True if the menu item should have a mnemonic
+	 * @return a menu item
 	 * @since jEdit 3.1pre1
 	 */
 	public static JMenuItem loadMenuItem(String name, boolean setMnemonic)
@@ -409,6 +431,7 @@ public class GUIUtilities
 	 * <code>VFSBrowser.getActionContext()</code>.
 	 * @param name The menu item name
 	 * @param setMnemonic True if the menu item should have a mnemonic
+	 * @return the menu item
 	 * @since jEdit 4.2pre1
 	 */
 	public static JMenuItem loadMenuItem(ActionContext context, String name,
@@ -432,7 +455,7 @@ public class GUIUtilities
 
 	//{{{ loadToolBar() method
 	/**
-	 * Creates a toolbar.
+	 * @return a toolbar.
 	 * @param name The toolbar name
 	 * @since jEdit 4.2pre2
 	 */
@@ -448,6 +471,7 @@ public class GUIUtilities
 	 * <code>jEdit.getActionContext()</code> or
 	 * <code>VFSBrowser.getActionContext()</code>.
 	 * @param name The toolbar name
+	 * @return the toolbar
 	 * @since jEdit 4.2pre2
 	 */
 	public static Container loadToolBar(ActionContext context, String name)
@@ -488,6 +512,7 @@ public class GUIUtilities
 	 * from the resource named '/org/gjt/sp/jedit/icons/' suffixed
 	 * with the value of the <code><i>name</i>.icon</code> property.
 	 * @param name The name of the button
+	 * @return a button
 	 */
 	public static EnhancedButton loadToolButton(String name)
 	{
@@ -505,6 +530,7 @@ public class GUIUtilities
 	 * <code>jEdit.getActionContext()</code> or
 	 * <code>VFSBrowser.getActionContext()</code>.
 	 * @param name The name of the button
+	 * @return the button
 	 * @since jEdit 4.2pre1
 	 */
 	public static EnhancedButton loadToolButton(ActionContext context,
@@ -543,6 +569,8 @@ public class GUIUtilities
 	 * `Prettifies' a menu item label by removing the `$' sign. This
 	 * can be used to process the contents of an <i>action</i>.label
 	 * property.
+	 * @param label the label
+	 * @return a pretty label
 	 */
 	public static String prettifyMenuLabel(String label)
 	{
@@ -574,7 +602,7 @@ public class GUIUtilities
 				out.append(' ');
 			out.append(getMacShortcutLabel(strokes[i]));
 		}
-		
+
 		return out.toString();
         } //}}}
 
@@ -582,7 +610,7 @@ public class GUIUtilities
 	/**
 	 * Returns a label string to show users what shortcut are
 	 * assigned to the action.
-	 * @param platform if true, show fancy platform-specific label for the modifiers. 
+	 * @param platform if true, show fancy platform-specific label for the modifiers.
 	 */
 	public static String getShortcutLabel(String action, Boolean platform)
 	{
@@ -664,13 +692,13 @@ public class GUIUtilities
 		if (EventQueue.isDispatchThread())
 		{
 			hideSplashScreen();
-	
+
 			JOptionPane.showMessageDialog(comp,
 				jEdit.getProperty(name.concat(".message"),args),
 				jEdit.getProperty(name.concat(".title"),args),
 				JOptionPane.INFORMATION_MESSAGE);
 		}
-                else 
+                else
                 {
                         try
                         {
@@ -708,13 +736,13 @@ public class GUIUtilities
 		if (EventQueue.isDispatchThread())
 		{
 			hideSplashScreen();
-	
+
 			JOptionPane.showMessageDialog(comp,
 				jEdit.getProperty(name.concat(".message"),args),
 				jEdit.getProperty(name.concat(".title"),args),
 				JOptionPane.ERROR_MESSAGE);
 		}
-                else 
+                else
                 {
                         try
                         {
@@ -784,7 +812,7 @@ public class GUIUtilities
 		if (EventQueue.isDispatchThread())
 		{
 			hideSplashScreen();
-	
+
 			return (String)JOptionPane.showInputDialog(comp,
 				jEdit.getProperty(name.concat(".message"),args),
 				jEdit.getProperty(name.concat(".title")),
@@ -807,7 +835,7 @@ public class GUIUtilities
 			return null;
 		}
 		return retValue[0];
-		
+
 	} //}}}
 
 	//{{{ inputProperty() method
@@ -829,7 +857,7 @@ public class GUIUtilities
 		if (EventQueue.isDispatchThread())
 		{
 			hideSplashScreen();
-	
+
 			String retVal = (String)JOptionPane.showInputDialog(comp,
 				jEdit.getProperty(name.concat(".message"),args),
 				jEdit.getProperty(name.concat(".title")),
@@ -856,7 +884,7 @@ public class GUIUtilities
 			return null;
 		}
 		return retValue[0];
-		
+
 	} //}}}
 
 	//{{{ confirm() method
@@ -881,7 +909,7 @@ public class GUIUtilities
 		if (EventQueue.isDispatchThread())
 		{
 			hideSplashScreen();
-	
+
 			return JOptionPane.showConfirmDialog(comp,
 				jEdit.getProperty(name + ".message",args),
 				jEdit.getProperty(name + ".title"),buttons,type);
@@ -975,12 +1003,12 @@ public class GUIUtilities
 		{
 			JList list = new JList(listModel);
 			list.setVisibleRowCount(8);
-	
+
 			Object[] message = {
 				jEdit.getProperty(name + ".message",args),
 				new JScrollPane(list)
 			};
-	
+
 			return JOptionPane.showConfirmDialog(comp,
 				message,
 				jEdit.getProperty(name + ".title"),
@@ -1004,7 +1032,7 @@ public class GUIUtilities
 			return JOptionPane.CANCEL_OPTION;
 		}
 		return retValue[0];
-		
+
 	} //}}}
 
 	//{{{ listConfirm() method
@@ -1026,19 +1054,19 @@ public class GUIUtilities
 	public static int listConfirm(final Component comp, final String name, final String[] args,
 		final Object[] listModel, final List selectedItems)
 	{
-		
+
 		if (EventQueue.isDispatchThread())
 		{
 			JList list = new JList(listModel);
 			list.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
 			list.setVisibleRowCount(8);
 			list.addSelectionInterval(0,listModel.length - 1);
-	
+
 			Object[] message = {
 				jEdit.getProperty(name + ".message",args),
 				new JScrollPane(list)
 			};
-	
+
 			int ret = JOptionPane.showConfirmDialog(comp,
 								message,
 								jEdit.getProperty(name + ".title"),
@@ -1065,7 +1093,7 @@ public class GUIUtilities
 			return JOptionPane.CANCEL_OPTION;
 		}
 		return retValue[0];
-		
+
 	} //}}}
 
 	//{{{ showVFSFileDialog() methods
@@ -1148,6 +1176,32 @@ public class GUIUtilities
 	} //}}}
 
 	//}}}
+
+	//{{{ menuAcceleratorFont() method
+	/**
+	 * Menu accelerator font according to L&amp;F defaults, with workarounds.
+	 */
+	public static Font menuAcceleratorFont()
+	{
+		if (OperatingSystem.isMacOSLF()) {
+			return UIManager.getFont("Menu.acceleratorFont");
+		}
+		else {
+			// Menu.acceleratorFont is unreliable, often not properly scaled:
+			// imitate Menu.font instead.
+			Font font1 = UIManager.getFont("Menu.font");
+			if (font1 == null) {
+				return new Font("Monospaced", Font.PLAIN, 12);
+			}
+			else {
+				Font font2 = new Font("Lucida Sans Typewriter", Font.PLAIN, font1.getSize());
+				FontRenderContext frc = new FontRenderContext(null, true, false);
+				float scale =
+					font1.getLineMetrics("", frc).getHeight() / font2.getLineMetrics("", frc).getHeight();
+				return new Font(font2.getFamily(), font2.getStyle(), (int)(scale * font1.getSize()));
+			}
+		}
+	} //}}}
 
 	//{{{ Colors and styles
 
@@ -1439,7 +1493,7 @@ public class GUIUtilities
 	 * Saves a window's geometry to the properties.
 	 * The geometry is saved to the <code><i>name</i>.x</code>,
 	 * <code><i>name</i>.y</code>, <code><i>name</i>.width</code> and
-	 * <code><i>name</i>.height</code> properties.<br />
+	 * <code><i>name</i>.height</code> properties.<br>
 	 * For Frame's and descendents use {@link #addSizeSaver(Frame,String)} to save the sizes
 	 * correct even if the Frame is in maximized or iconified state.
 	 * @param win The window to load geometry from
@@ -1456,7 +1510,7 @@ public class GUIUtilities
 	 * Saves a window's geometry to the properties.
 	 * The geometry is saved to the <code><i>name</i>.x</code>,
 	 * <code><i>name</i>.y</code>, <code><i>name</i>.width</code> and
-	 * <code><i>name</i>.height</code> properties.<br />
+	 * <code><i>name</i>.height</code> properties.<br>
 	 * For Frame's and descendents use {@link #addSizeSaver(Frame,Container,String)} to save the sizes
 	 * correct even if the Frame is in maximized or iconified state.
 	 * @param win The window to load geometry from
@@ -1506,25 +1560,25 @@ public class GUIUtilities
 
 	//{{{ applyTextAreaColors() method
 	/**
-	 * experimental - applies the text area colors on a Component 
-	 * (such as a dockable window) and its children. 
+	 * experimental - applies the text area colors on a Component
+	 * (such as a dockable window) and its children.
 	 * @since jEdit 5.0pre1
 	 * @author ezust
-	 * 
+	 *
 	 */
-	public static void applyTextAreaColors(Container win) 
-	{		
-		for (Component child: win.getComponents()) 
+	public static void applyTextAreaColors(Container win)
+	{
+		for (Component child: win.getComponents())
 		{
 			child.setBackground(jEdit.getColorProperty("view.bgColor", Color.WHITE));
 			child.setForeground(jEdit.getColorProperty("view.fgColor", Color.BLACK));
-			if (child instanceof JTextPane)  
+			if (child instanceof JTextPane)
 				((JTextPane)child).setUI(new javax.swing.plaf.basic.BasicEditorPaneUI());
 			if (child instanceof Container)
 				applyTextAreaColors((Container)child);
 		}
 	} //}}}
-	
+
 	//{{{ createMultilineLabel() method
 	/**
 	 * Creates a component that displays a multiple line message. This
@@ -1834,6 +1888,52 @@ public class GUIUtilities
 		return (View)getComponentParent(comp,View.class);
 	} //}}}
 
+	//{{{ setButtonContentMargin() method
+	/**
+	 * Sets the content margin of a button (for Nimbus L&amp;F).
+	 * @param button  the button to modify
+	 * @param margin  the new margin
+	 * @since jEdit 5.3
+	 */
+	public static void setButtonContentMargin(AbstractButton button, Insets margin)
+	{
+		UIDefaults defaults = new UIDefaults();
+		defaults.put("Button.contentMargins", margin);
+		defaults.put("ToggleButton.contentMargins", margin);
+		button.putClientProperty("Nimbus.Overrides", defaults);
+	} //}}}
+
+	//{{{ defaultTableDimension() method
+	/**
+	 * JTable cell size, based on global defaults.
+	 */
+	public static Dimension defaultTableCellSize()
+	{
+		JLabel label = new JLabel("miniminiminiminiminiminiminiminiminimini");
+		UIDefaults defaults = UIManager.getDefaults();
+		Object font = defaults.get("Table.font");
+		if (font instanceof Font) label.setFont((Font)font);
+		return label.getPreferredSize();
+	} //}}}
+
+	//{{{ defaultColumnWidth() method
+	/**
+	 * Column width for JTable, based on global defaults.
+	 */
+	public static int defaultColumnWidth()
+	{
+		return defaultTableCellSize().width;
+	} //}}}
+
+	//{{{ defaultRowHeight() method
+	/**
+	 * Row height for JTable, based on global defaults.
+	 */
+	public static int defaultRowHeight()
+	{
+		return defaultTableCellSize().height;
+	} //}}}
+
 	//{{{ addSizeSaver() method
 	/**
 	* Adds a SizeSaver to the specified Frame. For non-Frame's use {@link #saveGeometry(Window,String)}
@@ -2050,7 +2150,7 @@ public class GUIUtilities
 	} //}}}
 
 	private static HashMap<String, String> macKeySymbols = null;
-	
+
 	/*
 	 * Create a list of unicode characters to be used in displaying keyboard shortcuts
 	 * on Mac OS X.
@@ -2058,7 +2158,7 @@ public class GUIUtilities
 	static
 	{
 		macKeySymbols = new HashMap<String, String>();
-		
+
 		// These are the unicode code points used in cocoa apps for displaying
 		// shortcuts.
 		macKeySymbols.put("ENTER",         "\u21A9");
@@ -2083,9 +2183,9 @@ public class GUIUtilities
 	 * names and modifiers (e.g. C+PERIOD) to symbols.
 	 */
 	private static String getMacShortcutLabel(String label)
-	{	
+	{
 		StringBuilder out = new StringBuilder();
-		
+
 		// Show the list of modifiers in standard order
 		int endOfModifiers = label.indexOf('+');
 		if (endOfModifiers != -1)
@@ -2108,13 +2208,13 @@ public class GUIUtilities
 				out.append('\u2318');  // cmd
 			}
 		}
-		
+
 		// We've done the modifiers, now do the key
 		String key = label.substring(endOfModifiers + 1);
-		
+
 		// Some keys have Mac-specific symbols
 		String text = macKeySymbols.get(key);
-		
+
 		// Others don't
 		if (text == null)
 		{
@@ -2124,7 +2224,7 @@ public class GUIUtilities
 			{
 				// e.g., convert the string "PERIOD" to the int KeyEvent.VK_PERIOD
 				int keyCode = KeyEvent.class.getField("VK_".concat(key)).getInt(null);
-				
+
 				// And then convert KeyEvent.VK_PERIOD to the string "."
 				text = KeyEvent.getKeyText(keyCode).toUpperCase();
 			}
@@ -2136,22 +2236,31 @@ public class GUIUtilities
 			}
 		}
 		out.append(text);
-		
+
 		return out.toString();
 	} //}}}
-	
+
 	private GUIUtilities() {}
 	//}}}
 
 	//{{{ Inner classes
 
+	private static final AtomicLong executorThreadsCounter = new AtomicLong();
+	private static final ScheduledExecutorService schedExecutor = Executors.newSingleThreadScheduledExecutor(new ThreadFactory()
+	{
+		@Override
+		public Thread newThread(Runnable r)
+		{
+			return new Thread(r, "SizeSaver-" + executorThreadsCounter.incrementAndGet());
+		}
+	});
 	//{{{ SizeSaver class
 	/**
 	 * A combined ComponentListener and WindowStateListener to continually save a Frames size.<br />
 	 * For non-Frame's use {@link GUIUtilities#saveGeometry(Window,String)}
 	 *
 	 * @author Björn Kautler
-	 * @version $Id: GUIUtilities.java 23449 2014-03-30 19:14:26Z kerik-sf $
+	 * @version $Id: GUIUtilities.java 24110 2015-10-19 16:23:13Z vampire0 $
 	 * @since jEdit 4.3pre6
 	 * @see GUIUtilities#saveGeometry(Window,Container,String)
 	 */
@@ -2160,6 +2269,7 @@ public class GUIUtilities
 		private final Frame frame;
 		private final Container parent;
 		private final String name;
+		private Future<?> resizeDelayFuture;
 
 		//{{{ SizeSaver constructors
 		/**
@@ -2193,6 +2303,8 @@ public class GUIUtilities
 		//{{{ save() method
 		private void save(int extendedState, Rectangle bounds)
 		{
+			cancelResizeSave();
+
 			switch (extendedState)
 			{
 				case Frame.MAXIMIZED_VERT:
@@ -2210,6 +2322,16 @@ public class GUIUtilities
 					break;
 			}
 		} //}}}
+		
+		//{{{ cancelResizeSave() method
+		private void cancelResizeSave()
+		{
+			if (resizeDelayFuture != null) {
+				resizeDelayFuture.cancel(false);
+				resizeDelayFuture = null;
+			}
+		}
+		//}}}
 
 		//{{{ componentResized() method
 		@Override
@@ -2228,25 +2350,19 @@ public class GUIUtilities
 				@Override
 				public void run()
 				{
-					int extendedState = frame.getExtendedState();
-					save(extendedState, bounds);
+					EventQueue.invokeLater(new Runnable()
+					{
+						@Override
+						public void run()
+						{
+							save(frame.getExtendedState(), bounds);
+						}
+					});
 				}
 			};
-			new Thread("Sizesavingdelay")
-			{
-				@Override
-				public void run()
-				{
-					try
-					{
-						Thread.sleep(500L);
-					}
-					catch (InterruptedException ie)
-					{
-					}
-					EventQueue.invokeLater(sizeSaver);
-				}
-			}.start();
+
+			cancelResizeSave();
+			resizeDelayFuture = schedExecutor.schedule(sizeSaver, 500, TimeUnit.MILLISECONDS);
 		} //}}}
 	} //}}}
 

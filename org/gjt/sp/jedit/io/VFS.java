@@ -104,7 +104,7 @@ import org.gjt.sp.util.ThreadUtilities;
  * @see VFSManager#getVFSForProtocol(String)
  *
  * @author Slava Pestov
- * @author $Id: VFS.java 23222 2013-09-29 20:43:34Z shlomy $
+ * @author $Id: VFS.java 23981 2015-08-10 14:56:24Z daleanson $
  */
 public abstract class VFS
 {
@@ -311,7 +311,7 @@ public abstract class VFS
 	 * and the protocol separator character and then delegates
 	 * to eventually present sub-VFS-paths present in the VFS path
 	 * like "jode:archive:/test.zip!/test.txt".
-	 * <p/>
+	 * <p>
 	 * If a VFS implementation can have additional
 	 * information in the VFS path like username / password / host / port
 	 * for FTP VFS or archive filename for archive VFS, this

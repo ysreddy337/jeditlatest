@@ -49,7 +49,7 @@ import java.util.List;
 /**
  * Key binding editor.
  * @author Slava Pestov
- * @version $Id: ShortcutsOptionPane.java 23224 2013-09-30 20:51:42Z shlomy $
+ * @version $Id: ShortcutsOptionPane.java 23920 2015-05-22 08:03:45Z ezust $
  */
 @SuppressWarnings("serial")
 public class ShortcutsOptionPane extends AbstractOptionPane
@@ -153,6 +153,7 @@ public class ShortcutsOptionPane extends AbstractOptionPane
 
 		keyTable = new JTable(filteredModel);
 		filteredModel.setTable(keyTable);
+		keyTable.setRowHeight(GUIUtilities.defaultRowHeight());
 		keyTable.getTableHeader().setReorderingAllowed(false);
 		keyTable.getTableHeader().addMouseListener(new HeaderMouseHandler());
 		keyTable.addMouseListener(new TableMouseHandler());
