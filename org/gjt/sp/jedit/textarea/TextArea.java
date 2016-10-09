@@ -65,7 +65,7 @@ import org.gjt.sp.util.StandardUtilities;
  *
  * @author Slava Pestov
  * @author kpouer (rafactoring into standalone text area)
- * @version $Id: TextArea.java 16346 2009-10-14 10:35:10Z kpouer $
+ * @version $Id: TextArea.java 16763 2009-12-28 16:20:33Z k_satoda $
  */
 public abstract class TextArea extends JComponent
 {
@@ -2924,9 +2924,9 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 			goToStartOfLine(select);
 			break;
 		}
-	}// }}}
+	} //}}}
 
-	// {{{ end() method
+	//{{{ end() method
 	/**
 	 * a dumb end action which only has 2 states:
 	 * 	end of whitespace or end of line
@@ -2944,7 +2944,7 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 			goToEndOfLine(select);
 			break;
 		}
-	}//}}}
+	} //}}}
 
 	//{{{ smartHome() method
 	/**

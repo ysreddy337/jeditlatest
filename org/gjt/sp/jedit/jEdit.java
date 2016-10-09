@@ -70,7 +70,7 @@ import org.gjt.sp.util.SyntaxUtilities;
 /**
  * The main class of the jEdit text editor.
  * @author Slava Pestov
- * @version $Id: jEdit.java 16558 2009-11-28 18:29:52Z ezust $
+ * @version $Id: jEdit.java 16709 2009-12-23 01:08:45Z Vampire0 $
  */
 public class jEdit
 {
@@ -91,7 +91,7 @@ public class jEdit
 	public static String getBuild()
 	{
 		// (major).(minor).(<99 = preX, 99 = "final").(bug fix)
-		return "04.03.99.00";
+		return "04.03.99.01";
 	} //}}}
 
 	//{{{ main() method

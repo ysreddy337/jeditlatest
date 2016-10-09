@@ -1,7 +1,42 @@
 JEDIT 4.3 VERSION HISTORY
 
-{{{ Version 4.3
+{{{ Version 4.3.1
 
+Thanks to Björn "Vampire" Kautler, Alan Ezust, Damien Radtke,
+Kazutoshi Satoda, Dale Anson, and Shlomy Reinstein for contributing
+to this release.
+
+{{{ Bug Fixes
+
+- Searching for regex "^\s*.*$" missed every second line of adjacent
+  matching lines. (SF.net bug #2915720 - Kazutoshi Satoda)
+
+- Fix for 2924261, BufferLocal ignores request to change encoding.  (Dale
+Anson)
+
+- Fix # 2921611 - PluginSets fail to load grand-dependencies. (Damien Radtke)
+
+- Fix # 2920287 - Macro recording for home/end actions fixed. (Alan Ezust)
+
+- Fixed #2920352: Can't disable "Restore previously open files on startup".
+  (Shlomy Reinstein)
+
+}}}
+{{{ Miscellaneous
+
+
+}}}
+{{{ API Changes
+
+
+}}}
+{{{ Editing
+
+}}}
+
+}}}
+
+{{{ Version 4.3
 
 Thanks to Björn "Vampire" Kautler, Marcelo Vanzin, Matthieu Casanova,
 Alan Ezust, Eric Berry, and Eric Le Lay for contributing to this release.
@@ -142,6 +177,7 @@ Suraj Kurapati for contributing to this release.
 
 - Applied patch #2844750: line height correction (disappearing underscores),
   using OpenJDK (Suraj Kurapati)
+
 }}}
 {{{ Miscellaneous
 - New Macro - "Text/Compose Tag". (Gordon Hollenbeck # 2644277)

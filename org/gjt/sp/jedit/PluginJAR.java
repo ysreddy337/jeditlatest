@@ -121,7 +121,7 @@ import org.gjt.sp.util.IOUtilities;
  * @see org.gjt.sp.jedit.ServiceManager
  *
  * @author Slava Pestov
- * @version $Id: PluginJAR.java 16336 2009-10-14 09:56:25Z kpouer $
+ * @version $Id: PluginJAR.java 16756 2009-12-28 04:13:08Z ezust $
  * @since jEdit 4.2pre1
  */
 public class PluginJAR
@@ -185,7 +185,7 @@ public class PluginJAR
 			for (String jarName: pluginLoadList)
 			{
 				String jarPath = findPlugin(jarName);
-				load(jarPath, false);
+				load(jarPath, true);
 			}
 		}
 		// Load extra jars that are part of this plugin

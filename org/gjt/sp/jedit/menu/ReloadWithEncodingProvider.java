@@ -45,7 +45,7 @@ import org.gjt.sp.jedit.io.EncodingServer;
  * Menu provider for actions to reload the current buffer with a
  * specific encoding.
  *
- * @version $Id: ReloadWithEncodingProvider.java 16340 2009-10-14 09:59:54Z kpouer $
+ * @version $Id: ReloadWithEncodingProvider.java 16814 2010-01-02 08:09:17Z ezust $
  */
 public class ReloadWithEncodingProvider implements ActionListener, DynamicMenuProvider
 {	
@@ -148,6 +148,7 @@ public class ReloadWithEncodingProvider implements ActionListener, DynamicMenuPr
 			// Disable auto-detect because user explicitly
 			// specify an encoding.
 			props.put(Buffer.ENCODING_AUTODETECT, false);
+			view.getBuffer().setStringProperty(Buffer.ENCODING, encoding);
 		}
 
 		String path = view.getBuffer().getPath();
