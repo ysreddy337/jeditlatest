@@ -30,7 +30,7 @@ import java.awt.EventQueue;
 /**
  * A pool of work threads.
  * @author Slava Pestov
- * @version $Id: WorkThreadPool.java 18300 2010-08-05 13:14:02Z kpouer $
+ * @version $Id: WorkThreadPool.java 21698 2012-05-22 04:18:50Z ezust $
  * @deprecated
  * @see org.gjt.sp.util.ThreadUtilities
  * @since jEdit 2.6pre1
@@ -91,7 +91,7 @@ public class WorkThreadPool
 	 * Adds a work request to the queue.
 	 * @param run The runnable
 	 * @param inAWT If true, will be executed in AWT thread. Otherwise,
-	 * will be executed in work thread
+	 * will be executed in work thread. It is never executed directly.
 	 */
 	public void addWorkRequest(Runnable run, boolean inAWT)
 	{

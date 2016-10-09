@@ -49,7 +49,7 @@ import org.gjt.sp.util.ThreadUtilities;
 
 /**
  * @author Slava Pestov
- * @version $Id: VFSDirectoryEntryTable.java 18960 2010-11-15 19:23:52Z ezust $
+ * @version $Id: VFSDirectoryEntryTable.java 21747 2012-06-01 13:55:48Z jarekczek $
  * @since jEdit 4.2pre1
  */
 public class VFSDirectoryEntryTable extends JTable
@@ -595,6 +595,7 @@ public class VFSDirectoryEntryTable extends JTable
 		public void mouseClicked(MouseEvent e)
 		{
 			super.mouseClicked(e);
+			if (browserView.getBrowser().getMode() != VFSBrowser.BROWSER) return;
 			int ind = getSelectionModel().getMinSelectionIndex();
 			if (ind == -1)
 				return;

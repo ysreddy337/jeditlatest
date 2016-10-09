@@ -51,7 +51,7 @@ import org.gjt.sp.jedit.menu.MenuItemTextComparator;
  * VFSFileChooserDialog.
  * 
  * @author Slava Pestov
- * @version $Id: VFSBrowser.java 19949 2011-09-10 08:37:05Z kpouer $
+ * @version $Id: VFSBrowser.java 21676 2012-05-16 01:25:24Z ezust $
  */
 public class VFSBrowser extends JPanel implements DefaultFocusComponent,
 	DockableWindow
@@ -1671,15 +1671,14 @@ check_selected: for(int i = 0; i < selectedFiles.length; i++)
 		 */
 		private void resetLater()
 		{
-			ThreadUtilities.runInDispatchThread(new Runnable()
+			EventQueue.invokeLater(new Runnable()
+			{
+				@Override
+				public void run()
 				{
-					@Override
-					public void run()
-					{
-						isProcessingEvent = false;
-					}
+					isProcessingEvent = false;
 				}
-			);
+			});
 		}
 
 		private boolean isProcessingEvent;

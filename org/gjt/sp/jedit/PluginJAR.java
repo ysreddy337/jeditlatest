@@ -123,7 +123,7 @@ import static org.gjt.sp.jedit.EditBus.EBHandler;
  * @see org.gjt.sp.jedit.ServiceManager
  *
  * @author Slava Pestov
- * @version $Id: PluginJAR.java 20791 2012-01-14 08:53:42Z kpouer $
+ * @version $Id: PluginJAR.java 21669 2012-05-13 20:40:12Z ezust $
  * @since jEdit 4.2pre1
  */
 public class PluginJAR
@@ -1103,6 +1103,7 @@ public class PluginJAR
 			{
 				Log.log(Log.ERROR,this,io);
 			}
+			removePluginCache();
 		}
 	} //}}}
 
@@ -1471,6 +1472,13 @@ public class PluginJAR
 		uninit(false);
 		// but we want properties to hang around
 		jEdit.addPluginProps(properties);
+	} //}}}
+
+	//{{{ removePluginCache() method
+	private void removePluginCache()
+	{
+		if(cachePath != null)
+			new File(cachePath).delete();
 	} //}}}
 
 	//}}}

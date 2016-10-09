@@ -37,7 +37,7 @@ import static org.gjt.sp.jedit.io.FileVFS.recursiveDelete;
 //}}}
 
 /**
- * @author $Id: Roster.java 16348 2009-10-14 10:40:15Z kpouer $
+ * @author $Id: Roster.java 21669 2012-05-13 20:40:12Z ezust $
  */
 class Roster
 {
@@ -212,8 +212,6 @@ class Roster
 
 			toLoad.remove(this.jar);
 
-			// remove cache file
-
 			// move JAR first
 			File jarFile = new File(this.jar);
 			File srcFile = new File(this.jar.substring(0, this.jar.length() - 4));
@@ -249,15 +247,9 @@ class Roster
 				{
 					toLoad.add(path);
 					unloadPluginJAR(_jar);
-					// clear cache file
-					String cachePath = jar.getCachePath();
-					if(cachePath != null)
-						new File(cachePath).delete();
-
 				}
 			}
 			jEdit.removePluginJAR(jar,false);
-			
 		} //}}}
 
 		//{{{ equals() method
