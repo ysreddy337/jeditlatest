@@ -27,7 +27,7 @@ import org.gjt.sp.util.Log;
  * A simple text style class. It can specify the color, italic flag,
  * and bold flag of a run of text.
  * @author Slava Pestov
- * @version $Id: SyntaxStyle.java,v 1.8 2001/01/22 05:35:08 sp Exp $
+ * @version $Id: SyntaxStyle.java,v 1.9 2001/01/29 09:19:34 sp Exp $
  */
 public class SyntaxStyle
 {
@@ -143,19 +143,6 @@ public class SyntaxStyle
 		fontMetrics = Toolkit.getDefaultToolkit().getFontMetrics(
 			lastStyledFont);
 		return fontMetrics;
-	}
-
-	/**
-	 * Sets the foreground color and font of the specified graphics
-	 * context to that specified in this style.
-	 * @param gfx The graphics context
-	 * @param font The font to add the styles to
-	 */
-	public void setGraphicsFlags(Graphics gfx, Font font)
-	{
-		Font _font = getStyledFont(font);
-		gfx.setFont(_font);
-		gfx.setColor(fgColor);
 	}
 
 	/**
