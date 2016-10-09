@@ -23,8 +23,6 @@
 package org.gjt.sp.jedit.gui;
 
 //{{{ Imports
-import org.gjt.sp.jedit.jEdit;
-
 import java.awt.CardLayout;
 import java.awt.Cursor;
 import java.awt.Dimension;
@@ -35,11 +33,13 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionListener;
 
 import javax.swing.JPanel;
+import javax.swing.UIManager;
 import javax.swing.border.Border;
 //}}}
 
-/**
- * @version $Id: DockablePanel.java 13259 2008-08-10 20:54:46Z shlomy $
+/** A panel that holds dockable windows.
+ *
+ * @version $Id: DockablePanel.java 21502 2012-03-29 17:19:44Z ezust $
  */
 class DockablePanel extends JPanel
 {
@@ -140,7 +140,7 @@ class DockablePanel extends JPanel
 
 	/** This belong to ResizeMouseHandler but requires to be static. */
 	static Point dragStart;
-	
+
 	//{{{ ResizeMouseHandler class
 	class ResizeMouseHandler extends MouseAdapter implements MouseMotionListener
 	{
@@ -152,7 +152,7 @@ class DockablePanel extends JPanel
 		{
 			if(canDrag)
 			{
-				continuousLayout = jEdit.getBooleanProperty("appearance.continuousLayout");
+				continuousLayout = UIManager.getBoolean("SplitPane.continuousLayout");
 				wm.setResizePos(panel.getDimension(),panel);
 				dragStart = evt.getPoint();
 			}

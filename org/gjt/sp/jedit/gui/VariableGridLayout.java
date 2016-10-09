@@ -22,10 +22,7 @@ import java.awt.LayoutManager2;
 
 import java.util.Arrays;
 
-/**
- * The <code>VariableGridLayout</code> class is a layout manager
- * that lays out a container's components in a rectangular grid
- * with variable cell sizes.<p>
+/** A rectangular grid layout manager with variable cell sizes
  *
  * The container is divided into rectangles, and one component is placed
  * in each rectangle. Each row is as large as the largest component in
@@ -89,6 +86,7 @@ public class VariableGridLayout implements LayoutManager2, java.io.Serializable
 	 * @param hgap The horizontal space between cells (>=0)
 	 * @param vgap The vertical space between cells (>=0)
 	 * @param takeSizesIntoAccount Whether to take minimum and maximum sizes into account when distributing free space
+	 *        Javier Diaz Soto (jbds) warns in #2997417 that this may cause gui freeze and provides a patch
 	 * @param distanceToBorders The distances to the borders
 	 * @throws IllegalArgumentException if mode is not either FIXED_NUM_ROWS or FIXED_NUM_COLUMNS or size is <= 0 or hgap or vgap is < 0
 	 */
@@ -129,6 +127,7 @@ public class VariableGridLayout implements LayoutManager2, java.io.Serializable
 	 * @param hgap The horizontal space between cells (>=0)
 	 * @param vgap The vertical space between cells (>=0)
 	 * @param takeSizesIntoAccount Whether to take minimum and maximum sizes into account when distributing free space
+	 *        Javier Diaz Soto (jbds) warns in #2997417 that this may cause gui freeze and provides a patch
 	 * @throws IllegalArgumentException if mode is not either FIXED_NUM_ROWS or FIXED_NUM_COLUMNS or size is <= 0 or hgap or vgap is < 0
 	 */
 	public VariableGridLayout(int mode, int size, int hgap, int vgap, boolean takeSizesIntoAccount)
@@ -155,7 +154,7 @@ public class VariableGridLayout implements LayoutManager2, java.io.Serializable
 
 	/**
 	 * Creates a variable grid layout manager with the specified mode
-	 * and size, zero horizontal and vertical gap, and zero distance to borders. 
+	 * and size, zero horizontal and vertical gap, and zero distance to borders.
 	 * Does not take minimum and maximum Component sizes into account when distributing
 	 * free space.
 	 *
@@ -374,7 +373,7 @@ public class VariableGridLayout implements LayoutManager2, java.io.Serializable
 							yCorrection = (int)((height-d.height) * comp.getAlignmentY());
 							height = d.height;
 						}
-						
+
 						comp.setBounds(x + xCorrection, y + yCorrection, width, height);
 					}
 				}
@@ -428,15 +427,15 @@ public class VariableGridLayout implements LayoutManager2, java.io.Serializable
 							case MINIMUM:
 								row_height = Math.max(row_height, parent.getComponent(i).getMinimumSize().height);
 								break;
-							
+
 							case MAXIMUM:
 								row_height = Math.max(row_height, parent.getComponent(i).getMaximumSize().height);
 								break;
-							
+
 							case PREFERRED:
 								row_height = Math.max(row_height, parent.getComponent(i).getPreferredSize().height);
 								break;
-							
+
 							default:
 								throw new InternalError("Missing case branch for LayoutSize: " + which);
 						}
@@ -458,15 +457,15 @@ public class VariableGridLayout implements LayoutManager2, java.io.Serializable
 							case MINIMUM:
 								col_width = Math.max(col_width, parent.getComponent(i).getMinimumSize().width);
 								break;
-							
+
 							case MAXIMUM:
 								col_width = Math.max(col_width, parent.getComponent(i).getMaximumSize().width);
 								break;
-							
+
 							case PREFERRED:
 								col_width = Math.max(col_width, parent.getComponent(i).getPreferredSize().width);
 								break;
-							
+
 							default:
 								throw new InternalError("Missing case branch for LayoutSize: " + which);
 						}

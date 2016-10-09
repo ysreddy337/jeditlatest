@@ -1,11 +1,54 @@
-###
-### jEdit keyboard shortcuts
-### :tabSize=8:indentSize=8:noTabs=false:
-### :folding=explicit:collapseFolds=1:
-### :encoding=ISO-8859-1:
-###
-### Copyright (C) 1998, 2003 Slava Pestov
-###
+#
+# jEdit - Programmer's Text Editor
+# :tabSize=8:indentSize=8:noTabs=false:
+# :folding=explicit:collapseFolds=1:
+#
+# Copyright \u00A9 2012 jEdit contributors
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or any later version.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+#
+
+#{{{ Changing shortcuts that are unreachable on german keyboards
+
+# Below this block are the standard jEdit keys
+# The original shortcuts have to be removed from below
+#TODO: Implement an inheritance / delegation mechanism for keymaps
+
+# Action                  Original Shortcut      Changed Shortcut
+# ---------------------------------------------------------------
+# Expand Abbreviation     C+SEMICOLON            CA+SPACE
+# Multiple Selection      C+BACK_SLASH           C+NUMBER_SIGN
+# Rectangular Selection   A+BACK_SLASH           A+NUMBER_SIGN
+# Select Code Block       C+OPEN_BRACKET         C+8
+# Go to Matching Bracket  C+CLOSE_BRACKET        C+9
+# Go to Previous Bracket  C+e C+OPEN_BRACKET     C+e C+8
+# Go to Next Bracket      C+e C+CLOSE_BRACKET    C+e C+9
+# Focus Buffer Switcher   A+BACK_QUOTE           AS+1
+# Switch to recent buffer C+BACK_QUOTE           CS+1
+# Close Docking Area      C+e C+BACK_QUOTE       C+e CS+1
+
+expand-abbrev.shortcut=CA+SPACE
+toggle-multi-select.shortcut=C+NUMBER_SIGN
+toggle-rect-select.shortcut=A+NUMBER_SIGN
+select-block.shortcut=C+8
+match-bracket.shortcut=C+9
+prev-bracket.shortcut=C+e C+8
+next-bracket.shortcut=C+e C+9
+focus-buffer-switcher.shortcut=AS+1
+recent-buffer.shortcut=CS+1
+close-docking-area.shortcut=C+e CS+1
+#}}}
 
 #{{{ Function keys
 help.shortcut=F1
@@ -70,15 +113,10 @@ prev-buffer.shortcut=C+PAGE_UP
 next-buffer.shortcut=C+PAGE_DOWN
 last-action.shortcut=C+SPACE
 
-recent-buffer.shortcut=C+BACK_QUOTE
-select-block.shortcut=C+OPEN_BRACKET
-match-bracket.shortcut=C+CLOSE_BRACKET
-expand-abbrev.shortcut=C+SEMICOLON
 quick-search.shortcut=C+COMMA
 hypersearch.shortcut=C+PERIOD
 scroll-up-line.shortcut=C+QUOTE
 scroll-down-line.shortcut=C+SLASH
-toggle-multi-select.shortcut=C+BACK_SLASH
 #}}}
 
 #{{{ C+e C+X
@@ -94,7 +132,7 @@ line-comment.shortcut=C+e C+k
 select-line-range.shortcut=C+e C+l
 add-marker.shortcut=C+e C+m
 center-caret.shortcut=C+e C+n
-scroll-and-center=C+l
+scroll-and-center.shortcut=C+l
 open-path.shortcut=C+e C+o
 vertical-paste.shortcut=C+e C+p
 replace-in-selection.shortcut=C+e C+r
@@ -115,13 +153,9 @@ right-docking-area.shortcut=C+e C+RIGHT
 bottom-docking-area.shortcut=C+e C+DOWN
 toggle-full-screen.shortcut=F11
 toggle-dock-areas.shortcut=F12
-global-options.shortcut=C+F12
-
+combined-options.shortcut=C+F12
 prev-marker.shortcut=C+e C+COMMA
 next-marker.shortcut=C+e C+PERIOD
-prev-bracket.shortcut=C+e C+OPEN_BRACKET
-next-bracket.shortcut=C+e C+CLOSE_BRACKET
-close-docking-area.shortcut=C+e C+BACK_QUOTE
 #}}}
 
 #{{{ C+e X
@@ -153,7 +187,7 @@ record-temp-macro.shortcut=C+m C+m
 run-temp-macro.shortcut=C+m C+p
 record-macro.shortcut=C+m C+r
 stop-recording.shortcut=C+m C+s
-last-macro.shortuct=C+m C+l
+last-macro.shortcut=C+m C+l
 #}}}
 
 #{{{ C+r C+X
@@ -180,9 +214,6 @@ scroll-up-page.shortcut=A+QUOTE
 scroll-down-page.shortcut=A+SLASH
 prev-textarea.shortcut=A+PAGE_UP
 next-textarea.shortcut=A+PAGE_DOWN
-
-focus-buffer-switcher.shortcut=A+BACK_QUOTE
-toggle-rect-select.shortcut=A+BACK_SLASH
 #}}}
 
 #{{{ Other keys
@@ -212,24 +243,29 @@ insert-tab-indent.shortcut=TAB
 #}}}
 
 #{{{ Alternative shortcuts for frequently-used commands
-next-page.shortcut2=A+a
 select-next-page.shortcut2=AS+a
-delete.shortcut2=A+d
-prev-line.shortcut2=A+i
 select-prev-line.shortcut2=AS+i
-prev-char.shortcut2=A+j
 select-prev-char.shortcut2=AS+j
-next-line.shortcut2=A+k
 select-next-line.shortcut2=AS+k
-next-char.shortcut2=A+l
 select-next-char.shortcut2=AS+l
-prev-page.shortcut2=A+q
 select-prev-page.shortcut2=AS+q
-end.shortcut2=A+x
 select-end.shortcut2=AS+x
-home.shortcut2=A+z
 select-home.shortcut2=AS+z
 copy.shortcut2=C+INSERT
 paste.shortcut2=S+INSERT
 cut.shortcut2=S+DELETE
+#}}}
+
+#{{{ VFS browser
+vfs.browser.delete.shortcut=DELETE
+vfs.browser.home.shortcut=~
+vfs.browser.new-directory.shortcut=INSERT
+vfs.browser.new-file.shortcut=C+n
+vfs.browser.reload.shortcut=F5
+vfs.browser.rename.shortcut=F2
+vfs.browser.roots.shortcut=/
+vfs.browser.synchronize.shortcut=-
+vfs.browser.up.shortcut=A+Up
+vfs.browser.previous.shortcut=A+Left
+vfs.browser.next.shortcut=A+Right
 #}}}

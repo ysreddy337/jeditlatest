@@ -39,7 +39,7 @@ import org.gjt.sp.util.*;
 /**
  * A buffer load request.
  * @author Slava Pestov
- * @version $Id: BufferLoadRequest.java 17734 2010-05-04 22:08:41Z kpouer $
+ * @version $Id: BufferLoadRequest.java 21594 2012-04-22 11:44:00Z jarekczek $
  */
 public class BufferLoadRequest extends BufferIORequest
 {
@@ -338,7 +338,7 @@ public class BufferLoadRequest extends BufferIORequest
 			{
 				pp[1] = "See details in Activity Log";
 			}
-			VFSManager.error(view,path,"ioerror.encoding-error",pp);
+			VFSManager.error(view,path,"ioerror.encoding-error",pp,Log.NOTICE);
 			markedStream = rewindContentsStream(markedStream, gzipped);
 			read(EncodingServer.getEncoding(
 				buffer.getStringProperty(JEditBuffer.ENCODING)

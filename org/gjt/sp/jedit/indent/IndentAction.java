@@ -25,9 +25,9 @@ package org.gjt.sp.jedit.indent;
 import org.gjt.sp.jedit.buffer.JEditBuffer;
 import org.gjt.sp.util.StandardUtilities;
 
-/**
+/** Abstract Indentation Action 
  * @author Slava Pestov
- * @version $Id: IndentAction.java 15614 2009-06-30 07:21:56Z voituk $
+ * @version $Id: IndentAction.java 21398 2012-03-20 04:32:13Z ezust $
  */
 public interface IndentAction
 {

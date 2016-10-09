@@ -23,13 +23,14 @@ import javax.swing.*;
 import java.awt.event.*;
 import java.awt.*;
 
-/**
+/** Dialog that handles OK/Cancel for you
+ *
  * A dialog box that handles window closing, the ENTER key and the ESCAPE
  * key for you. All you have to do is implement ok() (called when
  * Enter is pressed) and cancel() (called when Escape is pressed, or window
  * is closed).
  * @author Slava Pestov
- * @version $Id: EnhancedDialog.java 12504 2008-04-22 23:12:43Z ezust $
+ * @version $Id: EnhancedDialog.java 21502 2012-03-29 17:19:44Z ezust $
  */
 public abstract class EnhancedDialog extends JDialog
 {
@@ -38,7 +39,7 @@ public abstract class EnhancedDialog extends JDialog
 		super(parent,title,modal);
 		_init();
 	}
-	
+
 	public EnhancedDialog(Dialog parent, String title, boolean modal)
 	{
 		super(parent,title,modal);
@@ -54,7 +55,7 @@ public abstract class EnhancedDialog extends JDialog
 	{
 		this.enterEnabled = enterEnabled;
 	}
-	
+
 	public abstract void ok();
 	public abstract void cancel();
 
@@ -70,11 +71,11 @@ public abstract class EnhancedDialog extends JDialog
 		addWindowListener(new WindowHandler());
 
 		setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
-		
+
 		enterEnabled = true;
 	}
 	//}}}
-	
+
 	// protected members
 	protected KeyHandler keyHandler;
 	protected boolean enterEnabled;
@@ -127,13 +128,10 @@ public abstract class EnhancedDialog extends JDialog
 	{
 		public void keyPressed(KeyEvent evt)
 		{
-			if(evt.isConsumed())
-				return;
-
-			if(evt.getKeyCode() == KeyEvent.VK_ENTER
-				&& enterEnabled)
+			if(evt.isConsumed()) return;
+			Component comp = getFocusOwner();
+			if(evt.getKeyCode() == KeyEvent.VK_ENTER && enterEnabled)
 			{
-				Component comp = getFocusOwner();
 				while(comp != null)
 				{
 					if(comp instanceof JComboBox)
@@ -145,19 +143,33 @@ public abstract class EnhancedDialog extends JDialog
 							if(selected != null)
 								combo.setSelectedItem(selected);
 						}
-						break;
-					}
 
+						if(combo.isPopupVisible())
+						{
+							evt.consume();
+							combo.setPopupVisible(false);
+						}
+						return;
+					}
+					// TODO: add other classes that need custom key handling here.
 					comp = comp.getParent();
 				}
-
-				ok();
 				evt.consume();
+				ok();
 			}
 			else if(evt.getKeyCode() == KeyEvent.VK_ESCAPE)
 			{
-				cancel();
 				evt.consume();
+				if(comp instanceof JComboBox)
+				{
+					JComboBox combo = (JComboBox)comp;
+					if (combo.isPopupVisible())
+					{
+						combo.setPopupVisible(false);
+					}
+					else cancel();
+				}
+				else cancel();
 			}
 		}
 	}

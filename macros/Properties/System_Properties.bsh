@@ -20,18 +20,22 @@
  * along with the jEdit program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
- * $Id: System_Properties.bsh 19599 2011-06-19 15:14:10Z kerik-sf $
+ * $Id: System_Properties.bsh 21353 2012-03-14 09:46:51Z jojaba_67 $
  *
  * Checked for jEdit 4.0 API
  *
  */
 
+// Localization
+final static String SystemPropertiesLabel = jEdit.getProperty("macro.rs.SystemProperties.SystemProperties.label", "System Properties");
+  
+// Process
 systemProperties()
 {
 	props = System.getProperties();
 	sw = new StringWriter();
 	pw = new PrintWriter(sw);
-	props.store(pw,"System Properties");
+	props.store(pw,SystemPropertiesLabel);
 	jEdit.newFile(view);
 	textArea.setSelectedText(sw.toString());
 }

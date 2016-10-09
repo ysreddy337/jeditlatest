@@ -29,8 +29,10 @@ import java.awt.font.*;
 import java.awt.geom.*;
 import java.awt.*;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.lang.ref.SoftReference;
 
 import org.gjt.sp.jedit.Debug;
 import org.gjt.sp.jedit.IPropertyManager;
@@ -43,10 +45,6 @@ import org.gjt.sp.jedit.IPropertyManager;
  */
 public class Chunk extends Token
 {
-	//{{{ Static variables
-	private static final char[] EMPTY_TEXT = new char[0];
-	//}}}
-
 	//{{{ paintChunkList() method
 	/**
 	 * Paints a chunk list.
@@ -79,12 +77,11 @@ public class Chunk extends Token
 						chunks.width,10));
 				}
 
-				if(chunks.accessable && chunks.visible)
+				if(chunks.isAccessible() && chunks.glyphs != null)
 				{
 					gfx.setFont(chunks.style.getFont());
 					gfx.setColor(chunks.style.getForegroundColor());
-
-					if (glyphVector && chunks.glyphs != null)
+					if (glyphVector)
 						chunks.drawGlyphs(gfx, x + _x, y);
 					else if(chunks.str != null)
 					{
@@ -129,7 +126,7 @@ public class Chunk extends Token
 			if(x + _x + chunks.width > clipRect.x
 				&& x + _x < clipRect.x + clipRect.width)
 			{
-				if(chunks.accessable)
+				if(chunks.isAccessible())
 				{
 					//{{{ Paint token background color if necessary
 					Color bgColor = chunks.background;
@@ -171,7 +168,7 @@ public class Chunk extends Token
 
 		while(chunks != null)
 		{
-			if(chunks.accessable && offset < chunks.offset + chunks.length)
+			if(chunks.isAccessible() && offset < chunks.offset + chunks.length)
 				return x + chunks.offsetToX(offset - chunks.offset);
 
 			x += chunks.width;
@@ -197,7 +194,7 @@ public class Chunk extends Token
 
 		while(chunks != null)
 		{
-			if(chunks.accessable && x < _x + chunks.width)
+			if(chunks.isAccessible() && x < _x + chunks.width)
 				return chunks.xToOffset(x - _x,round);
 
 			_x += chunks.width;
@@ -221,11 +218,13 @@ public class Chunk extends Token
 		if (props == null)
 		{
 			fontSubstEnabled = false;
+			fontSubstSystemFontsEnabled = true;
 			preferredFonts = null;
 		}
 		else
 		{
 			fontSubstEnabled = Boolean.parseBoolean(props.getProperty("view.enableFontSubst"));
+			fontSubstSystemFontsEnabled = Boolean.parseBoolean(props.getProperty("view.enableFontSubstSystemFonts"));
 		}
 
 
@@ -248,40 +247,122 @@ public class Chunk extends Token
 		}
 
 		preferredFonts = userFonts.toArray(new Font[userFonts.size()]);
+
+		// Clear cache, not to hold reference to old fonts which
+		// might become unused after properties changed.
+		glyphCache = null;
 	} //}}}
 
-	//{{{ Instance variables
-	public boolean accessable;
-	public boolean initialized;
+	//{{{ Package private members
 
+	//{{{ Instance variables
+	SyntaxStyle style;
 	// set up after init()
-	public SyntaxStyle style;
-	public float width;
+	float width;
 	//}}}
 
 	//{{{ Chunk constructor
-	public Chunk(float width, int offset, ParserRuleSet rules)
+	/**
+	 * Constructs a virtual indent appears at the beggining of a wrapped line.
+	 */
+	Chunk(float width, int offset, ParserRuleSet rules)
 	{
 		super(Token.NULL,offset,0,rules);
 		this.width = width;
+		assert !isAccessible();
+		assert isInitialized();
 	} //}}}
 
 	//{{{ Chunk constructor
-	public Chunk(byte id, int offset, int length, ParserRuleSet rules,
+	Chunk(byte id, int offset, int length, ParserRuleSet rules,
 		SyntaxStyle[] styles, byte defaultID)
 	{
 		super(id,offset,length,rules);
-		accessable = true;
 		style = styles[id];
 		background = style.getBackgroundColor();
 		if(background == null)
 			background = styles[defaultID].getBackgroundColor();
+		assert isAccessible();
+		assert !isInitialized();
+	} //}}}
+
+	//{{{ Chunk constructor
+	Chunk(byte id, int offset, int length, ParserRuleSet rules,
+		SyntaxStyle style, Color background)
+	{
+		super(id,offset,length,rules);
+		this.style = style;
+		this.background = background;
+		assert isAccessible();
+		assert !isInitialized();
+	} //}}}
+
+	//{{{ isAccessible() method
+	/**
+	 * Returns true if this chunk has accesible text.
+	 */
+	final boolean isAccessible()
+	{
+		return length > 0;
+	} //}}}
+
+	//{{{ isInitialized() method
+	/**
+	 * Returns true if this chunk is ready for painting.
+	 */
+	final boolean isInitialized()
+	{
+		return !isAccessible()	// virtual indent
+			|| (glyphs != null)	// normal text
+			|| (width > 0);	// tab
+	} //}}}
+
+	//{{{ isTab() method
+	/**
+	 * Returns true if this chunk represents a tab.
+	 */
+	final boolean isTab(Segment lineText)
+	{
+		return length == 1
+			&& lineText.array[lineText.offset + offset] == '\t';
+	} //}}}
+
+	//{{{ snippetBefore() method
+	/**
+	 * Returns a shorten uninitialized chunk before specific offset.
+	 */
+	final Chunk snippetBefore(int snipOffset)
+	{
+		assert 0 <= snipOffset && snipOffset < length;
+		return new Chunk(id, offset, snipOffset,
+			rules, style, background);
+	} //}}}
+
+	//{{{ snippetAfter() method
+	/**
+	 * Returns a shorten uninitialized chunk after specific offset.
+	 */
+	final Chunk snippetAfter(int snipOffset)
+	{
+		assert 0 <= snipOffset && snipOffset < length;
+		return new Chunk(id, offset + snipOffset, length - snipOffset,
+			rules, style, background);
+	} //}}}
+
+	//{{{ snippetBeforeLineOffset() method
+	/**
+	 * Returns a shorten uninitialized chunk before specific offset.
+	 * The offset is it in the line text, instead of in chunk.
+	 */
+	final Chunk snippetBeforeLineOffset(int lineOffset)
+	{
+		return snippetBefore(lineOffset - this.offset);
 	} //}}}
 
 	//{{{ offsetToX() method
-	public final float offsetToX(int offset)
+	final float offsetToX(int offset)
 	{
-		if(!visible || glyphs == null)
+		if(glyphs == null)
 			return 0.0f;
 
 		float x = 0.0f;
@@ -302,9 +383,9 @@ public class Chunk extends Token
 	} //}}}
 
 	//{{{ xToOffset() method
-	public final int xToOffset(float x, boolean round)
+	final int xToOffset(float x, boolean round)
 	{
-		if (!visible || glyphs == null)
+		if (glyphs == null)
 		{
 			if (round && width - x < x)
 				return offset + length;
@@ -346,65 +427,115 @@ public class Chunk extends Token
 	} //}}}
 
 	//{{{ init() method
-	public void init(Segment seg, TabExpander expander, float x,
+	void init(Segment lineText, TabExpander expander, float x,
 		FontRenderContext fontRenderContext, int physicalLineOffset)
 	{
-		initialized = true;
-
-		if(!accessable)
+		if(!isAccessible())
 		{
 			// do nothing
 		}
-		else if(length == 1 && seg.array[seg.offset + offset] == '\t')
+		else if(isTab(lineText))
 		{
-			visible = false;
 			float newX = expander.nextTabStop(x,physicalLineOffset+offset);
 			width = newX - x;
 		}
 		else
 		{
-			visible = true;
-
-			str = new String(seg.array,seg.offset + offset,length);
-
-			char[] textArray = seg.array;
-			int textStart = seg.offset + offset;
-			width = layoutGlyphs(fontRenderContext,
-					     textArray,
-					     textStart,
-					     textStart + length);
+			str = new String(lineText.array,lineText.offset + offset,length);
+			GlyphKey cacheKey = new GlyphKey(str,
+				style.getFont(), fontRenderContext);
+			GlyphCache cache = getGlyphCache();
+			GlyphVector[] cachedGlyphs = cache.get(cacheKey);
+			if (cachedGlyphs != null)
+			{
+				glyphs = cachedGlyphs;
+			}
+			else
+			{
+				int textStart = lineText.offset + offset;
+				int textEnd = textStart + length;
+				glyphs = layoutGlyphs(style.getFont(),
+					fontRenderContext,
+					lineText.array, textStart, textEnd);
+				cache.put(cacheKey, glyphs);
+			}
+			float w = 0.0f;
+			for (GlyphVector gv: glyphs)
+			{
+				w += (float)gv.getLogicalBounds().getWidth();
+			}
+			width = w;
 		}
+		assert isInitialized();
 	} //}}}
 
+	//}}}
+
 	//{{{ Private members
+
+	//{{{ Static variables
+	private static final char[] EMPTY_TEXT = new char[0];
+
+	private static boolean fontSubstEnabled;
+	private static boolean fontSubstSystemFontsEnabled;
+	private static Font[] preferredFonts;
+	private static Font[] fontSubstList;
+
+	// This cache is meant to reduce calls of layoutGlyphVector(),
+	// which was an outclassing CPU bottleneck (profiled on jProfiler,
+	// Sun JDK 6, Windows XP).
+	//
+	// The capacity is roughly tuned so that the effect is clearly
+	// noticeable on very large random int table in C mode; like
+	// following:
+	//   int table000[100] = { 232, 190, 69, ..., 80, 246, 78 };
+	//   int table000[100] = { 69, 84, 206, ..., 160, 197, 161 };
+	//   ...
+	//   int table099[100] = { 219, 100, 60, ..., 100, 203, 8 };
+	//   int table100[100] = { 159, 189, 159, ..., 76, 9, 239, };
+	// and the additional heap usage is lower than 1 MB.
+	//
+	// Heap usage was measured as about 400 KB / 256 entries (JRE 7u3,
+	// Windows XP).
+	private static int glyphCacheCapacity = 256;
+	private static SoftReference<GlyphCache> glyphCache;
+
+	//}}}
+
+	//{{{ Instance variables
 	// this is either style.getBackgroundColor() or
 	// styles[defaultID].getBackgroundColor()
 	private Color background;
 	private String str;
-	//private GlyphVector gv;
-	private List<GlyphVector> glyphs;
-	private boolean visible;
-
-	private static boolean fontSubstEnabled;
-	private static Font[] preferredFonts;
-	private static Font[] fontSubstList;
+	private GlyphVector[] glyphs;
+	//}}}
 
 	//{{{ getFontSubstList() method
 	private static Font[] getFontSubstList()
 	{
 		if (fontSubstList == null)
 		{
-			Font[] systemFonts = GraphicsEnvironment.getLocalGraphicsEnvironment().getAllFonts();
+			if (fontSubstSystemFontsEnabled)
+			{
+				Font[] systemFonts = GraphicsEnvironment.getLocalGraphicsEnvironment().getAllFonts();
 
-			fontSubstList = new Font[preferredFonts.length +
-						 systemFonts.length];
+				fontSubstList = new Font[preferredFonts.length +
+							 systemFonts.length];
 
-			System.arraycopy(preferredFonts, 0, fontSubstList, 0,
-					 preferredFonts.length);
+				System.arraycopy(preferredFonts, 0, fontSubstList, 0,
+						 preferredFonts.length);
 
-			System.arraycopy(systemFonts, 0, fontSubstList,
-					 preferredFonts.length,
-					 systemFonts.length);
+				System.arraycopy(systemFonts, 0, fontSubstList,
+						 preferredFonts.length,
+						 systemFonts.length);
+			}
+			else
+			{
+				fontSubstList = new Font[preferredFonts.length];
+
+				System.arraycopy(preferredFonts, 0, fontSubstList, 0,
+						 preferredFonts.length);
+			}
 		}
 		return fontSubstList;
 	} //}}}
@@ -434,7 +565,6 @@ public class Chunk extends Token
 		return null;
 	} //}}}
 
-
 	//{{{ drawGlyphs() method
 	/**
 	 * Draws the internal list of glyph vectors into the given
@@ -455,48 +585,34 @@ public class Chunk extends Token
 		}
 	} //}}}
 
-	//{{{ addGlyphVector() method
+	//{{{ layoutGlyphVector() method
 	/**
-	 * Creates a glyph vector for the text with the given font,
-	 * and adds it to the internal list.
-	 *
-	 * @param	font	Font to use for rendering.
-	 * @param	frc	Font rendering context.
-	 * @param	text	Char array with text to render.
-	 * @param	start	Start index of text to render.
-	 * @param	end	End index of text to render.
-	 *
-	 * @return Width of the rendered text.
+	 * A wrapper of Font.layoutGlyphVector() to simplify the calls.
 	 */
-	private float addGlyphVector(
-		Font font, FontRenderContext frc,
+	private static GlyphVector layoutGlyphVector(Font font,
+		FontRenderContext frc,
 		char[] text, int start, int end)
 	{
 		// FIXME: Need BiDi support.
-		int layoutFlags = Font.LAYOUT_LEFT_TO_RIGHT
+		int flags = Font.LAYOUT_LEFT_TO_RIGHT
 			| Font.LAYOUT_NO_START_CONTEXT
 			| Font.LAYOUT_NO_LIMIT_CONTEXT;
 
-		GlyphVector gv = font.layoutGlyphVector(frc,
-						     text,
-						     start,
-						     end,
-						     layoutFlags);
+		GlyphVector result =
+			font.layoutGlyphVector(frc, text, start, end, flags);
 
 		// This is necessary to work around a memory leak in Sun Java 6 where
 		// the sun.font.GlyphLayout is cached and reused while holding an
 		// instance to the char array.
-		font.layoutGlyphVector(frc, EMPTY_TEXT, 0, 0, layoutFlags);
+		font.layoutGlyphVector(frc, EMPTY_TEXT, 0, 0, flags);
 
-		glyphs.add(gv);
-		return (float) gv.getLogicalBounds().getWidth();
+		return result;
 	} // }}}
 
 	//{{{ layoutGlyphs() method
 	/**
 	 * Layout the glyphs to render the given text, applying font
-	 * substitution if configured. GlyphVectors are created and
-	 * added to the internal glyph list.
+	 * substitution if configured.
 	 *
 	 * Font substitution works in the following manner:
 	 *	- All characters that can be rendered with the main
@@ -507,63 +623,225 @@ public class Chunk extends Token
 	 *
 	 * The user can define his list of preferred fonts, which will
 	 * be tried before the system fonts.
-	 *
-	 * @param	frc	Font rendering context.
-	 * @param	text	Char array with text to render.
-	 * @param	start	Start index of text to render.
-	 * @param	end	End index of text to render.
-	 *
-	 * @return Width of the rendered text.
 	 */
-	private float layoutGlyphs(FontRenderContext frc,
-				   char[] text,
-				   int start,
-				   int end)
+	private static GlyphVector[] layoutGlyphs(Font mainFont,
+		FontRenderContext frc,
+		char[] text, int start, int end)
 	{
-		float width = 0.0f;
-		Font mainFont = style.getFont();
-
-		glyphs = new LinkedList<GlyphVector>();
-
-		while (start < end)
+		int substStart = !fontSubstEnabled ? -1
+			: mainFont.canDisplayUpTo(text, start, end);
+		if (substStart == -1)
 		{
-			int substStart = !fontSubstEnabled ? -1
-				: mainFont.canDisplayUpTo(text, start, end);
-			if (substStart == -1)
-			{
-				width += addGlyphVector(
-					mainFont, frc, text, start, end);
-				break;
-			}
-			if (substStart > start)
-			{
-				width += addGlyphVector(
-					mainFont, frc, text, start, substStart);
-			}
-			int nextChar = Character.codePointAt(text, substStart);
+			GlyphVector gv = layoutGlyphVector(mainFont, frc,
+				text, start, end);
+			return new GlyphVector[] {gv};
+		}
+		else
+		{
+			FontSubstitution subst = new FontSubstitution(
+				mainFont, frc, text, start);
+			subst.addNonSubstRange(substStart - start);
+			doFontSubstitution(subst, mainFont,
+				text, substStart, end);
+			subst.finish();
+			return subst.getGlyphs();
+		}
+	} //}}}
+
+	//{{{ doFontSubstitution() method
+	private static void doFontSubstitution(FontSubstitution subst,
+		Font mainFont,
+		char[] text, int start, int end)
+	{
+		for (;;)
+		{
+			assert start < end;
+			int nextChar = Character.codePointAt(text, start);
+			int charCount = Character.charCount(nextChar);
+			assert !mainFont.canDisplay(nextChar);
 			Font substFont = getSubstFont(nextChar);
-			int substEnd = substStart + Character.charCount(nextChar);
 			if (substFont != null)
 			{
-				while (substEnd < end &&
-					!mainFont.canDisplay(nextChar = Character.codePointAt(text, substEnd)) &&
-					substFont == getSubstFont(nextChar))
-				{
-					substEnd += Character.charCount(nextChar);
-				}
-				width += addGlyphVector(
-					substFont.deriveFont(mainFont.getStyle(),
-						mainFont.getSize()), frc,
-					text, substStart, substEnd);
+				subst.addRange(substFont, charCount);
 			}
 			else
 			{
-				width += addGlyphVector(
-					mainFont, frc, text, substStart, substEnd);
+				subst.addNonSubstRange(charCount);
 			}
-			start = substEnd;
+			start += charCount;
+			if (start >= end)
+			{
+				break;
+			}
+			int nextSubstStart =
+				mainFont.canDisplayUpTo(text, start, end);
+			if (nextSubstStart == -1)
+			{
+				subst.addNonSubstRange(end - start);
+				break;
+			}
+			subst.addNonSubstRange(nextSubstStart - start);
+			start = nextSubstStart;
 		}
-		return width;
+	} //}}}
+
+	//{{{ class FontSubstitution
+	// A helper class to build GlyphVector[] with least calls to
+	// layoutGlyphVector() no matter how many the font substitution
+	// logic find intermediate boundaries.
+	private static class FontSubstitution
+	{
+		public FontSubstitution(Font mainFont, FontRenderContext frc,
+			char[] text, int start)
+		{
+			this.mainFont = mainFont;
+			this.frc = frc;
+			this.text = text;
+			rangeStart = start;
+			rangeFont = null;
+			rangeLength = 0;
+			glyphs = new ArrayList<GlyphVector>();
+		}
+
+		public void addNonSubstRange(int length)
+		{
+			addRange(null, length);
+		}
+
+		private void addRange(Font font, int length)
+		{
+			assert length >= 0;
+			if (length == 0)
+			{
+				return;
+			}
+			if (font == rangeFont)
+			{
+				rangeLength += length;
+			}
+			else
+			{
+				addGlyphVectorOfLastRange();
+				rangeFont = font;
+				rangeStart += rangeLength;
+				rangeLength = length;
+			}
+		}
+
+		public void finish()
+		{
+			addGlyphVectorOfLastRange();
+			rangeFont = null;
+			rangeStart += rangeLength;
+			rangeLength = 0;
+		}
+
+		public GlyphVector[] getGlyphs()
+		{
+			return glyphs.toArray(new GlyphVector[glyphs.size()]);
+		}
+
+		private final Font mainFont;
+		private final FontRenderContext frc;
+		private final char[] text;
+		private int rangeStart;
+		private Font rangeFont;
+		private int rangeLength;
+		private final ArrayList<GlyphVector> glyphs;
+
+		private void addGlyphVectorOfLastRange()
+		{
+			if (rangeLength == 0)
+			{
+				return;
+			}
+			Font font = (rangeFont == null) ?
+				mainFont :
+				rangeFont.deriveFont(mainFont.getStyle(),
+					mainFont.getSize());
+			GlyphVector gv = layoutGlyphVector(font, frc,
+				text, rangeStart, rangeStart + rangeLength);
+			glyphs.add(gv);
+		}
+	} //}}}
+
+	//{{{ getGlyphCache() method
+	private static GlyphCache getGlyphCache()
+	{
+		if (glyphCache != null)
+		{
+			GlyphCache cache = glyphCache.get();
+			if (cache != null)
+			{
+				return cache;
+			}
+		}
+		GlyphCache newOne = new GlyphCache(glyphCacheCapacity);
+		glyphCache = new SoftReference<GlyphCache>(newOne);
+		return newOne;
+	} //}}}
+
+	//{{{ class GlyphKey
+	private static class GlyphKey
+	{
+		public final String token;
+		public final Font font;
+		public final FontRenderContext context;
+
+		GlyphKey(String token, Font font, FontRenderContext context)
+		{
+			assert token != null;
+			assert font != null;
+			assert context != null;
+			this.token = token;
+			this.font = font;
+			this.context = context;
+		}
+
+		@Override
+		public final int hashCode()
+		{
+			return token.hashCode()
+				+ font.hashCode()
+				+ context.hashCode();
+		}
+
+		@Override
+		public final boolean equals(Object otherObject)
+		{
+			// should be called only from GlyphCache to
+			// compare with other keys, then explicit type
+			// checking and null checking are not necessary.
+			GlyphKey other = (GlyphKey)otherObject;
+			return token.equals(other.token)
+				&& font.equals(other.font)
+				&& context.equals(other.context);
+		}
+
+		@Override
+		public final String toString()
+		{
+			return token;
+		}
+	} //}}}
+
+	//{{{ class GlyphCache
+	private static class GlyphCache extends LinkedHashMap<GlyphKey, GlyphVector[]>
+	{
+		public GlyphCache(int capacity)
+		{
+			// Avoid rehashing with known limit.
+			super(capacity + 1, 1.0f, true/*accessOrder*/);
+			this.capacity = capacity;
+		}
+
+		@Override
+		protected boolean removeEldestEntry(Map.Entry<GlyphKey, GlyphVector[]> eldest)
+		{
+			return size() > capacity;
+		}
+
+		private final int capacity;
 	} //}}}
 
 	//}}}

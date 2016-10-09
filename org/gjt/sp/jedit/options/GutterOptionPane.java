@@ -34,6 +34,7 @@ import org.gjt.sp.jedit.gui.*;
 import org.gjt.sp.jedit.textarea.JEditTextArea;
 import org.gjt.sp.jedit.*;
 //}}}
+
 import org.gjt.sp.util.SyntaxUtilities;
 
 public class GutterOptionPane extends AbstractOptionPane
@@ -66,7 +67,7 @@ public class GutterOptionPane extends AbstractOptionPane
 		gutterComponents = new JPanel(new GridBagLayout());
 		gutterComponents.setBorder(BorderFactory.createTitledBorder(
 			jEdit.getProperty("options.gutter.optionalComponents")));
-		
+
 		IntegerInputVerifier integerInputVerifier = new IntegerInputVerifier();
 
 		/* Line numbering */
@@ -222,7 +223,7 @@ public class GutterOptionPane extends AbstractOptionPane
 			gutterNoFocusBorder = new ColorWellButton(
 			jEdit.getColorProperty("view.gutter.noFocusBorderColor")),
 			GridBagConstraints.VERTICAL);
-		
+
 		addFoldStyleChooser();
 	} //}}}
 

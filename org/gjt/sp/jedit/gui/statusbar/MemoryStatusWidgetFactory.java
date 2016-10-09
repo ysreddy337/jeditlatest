@@ -1,6 +1,6 @@
 /*
  * MemoryStatusWidgetFactory.java - The memory status widget service
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2008 Matthieu Casanova
@@ -28,9 +28,11 @@ package org.gjt.sp.jedit.gui.statusbar;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.Graphics2D;
 import java.awt.Graphics;
 import java.awt.Insets;
 import java.awt.Point;
+import java.awt.RenderingHints;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
@@ -186,13 +188,17 @@ public class MemoryStatusWidgetFactory implements StatusWidgetFactory
 				height);
 
 			String str = (used / 1024 / 1024) + "/"
-				+ (total / 1024 / 1024) + "Mb";
+				+ (total / 1024 / 1024) + "MB";
 
 			FontRenderContext frc = new FontRenderContext(null,false,false);
 
 			Rectangle2D bounds = g.getFont().getStringBounds(str,frc);
 
-			Graphics g2 = g.create();
+			Graphics2D g2 = (Graphics2D)g;
+			g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
+                             RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+
+
 			g2.setClip(insets.left,insets.top,
 				(int)(width * fraction),
 				height);
@@ -202,10 +208,6 @@ public class MemoryStatusWidgetFactory implements StatusWidgetFactory
 			g2.drawString(str,
 				insets.left + ((int) (width - bounds.getWidth()) / 2),
 				(int)(insets.top + lm.getAscent()));
-
-			g2.dispose();
-
-			g2 = g.create();
 
 			g2.setClip(insets.left + (int)(width * fraction),
 				insets.top,MemoryStatus.this.getWidth()
@@ -222,7 +224,7 @@ public class MemoryStatusWidgetFactory implements StatusWidgetFactory
 		} //}}}
 
 		//{{{ Private members
-		private static final String memoryTestStr = "999/999Mb";
+		private static final String memoryTestStr = "9999/9999MB";
 
 		private final LineMetrics lm;
 		private final Color progressForeground;

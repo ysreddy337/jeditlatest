@@ -38,7 +38,7 @@ import org.gjt.sp.jedit.*;
  * favorite and clicking 'delete' in the browser just deletes the
  * favorite, and not the directory itself.
  * @author Slava Pestov
- * @version $Id: FavoritesVFS.java 19948 2011-09-09 16:35:32Z kpouer $
+ * @version $Id: FavoritesVFS.java 21627 2012-05-04 16:58:22Z jarekczek $
  */
 public class FavoritesVFS extends VFS
 {
@@ -47,7 +47,8 @@ public class FavoritesVFS extends VFS
 	//{{{ FavoritesVFS constructor
 	public FavoritesVFS()
 	{
-		super("favorites",DELETE_CAP | RENAME_CAP | LOW_LATENCY_CAP,
+		super("favorites",DELETE_CAP | RENAME_CAP | LOW_LATENCY_CAP
+			| NON_AWT_SESSION_CAP,
 			new String[] { EA_TYPE });
 
 		/* addToFavorites(), which is a static method
@@ -191,12 +192,14 @@ public class FavoritesVFS extends VFS
 			int i = 0;
 			for (Favorite favorite : favorites)
 			{
-				jEdit.setProperty("vfs.favorite." + i,
-					favorite.getPath());
-				jEdit.setProperty("vfs.favorite." + i
-					+ ".label", favorite.getLabel());
-				jEdit.setIntegerProperty("vfs.favorite." + i
-					+ ".type", favorite.getType());
+				String p = favorite.getPath();
+				String l = favorite.getLabel();
+				jEdit.setProperty("vfs.favorite." + i, p);
+				if (p.equals(l) || MiscUtilities.abbreviate(p).equals(l))
+					jEdit.unsetProperty("vfs.favorite." + i + ".label");
+				else 
+					jEdit.setProperty("vfs.favorite." + i + ".label", l);
+				jEdit.setIntegerProperty("vfs.favorite." + i + ".type", favorite.getType());
 
 				i++;
 			}
@@ -233,7 +236,7 @@ public class FavoritesVFS extends VFS
 		Favorite(String path, int type)
 		{
 			super(path,path,PROTOCOL + ':' + path,type, 0L,false);
-			this.label = path;
+			this.label = MiscUtilities.abbreviate(path);
 		}
 
 		public String getLabel()

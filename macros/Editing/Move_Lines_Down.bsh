@@ -27,9 +27,13 @@ OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+//Localization
+final static String NotEditableMessage = jEdit.getProperty("macro.rs.general.ErrorNotEditableDialog.message", "Buffer is not editable");
+final static String NoMultipleSelectionError = jEdit.getProperty("macro.rs.MoveLines.NoMultipleSelection.error", "Line move does not work with multiple selection.");
+
 // check buffer read-only status
 if ( buffer.isReadOnly() ) {
-   Macros.error( view, "File is read only." );
+   Macros.error( view, NotEditableMessage );
    return ;
 }
 
@@ -48,7 +52,7 @@ Selection[] selections = textArea.getSelection();
 
 // this doesn't work right with multiple selection, so don't do anything
 if (selections.length > 1) {
-   Macros.error( view, "Line move does not work with multiple selection." );
+   Macros.error( view, NoMultipleSelectionError );
    return ;
 }
 

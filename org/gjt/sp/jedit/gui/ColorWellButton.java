@@ -31,13 +31,12 @@ import org.gjt.sp.jedit.GUIUtilities;
 import org.gjt.sp.jedit.OperatingSystem;
 //}}}
 
-/**
- * A button that, when clicked, shows a color chooser.
+/** A button that, when clicked, shows a color chooser.
  *
  * You can get and set the currently selected color using
  * {@link #getSelectedColor()} and {@link #setSelectedColor(Color)}.
  * @author Slava Pestov
- * @version $Id: ColorWellButton.java 18910 2010-10-31 14:04:47Z daleanson $
+ * @version $Id: ColorWellButton.java 21502 2012-03-29 17:19:44Z ezust $
  */
 public class ColorWellButton extends JButton
 {
@@ -120,7 +119,7 @@ public class ColorWellButton extends JButton
 					ColorWellButton.this.getSelectedColor());
 			}
 			if (c != null) {
-				setSelectedColor(c);	
+				setSelectedColor(c);
 			}
 		}
 	} //}}}

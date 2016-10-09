@@ -5,6 +5,7 @@
  *
  * Copyright (C) 1999, 2000, 2001 Slava Pestov
  * Copyright (C) 2001 Dirk Moebius
+ * Copyright (C) 2011 Matthieu Casanova
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -28,9 +29,10 @@ import org.gjt.sp.jedit.*;
 import org.gjt.sp.jedit.gui.FilteredTableModel;
 import org.gjt.sp.jedit.gui.GrabKeyDialog;
 import org.gjt.sp.jedit.gui.GrabKeyDialog.KeyBinding;
+import org.jedit.keymap.Keymap;
+import org.jedit.keymap.KeymapManager;
 import org.gjt.sp.util.Log;
 import org.gjt.sp.util.StandardUtilities;
-
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -47,8 +49,9 @@ import java.util.List;
 /**
  * Key binding editor.
  * @author Slava Pestov
- * @version $Id: ShortcutsOptionPane.java 21012 2012-01-29 19:08:10Z voituk $
+ * @version $Id: ShortcutsOptionPane.java 22380 2012-10-15 02:49:41Z ezust $
  */
+@SuppressWarnings("serial")
 public class ShortcutsOptionPane extends AbstractOptionPane
 {
 	//{{{ ShortcutsOptionPane constructor
@@ -63,12 +66,47 @@ public class ShortcutsOptionPane extends AbstractOptionPane
 	{
 		allBindings = new Vector<KeyBinding>();
 
-		setLayout(new BorderLayout(12,12));
+		setLayout(new BorderLayout(12, 12));
 
+		KeymapManager keymapManager = jEdit.getKeymapManager();
+
+		String keymapName = jEdit.getProperty("keymap.current");
+		selectedKeymap = keymapManager.getKeymap(keymapName);
+		if (selectedKeymap == null)
+			selectedKeymap = keymapManager.getKeymap(KeymapManager.DEFAULT_KEYMAP_NAME);
 		initModels();
 
+		duplicateKeymap = new JButton(jEdit.getProperty("options.shortcuts.duplicatekeymap.label"));
+		resetKeymap = new JButton(jEdit.getProperty("options.shortcuts.resetkeymap.label"));
+		deleteKeymap = new JButton(jEdit.getProperty("options.shortcuts.deletekeymap.label"));
+		resetButtons();
+
+		ActionListener actionHandler = new ActionHandler();
+
+		ComboBoxModel model = new KeymapsModel();
+		keymaps = new JComboBox(model);
+		keymaps.setRenderer(new KeymapCellRenderer());
+		keymaps.setSelectedItem(keymapName);
+		duplicateKeymap.addActionListener(actionHandler);
+		resetKeymap.addActionListener(actionHandler);
+		deleteKeymap.addActionListener(actionHandler);
+		keymaps.addActionListener(actionHandler);
+		keymaps.setSelectedItem(selectedKeymap);
+
+		Box keymapBox = Box.createHorizontalBox();
+		keymapBox.add(new JLabel(jEdit.getProperty(
+			"options.shortcuts.keymap.label")));
+		keymapBox.add(Box.createHorizontalStrut(6));
+		keymapBox.add(keymaps);
+		keymapBox.add(Box.createHorizontalStrut(6));
+		keymapBox.add(duplicateKeymap);
+		keymapBox.add(resetKeymap);
+		keymapBox.add(deleteKeymap);
+		keymapBox.add(Box.createHorizontalGlue());
+
+		// combobox to choose action set
 		selectModel = new JComboBox(models);
-		selectModel.addActionListener(new ActionHandler());
+		selectModel.addActionListener(actionHandler);
 		selectModel.setToolTipText(jEdit.getProperty("options.shortcuts.select.tooltip"));
 		Box north = Box.createHorizontalBox();
 		north.add(new JLabel(jEdit.getProperty(
@@ -128,7 +166,12 @@ public class ShortcutsOptionPane extends AbstractOptionPane
 		tableFilterPanel.add(BorderLayout.NORTH,filterPanel);
 		tableFilterPanel.add(BorderLayout.CENTER,scroller);
 
-		add(BorderLayout.NORTH,north);
+		Box northBox = Box.createVerticalBox();
+		northBox.add(keymapBox);
+		northBox.add(Box.createVerticalGlue());
+		northBox.add(north);
+
+		add(BorderLayout.NORTH,northBox);
 		add(BorderLayout.CENTER,tableFilterPanel);
 		try
 		{
@@ -141,6 +184,7 @@ public class ShortcutsOptionPane extends AbstractOptionPane
 	@Override
 	protected void _save()
 	{
+		jEdit.setProperty("keymap.current", selectedKeymap.toString());
 		if(keyTable.getCellEditor() != null)
 			keyTable.getCellEditor().stopCellEditing();
 
@@ -148,9 +192,16 @@ public class ShortcutsOptionPane extends AbstractOptionPane
 			model.save();
 
 		Macros.loadMacros();
+		selectedKeymap.save();
 	} //}}}
 
 	//{{{ Private members
+	/** The selected keymap. It is a copy of the current keymap in the beginning, but it may be another one */
+	private Keymap selectedKeymap;
+	private JButton duplicateKeymap;
+	private JButton resetKeymap;
+	private JButton deleteKeymap;
+	private JComboBox keymaps;
 	private JTable keyTable;
 	private Vector<ShortcutsModel> models;
 	private FilteredTableModel<ShortcutsModel> filteredModel;
@@ -167,41 +218,7 @@ public class ShortcutsOptionPane extends AbstractOptionPane
 	//{{{ initModels() method
 	private void initModels()
 	{
-		List<KeyBinding[]> allBindings = new ArrayList<KeyBinding[]>();
-		Set<String> knownBindings = new HashSet<String>();
-		models = new Vector<ShortcutsModel>();
-		ActionSet[] actionSets = jEdit.getActionSets();
-		for(int i = 0; i < actionSets.length; i++)
-		{
-			ActionSet actionSet = actionSets[i];
-			if(actionSet.getActionCount() != 0)
-			{
-				String modelLabel = actionSet.getLabel();
-				if(modelLabel == null)
-				{
-					Log.log(Log.ERROR,this,"Empty action set: "
-						+ actionSet.getPluginJAR());
-				}
-				ShortcutsModel model = createModel(modelLabel,
-						actionSet.getActionNames());
-				models.addElement(model);
-				List<KeyBinding[]> bindings = model.getBindings();
-				for (KeyBinding[] binding : bindings)
-				{
-					String name = binding[0].name;
-					if (!knownBindings.contains(name))
-					{
-						knownBindings.add(name);
-						allBindings.add(binding);
-					}
-				}
-			}
-		}
-		if (models.size() > 1)
-			models.addElement(new ShortcutsModel("All", allBindings));
-		Collections.sort(models,new StandardUtilities.StringCompare<ShortcutsModel>(true));
-		ShortcutsModel currentModel = models.elementAt(0);
-		filteredModel = new FilteredTableModel<ShortcutsModel>(currentModel)
+		filteredModel = new FilteredTableModel<ShortcutsModel>()
 		{
 			@Override
 			public String prepareFilter(String filter)
@@ -216,6 +233,66 @@ public class ShortcutsOptionPane extends AbstractOptionPane
 				return name.contains(filter);
 			}
 		};
+		models = new Vector<ShortcutsModel>();
+		reloadModels();
+	} //}}}
+
+	//{{{ reloadModels() method
+	private void reloadModels()
+	{
+		models.clear();
+		allBindings.clear();
+		List<KeyBinding[]> allBindings = new ArrayList<KeyBinding[]>();
+		Collection<String> knownBindings = new HashSet<String>();
+		ActionSet[] actionSets = jEdit.getActionSets();
+		for(int i = 0; i < actionSets.length; i++)
+		{
+			ActionSet actionSet = actionSets[i];
+			if(actionSet.getActionCount() != 0)
+			{
+				String modelLabel = actionSet.getLabel();
+				if(modelLabel == null)
+				{
+					Log.log(Log.ERROR,this,"Empty action set: "
+						+ actionSet.getPluginJAR());
+				}
+				ShortcutsModel model = createModel(modelLabel,
+						actionSet.getActionNames());
+				models.add(model);
+				List<KeyBinding[]> bindings = model.getBindings();
+				for (KeyBinding[] binding : bindings)
+				{
+					String name = binding[0].name;
+					if (!knownBindings.contains(name))
+					{
+						knownBindings.add(name);
+						allBindings.add(binding);
+					}
+				}
+			}
+		}
+		if (models.size() > 1)
+			models.add(new ShortcutsModel("All", allBindings));
+		ShortcutsModel delegated = filteredModel.getDelegated();
+		Collections.sort(models,new StandardUtilities.StringCompare<ShortcutsModel>(true));
+		if (delegated == null)
+		{
+			delegated = models.get(0);
+		}
+		else
+		{
+			for (ShortcutsModel model : models)
+			{
+				// Find the model with the same name
+				if (model.toString().equals(delegated.toString()))
+				{
+					delegated = model;
+					break;
+				}
+			}
+		}
+		filteredModel.setDelegated(delegated);
+		filteredModel.fireTableDataChanged();
 	} //}}}
 
 	//{{{ createModel() method
@@ -245,9 +322,9 @@ public class ShortcutsOptionPane extends AbstractOptionPane
 		GrabKeyDialog.KeyBinding[] b = new GrabKeyDialog.KeyBinding[2];
 
 		b[0] = createBinding(name,label,
-			jEdit.getProperty(name + ".shortcut"));
+			selectedKeymap.getShortcut(name + ".shortcut"));
 		b[1] = createBinding(name,label,
-			jEdit.getProperty(name + ".shortcut2"));
+			selectedKeymap.getShortcut(name + ".shortcut2"));
 
 		bindings.add(b);
 	} //}}}
@@ -266,7 +343,17 @@ public class ShortcutsOptionPane extends AbstractOptionPane
 		return binding;
 	} //}}}
 
+	// {{{ resetButtons() methods
+	private void resetButtons()
+	{
+		KeymapManager keymapManager = jEdit.getKeymapManager();
+		KeymapManager.State state = keymapManager.getKeymapState(selectedKeymap.toString());
+		resetKeymap.setEnabled(state == KeymapManager.State.SystemModified);
+		deleteKeymap.setEnabled(state == KeymapManager.State.User);
+	} //}}}
+
 	//{{{ Inner classes
+
 
 	//{{{ HeaderMouseHandler class
 	private class HeaderMouseHandler extends MouseAdapter
@@ -319,19 +406,102 @@ public class ShortcutsOptionPane extends AbstractOptionPane
 		@Override
 		public void actionPerformed(ActionEvent evt)
 		{
-			ShortcutsModel newModel
-				= (ShortcutsModel)selectModel.getSelectedItem();
-			if(filteredModel.getDelegated() != newModel)
+			if (evt.getSource() == selectModel)
 			{
-				jEdit.setIntegerProperty("options.shortcuts.select.index", selectModel.getSelectedIndex());
-				filteredModel.setDelegated(newModel);
-				setFilter();
+				ShortcutsModel newModel
+					= (ShortcutsModel)selectModel.getSelectedItem();
+				if(filteredModel.getDelegated() != newModel)
+				{
+					jEdit.setIntegerProperty("options.shortcuts.select.index", selectModel.getSelectedIndex());
+					filteredModel.setDelegated(newModel);
+					setFilter();
+				}
+			}
+			else if (evt.getSource() == keymaps)
+			{
+				String selectedKeymapName = (String) keymaps.getSelectedItem();
+				KeymapManager keymapManager = jEdit.getKeymapManager();
+				selectedKeymap = keymapManager.getKeymap(selectedKeymapName);
+				resetButtons();
+				reloadModels();
+			}
+			else if (evt.getSource() == duplicateKeymap)
+			{
+				String newName = JOptionPane.showInputDialog(ShortcutsOptionPane.this,
+									     jEdit.getProperty(
+										     "options.shortcuts.duplicatekeymap.dialog.label"),
+									     jEdit.getProperty(
+										     "options.shortcuts.duplicatekeymap.dialog.title"),
+									     JOptionPane.OK_CANCEL_OPTION);
+				if (newName == null)
+				{
+					return;
+				}
+				newName = newName.replace(' ', '_');
+				KeymapManager manager = jEdit.getKeymapManager();
+				Collection<String> keymapNames = manager.getKeymapNames();
+				while (newName != null)
+				{
+					if (!keymapNames.contains(newName))
+						break;
+					newName = JOptionPane.showInputDialog(ShortcutsOptionPane.this,
+										     jEdit.getProperty(
+											     "options.shortcuts.duplicatekeymap.keymapalreadyexists.label"),
+										     jEdit.getProperty(
+											     "options.shortcuts.duplicatekeymap.dialog.title"),
+										     JOptionPane.OK_CANCEL_OPTION);
+					if (newName == null)
+					{
+						return;
+					}
+					newName = newName.replace(' ', '_');
+				}
+				if (manager.copyKeymap(selectedKeymap.toString(), newName))
+				{
+					KeymapsModel model = (KeymapsModel) keymaps.getModel();
+					model.reset();
+					keymaps.setSelectedItem(newName);
+				}
+			}
+			else if (evt.getSource() == resetKeymap)
+			{
+				int ret = JOptionPane.showConfirmDialog(ShortcutsOptionPane.this, jEdit.getProperty(
+					"options.shortcuts.resetkeymap.dialog.label"), jEdit.getProperty(
+					"options.shortcuts.resetkeymap.dialog.title"), JOptionPane.YES_NO_OPTION,
+								      JOptionPane.QUESTION_MESSAGE);
+				if (ret == JOptionPane.YES_OPTION)
+				{
+					String name = selectedKeymap.toString();
+					KeymapManager manager = jEdit.getKeymapManager();
+					manager.resetKeymap(name);
+					selectedKeymap = manager.getKeymap(name);
+					resetButtons();
+					reloadModels();
+				}
+			}
+			else if (evt.getSource() == deleteKeymap)
+			{
+				int ret = JOptionPane.showConfirmDialog(ShortcutsOptionPane.this, jEdit.getProperty(
+					"options.shortcuts.deletekeymap.dialog.label"), jEdit.getProperty(
+					"options.shortcuts.deletekeymap.dialog.title"), JOptionPane.YES_NO_OPTION,
+								      JOptionPane.QUESTION_MESSAGE);
+				if (ret == JOptionPane.YES_OPTION)
+				{
+					KeymapManager manager = jEdit.getKeymapManager();
+					KeymapManager.State keymapState = manager.getKeymapState(selectedKeymap.toString());
+					if (keymapState == KeymapManager.State.User)
+					{
+						manager.deleteUserKeymap(selectedKeymap.toString());
+						KeymapsModel model = (KeymapsModel) keymaps.getModel();
+						model.reset();
+					}
+				}
 			}
 		}
 	} //}}}
 
 	//{{{ ShortcutsModel class
-	private static class ShortcutsModel extends AbstractTableModel
+	private class ShortcutsModel extends AbstractTableModel
 	{
 		private final List<GrabKeyDialog.KeyBinding[]> bindings;
 		private final String name;
@@ -404,9 +574,9 @@ public class ShortcutsOptionPane extends AbstractOptionPane
 			case 0:
 				return jEdit.getProperty("options.shortcuts.name");
 			case 1:
-				return jEdit.getProperty("options.shortcuts.shortcut1");
+				return selectedKeymap.getShortcut("options.shortcuts.shortcut1");
 			case 2:
-				return jEdit.getProperty("options.shortcuts.shortcut2");
+				return selectedKeymap.getShortcut("options.shortcuts.shortcut2");
 			default:
 				return null;
 			}
@@ -416,10 +586,10 @@ public class ShortcutsOptionPane extends AbstractOptionPane
 		{
 			for (GrabKeyDialog.KeyBinding[] binding : bindings)
 			{
-				jEdit.setProperty(
+				selectedKeymap.setShortcut(
 					binding[0].name + ".shortcut",
 					binding[0].shortcut);
-				jEdit.setProperty(
+				selectedKeymap.setShortcut(
 					binding[1].name + ".shortcut2",
 					binding[1].shortcut);
 			}
@@ -437,7 +607,7 @@ public class ShortcutsOptionPane extends AbstractOptionPane
 			return name;
 		}
 
-		private static class KeyCompare implements Comparator<GrabKeyDialog.KeyBinding[]>
+		private class KeyCompare implements Comparator<GrabKeyDialog.KeyBinding[]>
 		{
 			private final int col;
 
@@ -481,6 +651,89 @@ public class ShortcutsOptionPane extends AbstractOptionPane
 			}
 		}
 	} //}}}
+
+	//{{{ KeymapsModel class
+	private static class KeymapsModel extends AbstractListModel implements ComboBoxModel
+	{
+		private String[] keymaps;
+
+		private Object selectedItem;
+
+		//{{{ KeymapsModel() constructor
+		private KeymapsModel()
+		{
+			reset();
+		} //}}}
+
+		//{{{ reset() method
+		void reset()
+		{
+			KeymapManager keymapManager = jEdit.getKeymapManager();
+			Collection<String> keymapNames = keymapManager.getKeymapNames();
+			keymaps = keymapNames.toArray(new String[keymapNames.size()]);
+			if (!isValidName(selectedItem))
+				selectedItem = keymaps[0];
+			fireContentsChanged(this, 0, keymaps.length-1);
+		} //}}}
+
+		//{{{ getSize() method
+		@Override
+		public int getSize()
+		{
+			return keymaps.length;
+		} //}}}
+
+		//{{{ getElementAt() method
+		@Override
+		public Object getElementAt(int index)
+		{
+			return keymaps[index];
+		} //}}}
+
+		//{{{ setSelectedItem() method
+		@Override
+		public void setSelectedItem(Object anItem)
+		{
+			if (isValidName(anItem))
+				selectedItem = anItem;
+			else
+				selectedItem = keymaps[0];
+		} //}}}
+
+		//{{{ getSelectedItem() method
+		@Override
+		public Object getSelectedItem()
+		{
+			return selectedItem;
+		} //}}}
+
+		//{{{ isValidName() method
+		private boolean isValidName(Object name)
+		{
+			for (String keymap : keymaps)
+			{
+				if (keymap.equals(name))
+					return true;
+			}
+			return false;
+		} //}}}
+	} //}}}
+
+	//{{{ KeymapsModel class
+	private static class KeymapCellRenderer extends DefaultListCellRenderer
+	{
+		@Override
+		public Component getListCellRendererComponent(JList list, Object value, int index,
+							      boolean isSelected, boolean cellHasFocus)
+		{
+			super.getListCellRendererComponent(list, value, index, isSelected,
+								  cellHasFocus);
+			String label = jEdit.getProperty("keymaps." + value + ".label", String.valueOf(value).replace('_', ' '));
+			setText(label);
+			return this;
+		}
+	} //}}}
+
 	//}}}
 	//}}}
 }

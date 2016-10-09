@@ -40,8 +40,7 @@ import org.gjt.sp.jedit.gui.statusbar.ToolTipLabel;
 import org.gjt.sp.util.*;
 //}}}
 
-/**
- * The status bar used to display various information to the user.<p>
+/** The status bar used to display various information to the user.
  *
  * Currently, it is used for the following:
  * <ul>
@@ -53,7 +52,7 @@ import org.gjt.sp.util.*;
  * <li>Displaying memory status
  * </ul>
  *
- * @version $Id: StatusBar.java 17443 2010-03-09 19:53:40Z kpouer $
+ * @version $Id: StatusBar.java 21616 2012-04-30 08:32:24Z kpouer $
  * @author Slava Pestov
  * @since jEdit 3.2pre2
  */
@@ -89,6 +88,7 @@ public class StatusBar extends JPanel implements WorkThreadProgressListener
 		foldWidget = _getWidget("fold");
 		encodingWidget = _getWidget("encoding");
 		wrapWidget = _getWidget("wrap");
+		indentWidget = _getWidget("indent");
 		multiSelectWidget = _getWidget("multiSelect");
 		rectSelectWidget = _getWidget("rectSelect");
 		overwriteWidget = _getWidget("overwrite");
@@ -400,6 +400,7 @@ public class StatusBar extends JPanel implements WorkThreadProgressListener
 	public void updateBufferStatus()
 	{
 		wrapWidget.update();
+		indentWidget.update();
 		lineSepWidget.update();
 		modeWidget.update();
 		foldWidget.update();
@@ -426,6 +427,7 @@ public class StatusBar extends JPanel implements WorkThreadProgressListener
 	private final Widget foldWidget;
 	private final Widget encodingWidget;
 	private final Widget wrapWidget;
+	private final Widget indentWidget;
 	private final Widget multiSelectWidget;
 	private final Widget rectSelectWidget;
 	private final Widget overwriteWidget;
@@ -452,6 +454,8 @@ public class StatusBar extends JPanel implements WorkThreadProgressListener
 			return encodingWidget;
 		if ("wrap".equals(name))
 			return wrapWidget;
+		if ("indent".equals(name))
+			return indentWidget;
 		if ("multiSelect".equals(name))
 			return multiSelectWidget;
 		if ("rectSelect".equals(name))
@@ -468,7 +472,7 @@ public class StatusBar extends JPanel implements WorkThreadProgressListener
 	private Widget _getWidget(String name)
 	{
 		StatusWidgetFactory widgetFactory =
-		(StatusWidgetFactory) ServiceManager.getService("org.gjt.sp.jedit.gui.statusbar.StatusWidget", name);
+		(StatusWidgetFactory) ServiceManager.getService("org.gjt.sp.jedit.gui.statusbar.StatusWidgetFactory", name);
 		if (widgetFactory == null)
 		{
 			return null;

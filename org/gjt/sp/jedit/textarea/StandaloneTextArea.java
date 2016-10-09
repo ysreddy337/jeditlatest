@@ -28,7 +28,8 @@ package org.gjt.sp.jedit.textarea;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
-import java.awt.event.MouseEvent;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -37,7 +38,6 @@ import java.util.Properties;
 import javax.swing.AbstractAction;
 import javax.swing.JFrame;
 import javax.swing.JMenuItem;
-import javax.swing.JPopupMenu;
 import javax.swing.WindowConstants;
 
 import org.gjt.sp.jedit.IPropertyManager;
@@ -65,11 +65,10 @@ import org.gjt.sp.util.Log;
 import org.gjt.sp.util.SyntaxUtilities;
 
 //}}}
-// {{{ class StandaloneTextArea
-/**
- * jEdit's standalone text component.<p>
+
+/** jEdit's standalone text component.
  *
- * Use this class to embed a jEdit text area into other applications.
+ * Use this class to embed a jEdit TextArea into other applications.
  *
  * Example:
  * <code>
@@ -100,7 +99,8 @@ import org.gjt.sp.util.SyntaxUtilities;
  *
  * @author Slava Pestov
  * @author John Gellene (API documentation)
- * @version $Id: StandaloneTextArea.java 17650 2010-04-16 10:43:16Z kpouer $
+   @author Matthieu Casanova
+ * @version $Id: StandaloneTextArea.java 22132 2012-09-02 02:03:27Z ezust $
  */
 public class StandaloneTextArea extends TextArea
 {
@@ -120,7 +120,6 @@ public class StandaloneTextArea extends TextArea
 	{
 		super(propertyManager, null);
 		this.propertyManager = propertyManager;
-
 		initInputHandler();
 
 		setMouseHandler(new TextAreaMouseHandler(this));
@@ -329,7 +328,7 @@ public class StandaloneTextArea extends TextArea
 		return propertyManager.getProperty(name);
 	} //}}}
 
-	//{{{ getBooleanProperty() method
+	//{{{ getBooleanProperty() methods
 	/**
 	 * Returns the value of a boolean property.
 	 * @param name The property
@@ -337,9 +336,8 @@ public class StandaloneTextArea extends TextArea
 	private boolean getBooleanProperty(String name)
 	{
 		return getBooleanProperty(name,false);
-	} //}}}
+	}
 
-	//{{{ getBooleanProperty() method
 	/**
 	 * Returns the value of a boolean property.
 	 * @param name The property
@@ -384,7 +382,6 @@ public class StandaloneTextArea extends TextArea
 			}
 		}
 	} //}}}
-
 
 	//{{{ getFontProperty() methods
 	/**
@@ -480,7 +477,6 @@ public class StandaloneTextArea extends TextArea
 			return SyntaxUtilities.parseColor(value, def);
 	} //}}}
 
-
 	//{{{ propertiesChanged() method
 	/**
 	 * Reinitializes the textarea by reading the properties from the property manager
@@ -533,23 +529,6 @@ public class StandaloneTextArea extends TextArea
 		buffer.propertiesChanged();
 	} // }}}
 
-	//{{{ createPopupMenu() method
-	/**
-	 * Creates the popup menu.
-	 * @since 4.3pre15
-	 */
-	@Override
-	public void createPopupMenu(MouseEvent evt)
-	{
-		popup = new JPopupMenu();
-		addMenuItem("undo", "Undo");
-		addMenuItem("redo", "Redo");
-		popup.addSeparator();
-		addMenuItem("cut", "Cut");
-		addMenuItem("copy", "Copy");
-		addMenuItem("paste", "Paste");
-	} //}}}
-
 	//{{{ addMenuItem() method
 	/**
 	 * Adds a menu item from the action context to the popup menu and returns the item.
@@ -583,7 +562,7 @@ public class StandaloneTextArea extends TextArea
 	public static StandaloneTextArea createTextArea()
 	{
 		final Properties props = new Properties();
-		props.putAll(loadProperties("/org/gjt/sp/jedit/jedit_keys.props"));
+		props.putAll(loadProperties("/keymaps/jEdit_keys.props"));
 		props.putAll(loadProperties("/org/gjt/sp/jedit/jedit.props"));
 		StandaloneTextArea textArea = new StandaloneTextArea(new IPropertyManager()
 		{
@@ -600,9 +579,23 @@ public class StandaloneTextArea extends TextArea
 	private static Properties loadProperties(String fileName)
 	{
 		Properties props = new Properties();
-		InputStream in = TextArea.class.getResourceAsStream(fileName);
+		File file;
+		if (fileName.charAt(0) == '/')
+			file = new File(fileName.substring(1));
+		else
+			file = new File(fileName);
+
+		InputStream in = null;
 		try
 		{
+			if (file.isFile())
+			{
+				in = new FileInputStream(file);
+			}
+			else
+			{
+				in = TextArea.class.getResourceAsStream(fileName);
+			}
 			props.load(in);
 		}
 		catch (IOException e)
@@ -683,4 +676,4 @@ public class StandaloneTextArea extends TextArea
 		frame.pack();
 		frame.setVisible(true);
 	} //}}}
-}// }}}
+}

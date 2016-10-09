@@ -1,5 +1,7 @@
 /*
  * Copyright (C) 2000, 2001 Slava Pestov
+ * :tabSize=4:indentSize=4:noTabs=false:
+ * :folding=explicit:collapseFolds=1:
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -36,7 +38,7 @@ import org.gjt.sp.util.StandardUtilities;
  *
  * @author Slava Pestov
  * @author Marcelo Vanzin
- * @version $Id: AbstractContextOptionPane.java 19655 2011-07-07 10:02:06Z kpouer $
+ * @version $Id: AbstractContextOptionPane.java 21983 2012-08-07 15:29:11Z ezust $
  * @since jEdit 4.3pre13
  */
 public abstract class AbstractContextOptionPane extends AbstractOptionPane

@@ -52,7 +52,7 @@ import org.gjt.sp.util.StandardUtilities;
  * {@link #waitForRequests()}.
  *
  * @author Slava Pestov
- * @version $Id: VFSManager.java 21699 2012-05-22 04:26:48Z ezust $
+ * @version $Id: VFSManager.java 22134 2012-09-02 02:22:53Z ezust $
  */
 public class VFSManager
 {
@@ -208,9 +208,10 @@ public class VFSManager
 	//{{{ runInAWTThread() method
 	/**
 	 * Executes the specified runnable in the AWT thread once all
-	 * pending I/O requests are complete. Even if there are no requests
-	 * active, the <code>Runnable</code> is not executed immediately,
-	 * but through <code>invokeLater</code>.
+	 * pending I/O requests are complete. Only in one case the
+	 * <code>Runnable</code> is executed directly: when the current thread
+	 * is EDT and there are no I/O requests active or queued
+	 * at the moment of call.
 	 * @since jEdit 2.5pre1
 	 * @deprecated Using that method, when you run a task in AWT Thread,
 	 * it will wait for all background task causing some unwanted delays.
@@ -255,7 +256,7 @@ public class VFSManager
 
 	//{{{ error() method
 	/**
-	 * Reports an I/O error.
+	 * Reports an I/O error with default urgency, <code>Log.ERROR</code>
 	 *
 	 * @param comp The component
 	 * @param path The path name that caused the error
@@ -268,6 +269,25 @@ public class VFSManager
 		String messageProp,
 		Object[] args)
 	{
+		error(comp,path,messageProp,args,Log.ERROR);
+	}
+	
+	/**
+	 * Reports an I/O error.
+	 *
+	 * @param comp The component
+	 * @param path The path name that caused the error
+	 * @param messageProp The error message property name
+	 * @param args Positional parameters
+	 * @param urgency Logging urgency (level)
+	 * @since jEdit 5.0pre1
+	 */
+	public static void error(Component comp,
+		final String path,
+		String messageProp,
+		Object[] args,
+		int urgency)
+	{
 		final Frame frame = JOptionPane.getFrameForComponent(comp);
 
 		synchronized(errorLock)
@@ -275,7 +295,7 @@ public class VFSManager
 			error = true;
 
 			errors.add(new ErrorListDialog.ErrorEntry(
-				path,messageProp,args));
+				path,messageProp,args,urgency));
 
 			if(errors.size() == 1)
 			{

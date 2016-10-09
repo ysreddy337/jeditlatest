@@ -22,14 +22,14 @@
 
 package org.gjt.sp.jedit.gui;
 
-/**
- * An interface that provides a method for focusing on the default
- * component. The file system browser implements this in order to
+/** An interface that provides a method for focusing on the default component.
+ *
+ * The file system browser implements this in order to
  * focus on the file system view by default, for example.
  *
  * @since jEdit 4.2pre1
  * @author Slava Pestov
- * @version $Id: DefaultFocusComponent.java 12504 2008-04-22 23:12:43Z ezust $
+ * @version $Id: DefaultFocusComponent.java 21502 2012-03-29 17:19:44Z ezust $
  */
 public interface DefaultFocusComponent
 {

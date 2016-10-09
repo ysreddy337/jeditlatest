@@ -24,8 +24,10 @@ package org.gjt.sp.jedit.gui.statusbar;
 
 import org.gjt.sp.jedit.View;
 
-/**
- * A widget factory for the status bar.
+/** A widget factory for the status bar.
+ * 
+ * Implement this interface and register via
+ * services.xml to add another status bar widget. 
  * 
  * @author Matthieu Casanova
  * @since jEdit 4.3pre14 

@@ -40,7 +40,14 @@ public class GenerateTocXML
 		}
 		try
 		{
-			FileWriter out = new FileWriter(Standard.htmlDoclet.configuration().destDirName + OUT);
+			String destDirName = null;
+			for (String[] option : root.options()) {
+				if ("-d".equals(option[0].toLowerCase())) {
+					destDirName = option[1];
+					break;
+				}
+			}
+			FileWriter out = new FileWriter(new File(destDirName, OUT));
 			out.write(HEADER);
 
 			PackageDoc[] packages = root.specifiedPackages();

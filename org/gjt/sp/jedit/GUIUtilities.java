@@ -29,6 +29,7 @@ import org.gjt.sp.jedit.gui.EnhancedButton;
 import org.gjt.sp.jedit.gui.FloatingWindowContainer;
 import org.gjt.sp.jedit.gui.SplashScreen;
 import org.gjt.sp.jedit.gui.VariableGridLayout;
+import org.jedit.keymap.Keymap;
 import org.gjt.sp.jedit.menu.EnhancedCheckBoxMenuItem;
 import org.gjt.sp.jedit.menu.EnhancedMenu;
 import org.gjt.sp.jedit.menu.EnhancedMenuItem;
@@ -59,6 +60,7 @@ import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
+import javax.swing.JTextPane;
 import javax.swing.JToolBar;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
@@ -68,8 +70,7 @@ import java.awt.*;
 import java.awt.event.*;
 //}}}
 
-/**
- * Various GUI functions.<p>
+/** Various GUI utility functions related to icons, menus, toolbars, keyboard shortcuts, etc. 
  *
  * The most frequently used members of this class are:
  *
@@ -86,7 +87,7 @@ import java.awt.event.*;
  * </ul>
  *
  * @author Slava Pestov
- * @version $Id: GUIUtilities.java 21012 2012-01-29 19:08:10Z voituk $
+ * @version $Id: GUIUtilities.java 21469 2012-03-28 17:33:10Z ezust $
  */
 public class GUIUtilities
 {
@@ -571,7 +572,7 @@ public class GUIUtilities
 				out.append(' ');
 			out.append(getMacShortcutLabel(strokes[i]));
 		}
-
+		
 		return out.toString();
         } //}}}
 
@@ -586,8 +587,9 @@ public class GUIUtilities
 			return null;
 		else
 		{
-			String shortcut1 = jEdit.getProperty(action + ".shortcut");
-			String shortcut2 = jEdit.getProperty(action + ".shortcut2");
+			Keymap keymap = jEdit.getKeymapManager().getKeymap();
+			String shortcut1 = keymap.getShortcut(action + ".shortcut");
+			String shortcut2 = keymap.getShortcut(action + ".shortcut2");
 
 			shortcut1 = getPlatformShortcutLabel(shortcut1);
 			shortcut2 = getPlatformShortcutLabel(shortcut2);
@@ -628,14 +630,35 @@ public class GUIUtilities
 	 * @param args Positional parameters to be substituted into the
 	 * message text
 	 */
-	public static void message(Component comp, String name, Object[] args)
+	public static void message(final Component comp, final String name, final Object[] args)
 	{
-		hideSplashScreen();
-
-		JOptionPane.showMessageDialog(comp,
-			jEdit.getProperty(name.concat(".message"),args),
-			jEdit.getProperty(name.concat(".title"),args),
-			JOptionPane.INFORMATION_MESSAGE);
+		if (EventQueue.isDispatchThread())
+		{
+			hideSplashScreen();
+	
+			JOptionPane.showMessageDialog(comp,
+				jEdit.getProperty(name.concat(".message"),args),
+				jEdit.getProperty(name.concat(".title"),args),
+				JOptionPane.INFORMATION_MESSAGE);
+		}
+                else 
+                {
+                        try
+                        {
+                            EventQueue.invokeAndWait(new Runnable()
+                            {
+                                    @Override
+                                    public void run()
+                                    {
+                                            message(comp, name, args);
+                                    }
+                            });
+                        }
+                        catch (Exception e)
+                        {
+                            // ignored
+                        }
+                }
 	} //}}}
 
 	//{{{ error() method
@@ -651,14 +674,35 @@ public class GUIUtilities
 	 * @param args Positional parameters to be substituted into the
 	 * message text
 	 */
-	public static void error(Component comp, String name, Object[] args)
+	public static void error(final Component comp, final String name, final Object[] args)
 	{
-		hideSplashScreen();
-
-		JOptionPane.showMessageDialog(comp,
-			jEdit.getProperty(name.concat(".message"),args),
-			jEdit.getProperty(name.concat(".title"),args),
-			JOptionPane.ERROR_MESSAGE);
+		if (EventQueue.isDispatchThread())
+		{
+			hideSplashScreen();
+	
+			JOptionPane.showMessageDialog(comp,
+				jEdit.getProperty(name.concat(".message"),args),
+				jEdit.getProperty(name.concat(".title"),args),
+				JOptionPane.ERROR_MESSAGE);
+		}
+                else 
+                {
+                        try
+                        {
+                                EventQueue.invokeAndWait(new Runnable()
+                                {
+                                        @Override
+                                        public void run()
+                                        {
+                                                error(comp, name, args);
+                                        }
+                                });
+                        }
+                        catch (Exception e)
+                        {
+                                // ignored
+                        }
+                }
 	} //}}}
 
 	//{{{ input() method
@@ -705,16 +749,36 @@ public class GUIUtilities
 	 * message text
 	 * @since jEdit 3.1pre3
 	 */
-	public static String input(Component comp, String name,
-		Object[] args, Object def)
+	public static String input(final Component comp, final String name,
+		final Object[] args, final Object def)
 	{
-		hideSplashScreen();
-
-		String retVal = (String)JOptionPane.showInputDialog(comp,
-			jEdit.getProperty(name.concat(".message"),args),
-			jEdit.getProperty(name.concat(".title")),
-			JOptionPane.QUESTION_MESSAGE,null,null,def);
-		return retVal;
+		if (EventQueue.isDispatchThread())
+		{
+			hideSplashScreen();
+	
+			return (String)JOptionPane.showInputDialog(comp,
+				jEdit.getProperty(name.concat(".message"),args),
+				jEdit.getProperty(name.concat(".title")),
+				JOptionPane.QUESTION_MESSAGE,null,null,def);
+		}
+		final String[] retValue = new String[1];
+		try
+		{
+			EventQueue.invokeAndWait(new Runnable()
+			{
+				@Override
+				public void run()
+				{
+					retValue[0] = input(comp, name, args, def);
+				}
+			});
+		}
+		catch (Exception e)
+		{
+			return null;
+		}
+		return retValue[0];
+		
 	} //}}}
 
 	//{{{ inputProperty() method
@@ -730,19 +794,40 @@ public class GUIUtilities
 	 * @param def The property whose text to display in the input field
 	 * @since jEdit 3.1pre3
 	 */
-	public static String inputProperty(Component comp, String name,
-		Object[] args, String def)
+	public static String inputProperty(final Component comp, final String name,
+		final Object[] args, final String def)
 	{
-		hideSplashScreen();
-
-		String retVal = (String)JOptionPane.showInputDialog(comp,
-			jEdit.getProperty(name.concat(".message"),args),
-			jEdit.getProperty(name.concat(".title")),
-			JOptionPane.QUESTION_MESSAGE,
-			null,null,jEdit.getProperty(def));
-		if(retVal != null)
-			jEdit.setProperty(def,retVal);
-		return retVal;
+		if (EventQueue.isDispatchThread())
+		{
+			hideSplashScreen();
+	
+			String retVal = (String)JOptionPane.showInputDialog(comp,
+				jEdit.getProperty(name.concat(".message"),args),
+				jEdit.getProperty(name.concat(".title")),
+				JOptionPane.QUESTION_MESSAGE,
+				null,null,jEdit.getProperty(def));
+			if(retVal != null)
+				jEdit.setProperty(def,retVal);
+			return retVal;
+		}
+		final String[] retValue = new String[1];
+		try
+		{
+			EventQueue.invokeAndWait(new Runnable()
+			{
+				@Override
+				public void run()
+				{
+					retValue[0] = inputProperty(comp, name, args, def);
+				}
+			});
+		}
+		catch (Exception e)
+		{
+			return null;
+		}
+		return retValue[0];
+		
 	} //}}}
 
 	//{{{ confirm() method
@@ -854,22 +939,43 @@ public class GUIUtilities
 	 * @return an integer indicating the option selected by the user
 	 * @since jEdit 4.3pre1
 	 */
-	public static int listConfirm(Component comp, String name, String[] args,
-		Object[] listModel)
+	public static int listConfirm(final Component comp, final String name, final String[] args,
+		final Object[] listModel)
 	{
-		JList list = new JList(listModel);
-		list.setVisibleRowCount(8);
-
-		Object[] message = {
-			jEdit.getProperty(name + ".message",args),
-			new JScrollPane(list)
-		};
-
-		return JOptionPane.showConfirmDialog(comp,
-			message,
-			jEdit.getProperty(name + ".title"),
-			JOptionPane.YES_NO_OPTION,
-			JOptionPane.QUESTION_MESSAGE);
+		if (EventQueue.isDispatchThread())
+		{
+			JList list = new JList(listModel);
+			list.setVisibleRowCount(8);
+	
+			Object[] message = {
+				jEdit.getProperty(name + ".message",args),
+				new JScrollPane(list)
+			};
+	
+			return JOptionPane.showConfirmDialog(comp,
+				message,
+				jEdit.getProperty(name + ".title"),
+				JOptionPane.YES_NO_OPTION,
+				JOptionPane.QUESTION_MESSAGE);
+		}
+		final int [] retValue = new int[1];
+		try
+		{
+			EventQueue.invokeAndWait(new Runnable()
+			{
+				@Override
+				public void run()
+				{
+					retValue[0] = listConfirm(comp, name, args, listModel);
+				}
+			});
+		}
+		catch (Exception e)
+		{
+			return JOptionPane.CANCEL_OPTION;
+		}
+		return retValue[0];
+		
 	} //}}}
 
 	//{{{ listConfirm() method
@@ -888,27 +994,49 @@ public class GUIUtilities
 	 * @return an integer indicating the option selected by the user
 	 * @since jEdit 4.3pre12
 	 */
-	public static int listConfirm(Component comp, String name, String[] args,
-		Object[] listModel, List selectedItems)
+	public static int listConfirm(final Component comp, final String name, final String[] args,
+		final Object[] listModel, final List selectedItems)
 	{
-		JList list = new JList(listModel);
-		list.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
-		list.setVisibleRowCount(8);
-		list.addSelectionInterval(0,listModel.length - 1);
-
-		Object[] message = {
-			jEdit.getProperty(name + ".message",args),
-			new JScrollPane(list)
-		};
-
-		int ret = JOptionPane.showConfirmDialog(comp,
-							message,
-							jEdit.getProperty(name + ".title"),
-							JOptionPane.YES_NO_OPTION,
-							JOptionPane.QUESTION_MESSAGE);
-		Object[] selectedValues = list.getSelectedValues();
-		selectedItems.addAll(Arrays.asList(selectedValues));
-		return ret;
+		
+		if (EventQueue.isDispatchThread())
+		{
+			JList list = new JList(listModel);
+			list.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+			list.setVisibleRowCount(8);
+			list.addSelectionInterval(0,listModel.length - 1);
+	
+			Object[] message = {
+				jEdit.getProperty(name + ".message",args),
+				new JScrollPane(list)
+			};
+	
+			int ret = JOptionPane.showConfirmDialog(comp,
+								message,
+								jEdit.getProperty(name + ".title"),
+								JOptionPane.YES_NO_OPTION,
+								JOptionPane.QUESTION_MESSAGE);
+			Object[] selectedValues = list.getSelectedValues();
+			selectedItems.addAll(Arrays.asList(selectedValues));
+			return ret;
+		}
+		final int [] retValue = new int[1];
+		try
+		{
+			EventQueue.invokeAndWait(new Runnable()
+			{
+				@Override
+				public void run()
+				{
+					retValue[0] = listConfirm(comp, name, args, listModel, selectedItems);
+				}
+			});
+		}
+		catch (Exception e)
+		{
+			return JOptionPane.CANCEL_OPTION;
+		}
+		return retValue[0];
+		
 	} //}}}
 
 	//{{{ showVFSFileDialog() methods
@@ -1347,6 +1475,27 @@ public class GUIUtilities
 		}
 	} //}}}
 
+	//{{{ applyTextAreaColors() method
+	/**
+	 * experimental - applies the text area colors on a Component 
+	 * (such as a dockable window) and its children. 
+	 * @since jEdit 5.0pre1
+	 * @author ezust
+	 * 
+	 */
+	public static void applyTextAreaColors(Container win) 
+	{		
+		for (Component child: win.getComponents()) 
+		{
+			child.setBackground(jEdit.getColorProperty("view.bgColor", Color.WHITE));
+			child.setForeground(jEdit.getColorProperty("view.fgColor", Color.BLACK));
+			if (child instanceof JTextPane)  
+				((JTextPane)child).setUI(new javax.swing.plaf.basic.BasicEditorPaneUI());
+			if (child instanceof Container)
+				applyTextAreaColors((Container)child);
+		}
+	} //}}}
+	
 	//{{{ createMultilineLabel() method
 	/**
 	 * Creates a component that displays a multiple line message. This
@@ -1689,17 +1838,15 @@ public class GUIUtilities
 
 	//{{{ initContinuousLayout() method
 	/**
-	 * Init the continuous layout flag using the jEdit's property
-	 * appearance.continuousLayout
+	 * This method do nothing.
 	 *
 	 * @param split the split. It must never be null
 	 * @since jEdit 4.3pre9
+	 * @deprecated since jEdit 5.0 using or not continuous layout is not anymore an option.
 	 */
+	@Deprecated
 	public static void initContinuousLayout(JSplitPane split)
 	{
-		boolean continuousLayout = split.isContinuousLayout();
-		if (continuousLayout != jEdit.getBooleanProperty("appearance.continuousLayout"))
-			split.setContinuousLayout(!continuousLayout);
 	} //}}}
 
 	//{{{ Package-private members
@@ -1872,7 +2019,7 @@ public class GUIUtilities
 	} //}}}
 
 	private static HashMap<String, String> macKeySymbols = null;
-
+	
 	/*
 	 * Create a list of unicode characters to be used in displaying keyboard shortcuts
 	 * on Mac OS X.
@@ -1880,7 +2027,7 @@ public class GUIUtilities
 	static
 	{
 		macKeySymbols = new HashMap<String, String>();
-
+		
 		// These are the unicode code points used in cocoa apps for displaying
 		// shortcuts.
 		macKeySymbols.put("ENTER",         "\u21A9");
@@ -1905,36 +2052,38 @@ public class GUIUtilities
 	 * names and modifiers (e.g. C+PERIOD) to symbols.
 	 */
 	private static String getMacShortcutLabel(String label)
-	{
+	{	
 		StringBuilder out = new StringBuilder();
-
+		
+		// Show the list of modifiers in standard order
 		int endOfModifiers = label.indexOf('+');
-		for (int i = 0; i < endOfModifiers; i++)
+		if (endOfModifiers != -1)
 		{
-			char c = Character.toUpperCase(label.charAt(i));
-			switch (c)
+			String modifiers = label.substring(0, endOfModifiers).toUpperCase();
+			if (modifiers.indexOf('A') != -1)
 			{
-			case 'A':
 				out.append('\u2303');  // ctrl
-				break;
-			case 'C':
-				out.append('\u2318');  // cmd
-				break;
-			case 'M':
+			}
+			if (modifiers.indexOf('M') != -1)
+			{
 				out.append('\u2325');  // alt
-				break;
-			case 'S':
+			}
+			if (modifiers.indexOf('S') != -1)
+			{
 				out.append('\u21E7');  // shift
-				break;
+			}
+			if (modifiers.indexOf('C') != -1)
+			{
+				out.append('\u2318');  // cmd
 			}
 		}
-
+		
 		// We've done the modifiers, now do the key
 		String key = label.substring(endOfModifiers + 1);
-
+		
 		// Some keys have Mac-specific symbols
 		String text = macKeySymbols.get(key);
-
+		
 		// Others don't
 		if (text == null)
 		{
@@ -1944,7 +2093,7 @@ public class GUIUtilities
 			{
 				// e.g., convert the string "PERIOD" to the int KeyEvent.VK_PERIOD
 				int keyCode = KeyEvent.class.getField("VK_".concat(key)).getInt(null);
-
+				
 				// And then convert KeyEvent.VK_PERIOD to the string "."
 				text = KeyEvent.getKeyText(keyCode).toUpperCase();
 			}
@@ -1956,10 +2105,10 @@ public class GUIUtilities
 			}
 		}
 		out.append(text);
-
+		
 		return out.toString();
 	} //}}}
-
+	
 	private GUIUtilities() {}
 	//}}}
 
@@ -1971,7 +2120,7 @@ public class GUIUtilities
 	 * For non-Frame's use {@link GUIUtilities#saveGeometry(Window,String)}
 	 *
 	 * @author Björn Kautler
-	 * @version $Id: GUIUtilities.java 21012 2012-01-29 19:08:10Z voituk $
+	 * @version $Id: GUIUtilities.java 21469 2012-03-28 17:33:10Z ezust $
 	 * @since jEdit 4.3pre6
 	 * @see GUIUtilities#saveGeometry(Window,Container,String)
 	 */

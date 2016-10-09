@@ -32,12 +32,13 @@ import java.awt.*;
 import java.util.*;
 import org.gjt.sp.jedit.gui.*;
 import org.gjt.sp.jedit.*;
+
 //}}}
 
 /**
  * Status bar editor.
  * @author Matthieu Casanova
- * @version $Id: StatusBarOptionPane.java 21265 2012-03-07 21:12:58Z ezust $
+ * @version $Id: StatusBarOptionPane.java 21616 2012-04-30 08:32:24Z kpouer $
  */
 public class StatusBarOptionPane extends AbstractOptionPane
 {
@@ -297,16 +298,17 @@ public class StatusBarOptionPane extends AbstractOptionPane
 	//{{{ ActionHandler class
 	private class ActionHandler implements ActionListener
 	{
+		@Override
 		public void actionPerformed(ActionEvent evt)
 		{
 			Object source = evt.getSource();
 
 			if(source == add)
 			{
-				String value = selectWidget();
-				if (value == null)
+				WidgetSelectionDialog dialog = new WidgetSelectionDialog(StatusBarOptionPane.this);
+				String value = dialog.getValue();
+				if (value == null || value.isEmpty())
 					return;
-
 
 				int index = list.getSelectedIndex();
 				if(index == -1)
@@ -371,27 +373,19 @@ public class StatusBarOptionPane extends AbstractOptionPane
 				updatePreview();
 			}
 		}
-
-		private String selectWidget()
-		{
-			WidgetSelectionDialog dialog = new WidgetSelectionDialog(StatusBarOptionPane.this);
-			String value = dialog.getValue();
-			if (value != null && value.length() == 0)
-				value = null;
-			return value;
-		}
 	} //}}}
 
 	//{{{ ListHandler class
 	private class ListHandler implements ListSelectionListener
 	{
+		@Override
 		public void valueChanged(ListSelectionEvent evt)
 		{
 			updateButtons();
 		}
 	} //}}}
 
-	private class WidgetListCellRenderer extends DefaultListCellRenderer
+	private static class WidgetListCellRenderer extends DefaultListCellRenderer
 	{
 		@Override
 		public Component getListCellRendererComponent(JList list, Object value, int index,
@@ -412,14 +406,14 @@ public class StatusBarOptionPane extends AbstractOptionPane
 	//{{{ WidgetSelectionDialog class
 	private class WidgetSelectionDialog extends EnhancedDialog
 	{
-		private JButton ok;
-		private JButton cancel;
-		private JTextField labelField;
-		private JLabel labelLabel;
-		private JRadioButton labelRadio;
-		private JComboBox widgetCombo;
-		private JLabel widgetLabel;
-		private JRadioButton widgetRadio;
+		private final JButton ok;
+		private final JButton cancel;
+		private final JTextField labelField;
+		private final JLabel labelLabel;
+		private final JRadioButton labelRadio;
+		private final JComboBox widgetCombo;
+		private final JLabel widgetLabel;
+		private final JRadioButton widgetRadio;
 		private String value;
 
 		//{{{ WidgetSelectionDialog constructors
@@ -437,7 +431,7 @@ public class StatusBarOptionPane extends AbstractOptionPane
 
 			widgetLabel = new JLabel(jEdit.getProperty("options.status.edit.widgetLabel"));
 
-			String[] allWidgets = ServiceManager.getServiceNames("org.gjt.sp.jedit.gui.statusbar.StatusWidget");
+			String[] allWidgets = ServiceManager.getServiceNames("org.gjt.sp.jedit.gui.statusbar.StatusWidgetFactory");
 			Arrays.sort(allWidgets);
 			
 			boolean valueIsWidget = value != null && Arrays.binarySearch(allWidgets, value) >= 0;
@@ -560,6 +554,7 @@ public class StatusBarOptionPane extends AbstractOptionPane
 		private class ActionHandler implements ActionListener
 		{
 			//{{{ actionPerformed() method
+			@Override
 			public void actionPerformed(ActionEvent evt)
 			{
 				Object source = evt.getSource();

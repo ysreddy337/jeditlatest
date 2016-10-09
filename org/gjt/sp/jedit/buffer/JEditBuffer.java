@@ -66,7 +66,7 @@ import java.util.regex.Pattern;
  * </ul>
  *
  * @author Slava Pestov
- * @version $Id: JEditBuffer.java 20422 2011-11-25 17:23:30Z ezust $
+ * @version $Id: JEditBuffer.java 21754 2012-06-02 18:49:16Z jarekczek $
  *
  * @since jEdit 4.3pre3
  */
@@ -257,6 +257,7 @@ public class JEditBuffer
 	/**
 	 * The buffer is guaranteed not to change between calls to
 	 * {@link #readLock()} and {@link #readUnlock()}.
+	 * Calls to this method may be nested.
 	 */
 	public void readLock()
 	{
@@ -277,6 +278,7 @@ public class JEditBuffer
 	/**
 	 * Attempting to obtain read lock will block between calls to
 	 * {@link #writeLock()} and {@link #writeUnlock()}.
+	 * Calls to this method may be nested.
 	 */
 	public void writeLock()
 	{
@@ -348,7 +350,8 @@ public class JEditBuffer
 	 * Returns the start offset of the specified line.
 	 * This method is thread-safe.
 	 * @param line The line
-	 * @return The start offset of the specified line
+	 * @return The start offset of the specified line, that is the offset
+	 * after the end-of-line character before that line.
 	 * @since jEdit 4.0pre1
 	 */
 	public int getLineStartOffset(int line)
@@ -375,8 +378,10 @@ public class JEditBuffer
 	 * Returns the end offset of the specified line.
 	 * This method is thread-safe.
 	 * @param line The line
-	 * @return The end offset of the specified line
-	 * invalid.
+	 * @return The end offset of the specified line, that is the offset 
+	 * after the end-of-line character. Note that
+	 * <code>buffer.getLineOfOffset(buffer.getLineEndOffset(x))</code>
+	 * does not return <code>x</code> but <code>x+1</code>.
 	 * @since jEdit 4.0pre1
 	 */
 	public int getLineEndOffset(int line)
@@ -519,23 +524,23 @@ public class JEditBuffer
 		{
 			readLock();
 
-			int start = (line == 0 ? 0 : lineMgr.getLineEndOffset(line - 1)); 
+			int start = (line == 0 ? 0 : lineMgr.getLineEndOffset(line - 1));
 			int end = lineMgr.getLineEndOffset(line);
 			if((start+relativeStartOffset)>end)
 			{
 				throw new IllegalArgumentException("This index is outside the line length (start+relativeOffset):"+start+" + "+relativeStartOffset+" > "+"endffset:"+end);
 			}
 			else
-			{	
+			{
 				getText(start+relativeStartOffset,end - start -relativeStartOffset- 1,segment);
-			}	
+			}
 		}
 		finally
 		{
 			readUnlock();
 		}
 	} //}}}
-	
+
 	//{{{ getLineSegment() method
 	/**
 	 * Returns the text on the specified line.
@@ -676,10 +681,32 @@ public class JEditBuffer
 	 */
 	public void insert(int offset, String str)
 	{
-		if(str == null)
+		insert(offset, (CharSequence) str);
+	}
+
+	/**
+	 * Inserts a string into the buffer.
+	 * @param offset The offset
+	 * @param seg The segment
+	 * @since jEdit 4.0pre1
+	 */
+	public void insert(int offset, Segment seg)
+	{
+		insert(offset, (CharSequence) seg);
+	}
+
+	/**
+	 * Inserts a string into the buffer.
+	 * @param offset The offset
+	 * @param seq The charsequence
+	 * @since jEdit 5.0pre1
+	 */
+	public void insert(int offset, CharSequence seq)
+	{
+		if(seq == null)
 			return;
 
-		int len = str.length();
+		int len = seq.length();
 
 		if(len == 0)
 			return;
@@ -694,67 +721,23 @@ public class JEditBuffer
 			if(offset < 0 || offset > contentMgr.getLength())
 				throw new ArrayIndexOutOfBoundsException(offset);
 
-			contentMgr.insert(offset,str);
+			contentMgr.insert(offset,seq);
 
 			integerArray.clear();
 
 			for(int i = 0; i < len; i++)
 			{
-				if(str.charAt(i) == '\n')
+				if(seq.charAt(i) == '\n')
 					integerArray.add(i + 1);
 			}
 
 			if(!undoInProgress)
 			{
-				undoMgr.contentInserted(offset,len,str,!dirty);
+				undoMgr.contentInserted(offset,len,
+							seq.toString(),!dirty);
 			}
 
 			contentInserted(offset,len,integerArray);
-		}
-		finally
-		{
-			writeUnlock();
-		}
-	}
-
-	/**
-	 * Inserts a string into the buffer.
-	 * @param offset The offset
-	 * @param seg The segment
-	 * @since jEdit 4.0pre1
-	 */
-	public void insert(int offset, Segment seg)
-	{
-		if(seg.count == 0)
-			return;
-
-		if(isReadOnly())
-			throw new RuntimeException("buffer read-only");
-
-		try
-		{
-			writeLock();
-
-			if(offset < 0 || offset > contentMgr.getLength())
-				throw new ArrayIndexOutOfBoundsException(offset);
-
-			contentMgr.insert(offset,seg);
-
-			integerArray.clear();
-
-			for(int i = 0; i < seg.count; i++)
-			{
-				if(seg.array[seg.offset + i] == '\n')
-					integerArray.add(i + 1);
-			}
-
-			if(!undoInProgress)
-			{
-				undoMgr.contentInserted(offset,seg.count,
-					seg.toString(),!dirty);
-			}
-
-			contentInserted(offset,seg.count,integerArray);
 		}
 		finally
 		{
@@ -984,6 +967,39 @@ public class JEditBuffer
 			beginCompoundEdit();
 			for(int i = 0; i < lines.length; i++)
 				indentLine(lines[i],true);
+		}
+		finally
+		{
+			endCompoundEdit();
+		}
+	} //}}}
+
+	//{{{ simpleIndentLine() method
+	/**
+	 * Simply indents the given line to the same level as the previous nonempty line
+	 * @param lineIndex The line number to indent
+	 * @since jEdit 5.0
+	 */
+	public void simpleIndentLine(int lineIndex)
+	{
+		int[] whitespaceChars = new int[1];
+		int currentIndent = getCurrentIndentForLine(lineIndex, whitespaceChars);
+
+		int prevLineIndex = getPriorNonEmptyLine(lineIndex);
+		if (prevLineIndex == -1)
+			return;
+
+		String indentString = StandardUtilities.getIndentString(
+			getLineText(prevLineIndex));
+
+		// Do it
+		try
+		{
+			beginCompoundEdit();
+
+			int start = getLineStartOffset(lineIndex);
+			remove(start, whitespaceChars[0]);
+			insert(start, indentString);
 		}
 		finally
 		{
@@ -1356,9 +1372,8 @@ loop:		for(int i = 0; i < seg.count; i++)
 				: lineMgr.getLineContext(i - 1)
 			);
 
-			context = tokenMarker.markTokens(prevContext,
-				(i == lineIndex ? tokenHandler
-				: DummyTokenHandler.INSTANCE), seg);
+			TokenHandler _tokenHandler = i == lineIndex ? tokenHandler : DummyTokenHandler.INSTANCE;
+			context = markTokens(seg, prevContext, _tokenHandler);
 			lineMgr.setLineContext(i,context);
 		}
 
@@ -1398,7 +1413,9 @@ loop:		for(int i = 0; i < seg.count; i++)
 
 	//{{{ createPosition() method
 	/**
-	 * Creates a floating position.
+	 * Creates a floating position (<code>javax.swing.text.Position</code>).
+	 * The position is retained despite text editions.
+	 * <p>No explicit removal of position is necessary, only dereferencing it.
 	 * @param offset The offset
 	 */
 	public Position createPosition(int offset)
@@ -2408,6 +2425,7 @@ loop:		for(int i = 0; i < seg.count; i++)
 	 */
 	protected boolean contextInsensitive;
 	protected UndoManager undoMgr;
+	protected TokenMarker tokenMarker;
 
 	//{{{ Event firing methods
 
@@ -2678,6 +2696,14 @@ loop:		for(int i = 0; i < seg.count; i++)
 		}
 	} //}}}
 
+	//{{{ markTokens() method
+	protected TokenMarker.LineContext markTokens(Segment seg, TokenMarker.LineContext prevContext,
+						     TokenHandler _tokenHandler)
+	{
+		TokenMarker.LineContext context = tokenMarker.markTokens(prevContext, _tokenHandler, seg);
+		return context;
+	} //}}}
+
 	//{{{ Used to store property values
 	protected static class PropValue
 	{
@@ -2717,7 +2743,6 @@ loop:		for(int i = 0; i < seg.count; i++)
 	private final PositionManager positionMgr;
 	private FoldHandler foldHandler;
 	private final IntegerArray integerArray;
-	private TokenMarker tokenMarker;
 	private boolean undoInProgress;
 	private boolean dirty;
 	private boolean readOnly;
@@ -2727,7 +2752,7 @@ loop:		for(int i = 0; i < seg.count; i++)
 	private boolean io;
 	private final Map<Object, PropValue> properties;
 	private final Object propertyLock;
-	public boolean elasticTabstopsOn = false; 
+	public boolean elasticTabstopsOn = false;
 	private ColumnBlock columnBlock;
 
 	//{{{ getListener() method
@@ -2797,7 +2822,8 @@ loop:		for(int i = 0; i < seg.count; i++)
 					// encoding mustn't be set this way as it must
 					// be equal to encoding used to load or save the
 					// file.
-					if (!name.equals(ENCODING)) {
+					if (!name.equals(ENCODING))
+					{
 						// use the low-level property setting code
 						// so that if we have a buffer-local
 						// property with the same value as a default,
@@ -2864,21 +2890,23 @@ loop:		for(int i = 0; i < seg.count; i++)
 	} //}}}
 
 	//{{{ updateColumnBlocks() method
-	public void updateColumnBlocks(int startLine,int endLine,int startColumn,Node parent)
+	public void updateColumnBlocks(int startLine,int endLine,int startColumn, Node parent)
 	{
-		if((parent!=null)&&(startLine>=0)&&(endLine>=0)&&(startLine<=endLine))
-		{	
+		if (parent != null && startLine >= 0 && endLine >= 0 && startLine <= endLine)
+		{
 			int currentLine = startLine;
 			int colBlockWidth=0;
 			Vector<ColumnBlockLine> columnBlockLines = new Vector<ColumnBlockLine>();
 			//while(currentLine<=endLine)
-			for(int ik=startLine-((ColumnBlock)parent).getStartLine();currentLine<=endLine;ik++)
+			ColumnBlock parentColumnBlock = (ColumnBlock) parent;
+			for(int ik=startLine- parentColumnBlock.getStartLine();currentLine<=endLine;ik++)
 			{
 				Segment seg = new Segment();
-				int actualStart =  startColumn ;
-				if(((ColumnBlock)parent).getLines().size()>0)
+				int actualStart =  startColumn;
+				if(!parentColumnBlock.getLines().isEmpty())
 				{
-					ColumnBlockLine line = ((ColumnBlockLine)(((ColumnBlock)parent).getLines().elementAt(ik)));
+					ColumnBlockLine line =
+						parentColumnBlock.getLines().elementAt(ik);
 					if(currentLine!=line.getLine())
 					{
 						throw new IllegalArgumentException();
@@ -2890,14 +2918,19 @@ loop:		for(int i = 0; i < seg.count; i++)
 				if(tabPos>=0)
 				{
 					columnBlockLines.add(new ColumnBlockLine(currentLine, actualStart, actualStart+tabPos));
-					if( tabPos>colBlockWidth)
+					if(tabPos>colBlockWidth)
 					{
 						colBlockWidth =  tabPos;
 					}
 				}
-				if((( tabPos<0)&&(columnBlockLines.size()>0))||((columnBlockLines.size()>0)&&(currentLine==endLine)))
+				if (tabPos < 0 && !columnBlockLines.isEmpty()
+				    || !columnBlockLines.isEmpty() && currentLine == endLine)
 				{
-					ColumnBlock  block = new ColumnBlock(this,((ColumnBlockLine)columnBlockLines.elementAt(0)).getLine(),startColumn+colBlockWidth,((ColumnBlockLine)columnBlockLines.elementAt(columnBlockLines.size()-1)).getLine(),startColumn+colBlockWidth);
+					ColumnBlock  block = new ColumnBlock(this,
+									     columnBlockLines.elementAt(0).getLine(),
+									     startColumn+colBlockWidth,
+									     columnBlockLines.elementAt(columnBlockLines.size()-1).getLine(),
+									     startColumn+colBlockWidth);
 					block.setLines(columnBlockLines);
 					block.setParent(parent);
 					block.setWidth(colBlockWidth);
@@ -2917,9 +2950,9 @@ loop:		for(int i = 0; i < seg.count; i++)
 		}
 	}
 	//}}}
-	
+
 	//{{{ getTabStopPosition() method
-	public int getTabStopPosition(Segment seg )
+	public int getTabStopPosition(Segment seg)
 	{
 		for (int i = 0; i < seg.count; i++)
 		{
@@ -2931,9 +2964,9 @@ loop:		for(int i = 0; i < seg.count; i++)
 		return -5;
 	}
 	 //}}}
-	
-	public final String columnBlockLock = "columnBlockLock";
-	
+
+	public final Object columnBlockLock = new Object();
+
 	//{{{ indentUsingElasticTabstops() method
 	public void indentUsingElasticTabstops()
 	{
@@ -2941,15 +2974,15 @@ loop:		for(int i = 0; i < seg.count; i++)
 		{
 			columnBlock = new ColumnBlock(this,0,getLineCount()-1);
 			updateColumnBlocks(0, lineMgr.getLineCount()-1, 0, columnBlock);
-		}	
+		}
 	}
 	 //}}}
-	
+
 	//{{{ getColumnBlock() method
 	public ColumnBlock getColumnBlock()
 	{
 		return columnBlock;
 	}
 	 //}}}
-//}}}	
+//}}}
 }

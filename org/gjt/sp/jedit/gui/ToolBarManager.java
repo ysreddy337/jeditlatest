@@ -29,7 +29,7 @@ import java.util.List;
 
 import org.gjt.sp.jedit.*;
 //}}}
-
+/** Handles toolbars for a single View */
 public class ToolBarManager
 {
 	//{{{ ToolBarManager constructor
@@ -62,11 +62,11 @@ public class ToolBarManager
 	//{{{ Private members
 
 	//{{{ Instance variables
-	private Container top;
-	private Container bottom;
+	private final Container top;
+	private final Container bottom;
 
-	private List<Entry> topToolBars = new ArrayList<Entry>();
-	private List<Entry> bottomToolBars = new ArrayList<Entry>();
+	private final List<Entry> topToolBars = new ArrayList<Entry>();
+	private final List<Entry> bottomToolBars = new ArrayList<Entry>();
 	//}}}
 
 	//{{{ addToolBar() method

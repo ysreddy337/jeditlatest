@@ -30,13 +30,12 @@ import org.gjt.sp.jedit.input.AbstractInputHandler;
 import org.gjt.sp.util.Log;
 //}}}
 
-/**
- * Various hacks to get keyboard event handling to behave in a consistent manner
+/** Various hacks to get keyboard event handling to behave in a consistent manner
  * across Java implementations. This type of stuff should not be necessary, but
  * Java's keyboard handling is crap, to put it mildly.
  *
  * @author Slava Pestov
- * @version $Id: KeyEventWorkaround.java 17503 2010-03-20 09:47:18Z k_satoda $
+ * @version $Id: KeyEventWorkaround.java 21504 2012-03-29 17:45:22Z ezust $
  */
 public class KeyEventWorkaround
 {

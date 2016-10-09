@@ -28,6 +28,9 @@ import org.gjt.sp.jedit.jEdit;
 import org.gjt.sp.util.Log;
 
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 //}}}
@@ -65,6 +68,9 @@ public class GeneralOptionPane extends AbstractOptionPane
 	private JCheckBox restoreRemote;
 	private JCheckBox restoreCLI;
 	private JCheckBox restoreSplits;
+
+	private JCheckBox useDefaultLocale;
+	private JComboBox lang;
 	//}}}
 
 	//{{{ GeneralOptionPane constructor
@@ -114,6 +120,7 @@ public class GeneralOptionPane extends AbstractOptionPane
 			jEdit.getProperty("options.general.checkModStatusUpon.none")
 		};
 		checkModStatusUpon = new JComboBox(modCheckUponOptions);
+
 		checkModStatusUpon.setSelectedIndex(jEdit.getIntegerProperty("checkFileStatus"));
 		addComponent(jEdit.getProperty("options.general.checkModStatusUpon"),
 			checkModStatusUpon);
@@ -183,7 +190,29 @@ public class GeneralOptionPane extends AbstractOptionPane
 			hypersearchResultsWarning);
 
 
+		String language = jEdit.getCurrentLanguage();
 
+		String availableLanguages = jEdit.getProperty("available.lang", "en");
+		String[] languages = availableLanguages.split(" ");
+
+		useDefaultLocale = new JCheckBox(jEdit.getProperty("options.appearance.usedefaultlocale.label"));
+		useDefaultLocale.setSelected(jEdit.getBooleanProperty("lang.usedefaultlocale"));
+		useDefaultLocale.addChangeListener(new ChangeListener()
+		{
+			@Override
+			public void stateChanged(ChangeEvent e)
+			{
+				lang.setEnabled(!useDefaultLocale.isSelected());
+			}
+		});
+		lang = new JComboBox(languages);
+		lang.setEnabled(!useDefaultLocale.isSelected());
+		lang.setSelectedItem(language);
+
+		lang.setRenderer(new LangCellRenderer());
+		addSeparator("options.appearance.localization.section.label");
+		addComponent(useDefaultLocale);
+		addComponent(jEdit.getProperty("options.appearance.lang.label"), lang);
 	} //}}}
 
 	//{{{ _save() method
@@ -228,7 +257,24 @@ public class GeneralOptionPane extends AbstractOptionPane
 		{
 			Log.log(Log.WARNING, this, "hypersearchResultsWarning: " + hypersearchResultsWarning.getText() + " is not a valid value for this option");
 		}
+
+		jEdit.setBooleanProperty("lang.usedefaultlocale", useDefaultLocale.isSelected());
+		jEdit.setProperty("lang.current", String.valueOf(lang.getSelectedItem()));
 	} //}}}
 
-
+	//{{{ LangCellRenderer class
+	private static class LangCellRenderer extends DefaultListCellRenderer
+	{
+		@Override
+		public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected,
+							      boolean cellHasFocus)
+		{
+			super.getListCellRendererComponent(list, value, index, isSelected,
+							   cellHasFocus);
+			String label = jEdit.getProperty("options.appearance.lang."+value);
+			if (label != null)
+				setText(label);
+			return this;
+		}
+	} //}}}
 }

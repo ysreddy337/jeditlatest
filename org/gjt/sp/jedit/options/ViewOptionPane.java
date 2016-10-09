@@ -94,7 +94,7 @@ public class ViewOptionPane extends AbstractOptionPane
 		floatableToolbars.setSelected(jEdit.getBooleanProperty(
 			"view.toolbar.floatable"));
 		addComponent(floatableToolbars);
-		
+
 		/* Show full path */
 		showFullPath = new JCheckBox(jEdit.getProperty(
 			"options.view.showFullPath"));
@@ -203,7 +203,7 @@ public class ViewOptionPane extends AbstractOptionPane
 		jEdit.setBooleanProperty("view.showFullPath",showFullPath
 			.isSelected());
 		jEdit.setBooleanProperty("view.toolbar.floatable", floatableToolbars.isSelected());
-		
+
 		jEdit.setBooleanProperty("view.showSearchbar",showSearchbar
 			.isSelected());
 		jEdit.setBooleanProperty("search.beepOnSearchAutoWrap",beepOnSearchAutoWrap

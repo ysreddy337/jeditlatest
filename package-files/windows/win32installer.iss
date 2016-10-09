@@ -24,7 +24,9 @@ ChangesEnvironment=true
 DefaultDirName={pf}\jEdit
 DefaultGroupName=jEdit
 FlatComponentsList=false
-LicenseFile=@dist.dir.for.innosetup@\doc\COPYING.txt
+; Do not use LicenseFile here as the GPL does not require acceptance of
+; the license for running the program, but still show it as information
+InfoBeforeFile=@dist.dir.for.innosetup@\doc\COPYING.txt
 OutputBaseFilename=@win.filename@
 OutputDir=@dist.dir.for.innosetup@
 SetupIconFile=@base.dir.for.innosetup@\icons\jedit.ico
@@ -60,6 +62,7 @@ Source: doc\*; DestDir: {app}\doc; Excludes: \doc\api\*; Flags: ignoreversion re
 Source: doc\api\*; DestDir: {app}\doc\api; Flags: ignoreversion recursesubdirs createallsubdirs sortfilesbyextension sortfilesbyname; Components: apidoc
 Source: jars\QuickNotepad.jar; DestDir: {app}\jars; Flags: ignoreversion sortfilesbyextension sortfilesbyname; Components: main
 Source: macros\*; DestDir: {app}\macros; Flags: ignoreversion recursesubdirs createallsubdirs sortfilesbyextension sortfilesbyname; Components: macros
+Source: keymaps\*; DestDir: {app}\keymaps; Flags: ignoreversion recursesubdirs createallsubdirs sortfilesbyextension sortfilesbyname; Components: main
 Source: modes\*; DestDir: {app}\modes; Flags: ignoreversion recursesubdirs createallsubdirs sortfilesbyextension sortfilesbyname; Components: main
 Source: properties\*; DestDir: {app}\properties; Flags: ignoreversion recursesubdirs createallsubdirs sortfilesbyextension sortfilesbyname; Components: main
 Source: startup\*; DestDir: {app}\startup; Flags: ignoreversion recursesubdirs createallsubdirs sortfilesbyextension sortfilesbyname; Components: main
@@ -97,30 +100,41 @@ Name: sl; MessagesFile: compiler:Languages\Slovenian.isl
 Name: es; MessagesFile: compiler:Languages\Spanish.isl
 
 [CustomMessages]
+; Default messages
 APIDocumentation=API Documentation (for macro and plugin development)
-de.APIDocumentation=API Dokumentation (für Macro und Plugin Entwicklung)
 Macros=Default set of macros (highly recommended)
-de.Macros=Standard Makros (sehr empfohlen)
 AutostartJEditServer=Start jEdit Server automatically on system startup
-de.AutostartJEditServer=jEdit Server automatisch beim Hochfahren starten
 QuitProgram=Quit %1
-de.QuitProgram=%1 beenden
 OpenWithProgram=Open with %1
-de.OpenWithProgram=Mit %1 öffnen
 pleaseQuitJEdit=The installer will now try to quit a running instance of jEdit.%nPlease save your work and exit jEdit for the installation to continue.
-de.pleaseQuitJEdit=Die Installation wird nun versuchen eine laufende Instanz von jEdit zu beenden.%nBitte speichern Sie Ihre Arbeit und beenden Sie jEdit um mit der Installation fortzufahren.
 ViewFile=View %1
+; German messages
+de.APIDocumentation=API Dokumentation (für Macro und Plugin Entwicklung)
+de.Macros=Standard Makros (sehr empfohlen)
+de.AutostartJEditServer=jEdit Server automatisch beim Hochfahren starten
+de.QuitProgram=%1 beenden
+de.OpenWithProgram=Mit %1 öffnen
+de.pleaseQuitJEdit=Die Installation wird nun versuchen eine laufende Instanz von jEdit zu beenden.%nBitte speichern Sie Ihre Arbeit und beenden Sie jEdit um mit der Installation fortzufahren.
 de.ViewFile=%1 anzeigen
+; French messages
+fr.APIDocumentation=API Documentation (pour développement de Macro et Plugin)
+fr.Macros=Macros standards (vraiment recommandées)
+fr.AutostartJEditServer=Démarrer automatiquement le serveur jEdit au démarrage de l'ordinateur
+fr.QuitProgram=Quitter %1
+fr.OpenWithProgram=Ouvrir avec %1
+fr.pleaseQuitJEdit=L'installation va tenter à présent de quitter une instance de jEdit en cours.%nVeuillez enregistrer votre travail et quitter jEdit afin de poursuivre l'installation.
+fr.ViewFile=Afficher %1
 
 [Registry]
 Root: HKCR; Subkey: *\Shell; Flags: uninsdeletekeyifempty
 Root: HKCR; Subkey: *\Shell\{cm:OpenWithProgram,jEdit}; Flags: uninsdeletekey
 Root: HKCR; Subkey: *\Shell\{cm:OpenWithProgram,jEdit}\Command; ValueType: string; ValueData: """{app}\jedit.exe"" ""%1"""
+Root: HKCR; Subkey: *\Shell\{cm:OpenWithProgram,jEdit}; ValueName: Icon; ValueType: string; ValueData: "{app}\jedit.exe"
 Root: HKLM; Subkey: SOFTWARE\Microsoft\Windows\CurrentVersion\Run; ValueType: string; ValueName: jEdit Server; ValueData: """{app}\jedit.exe"" -background -nogui --l4j-dont-wait"; Flags: uninsdeletevalue; Tasks: autostartserver
 
 [Run]
-Filename: {app}\jedit.exe; Description: {cm:ViewFile,README}; Parameters: "--l4j-dont-wait -nosettings {app}\doc\README.txt"; WorkingDir: {app}; Flags: nowait postinstall skipifsilent
-Filename: {app}\jedit.exe; Description: {cm:ViewFile,CHANGES}; Parameters: "--l4j-dont-wait -nosettings {app}\doc\CHANGES.txt"; WorkingDir: {app}; Flags: nowait postinstall skipifsilent
+Filename: {app}\jedit.exe; Description: {cm:ViewFile,README}; Parameters: "--l4j-dont-wait -nosettings ""{app}\doc\README.txt"""; WorkingDir: {app}; Flags: nowait postinstall skipifsilent
+Filename: {app}\jedit.exe; Description: {cm:ViewFile,CHANGES}; Parameters: "--l4j-dont-wait -nosettings ""{app}\doc\CHANGES.txt"""; WorkingDir: {app}; Flags: nowait postinstall skipifsilent
 Filename: {app}\jedit.exe; Description: {cm:LaunchProgram,jEdit}; Parameters: "--l4j-dont-wait"; WorkingDir: {app}; Flags: nowait postinstall skipifsilent; Tasks: not autostartserver
 Filename: {app}\jedit.exe; Description: {cm:LaunchProgram,jEdit}; Parameters: "--l4j-dont-wait -background"; WorkingDir: {app}; Flags: nowait postinstall skipifsilent; Tasks: autostartserver
 

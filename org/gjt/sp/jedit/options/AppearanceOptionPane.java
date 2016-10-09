@@ -24,12 +24,18 @@ package org.gjt.sp.jedit.options;
 
 //{{{ Imports
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
+import java.awt.Component;
 import java.awt.Font;
 import java.awt.event.*;
 import java.io.*;
+import java.util.Locale;
+
 import org.gjt.sp.jedit.gui.FontSelector;
 import org.gjt.sp.jedit.gui.NumericTextField;
+
 import org.gjt.sp.jedit.*;
 import org.gjt.sp.util.Log;
 import org.gjt.sp.util.IOUtilities;
@@ -42,7 +48,7 @@ public class AppearanceOptionPane extends AbstractOptionPane
 	 * Possible values of the jedit property 'icon-theme'
 	 */
 	public static final String[] builtInIconThemes = {"tango", "old"};
-	
+
 	//{{{ AppearanceOptionPane constructor
 	public AppearanceOptionPane()
 	{
@@ -78,10 +84,10 @@ public class AppearanceOptionPane extends AbstractOptionPane
 			}
 		});
 
-		
+
 		addComponent(jEdit.getProperty("options.appearance.lf"),
 			lookAndFeel);
-		addDockingFrameworkChooser();
+
 
 		/* Icon Theme */
 		String[] themes = IconTheme.builtInNames();
@@ -96,7 +102,7 @@ public class AppearanceOptionPane extends AbstractOptionPane
 				break;
 			}
 		}
-		
+
 		/* Primary Metal L&F font */
 		Font pf = jEdit.getFontProperty("metal.primary.font");
 		primaryFont = new FontSelector(pf);
@@ -108,13 +114,13 @@ public class AppearanceOptionPane extends AbstractOptionPane
 			"metal.secondary.font"));
 		addComponent(jEdit.getProperty("options.appearance.secondaryFont"),
 			secondaryFont);
-		
+
 		/* HelpViewer font */
 		helpViewerFont = new FontSelector(jEdit.getFontProperty(
 			"helpviewer.font", pf));
 		addComponent(jEdit.getProperty("options.appearance.helpViewerFont"),
 			helpViewerFont);
-		
+
 		/*
 		antiAliasExtras = new JComboBox(AntiAlias.comboChoices);
 		antiAliasExtras.setSelectedIndex(AntiAlias.appearance().val());
@@ -130,11 +136,6 @@ public class AppearanceOptionPane extends AbstractOptionPane
 		/* Menu spillover count */
 		menuSpillover = new NumericTextField(jEdit.getProperty("menu.spillover"), true);
 		addComponent(jEdit.getProperty("options.appearance.menuSpillover"),menuSpillover);
-
-		continuousLayout = new JCheckBox(jEdit.getProperty(
-			"options.appearance.continuousLayout.label"));
-		continuousLayout.setSelected(jEdit.getBooleanProperty("appearance.continuousLayout"));
-		addComponent(continuousLayout);
 
 		systemTrayIcon = new JCheckBox(jEdit.getProperty(
 					"options.general.systrayicon", "Show the systray icon"));
@@ -194,12 +195,9 @@ public class AppearanceOptionPane extends AbstractOptionPane
 		jEdit.setProperty("history",history.getText());
 		jEdit.setProperty("menu.spillover",menuSpillover.getText());
 		jEdit.setBooleanProperty("tip.show",showTips.isSelected());
-		jEdit.setBooleanProperty("appearance.continuousLayout",continuousLayout.isSelected());
 		jEdit.setBooleanProperty("systrayicon", systemTrayIcon.isSelected());
 		IconTheme.set(iconThemes.getSelectedItem().toString());
 
-		jEdit.setProperty(View.VIEW_DOCKING_FRAMEWORK_PROPERTY,
-			(String) dockingFramework.getSelectedItem());
 
 		/* AntiAlias nv = AntiAlias.appearance();
 		 int idx = antiAliasExtras.getSelectedIndex();
@@ -209,34 +207,11 @@ public class AppearanceOptionPane extends AbstractOptionPane
 		primaryFont.repaint();
 		secondaryFont.repaint(); */
 
-		// this is handled a little differently from other jEdit settings
-		// as the splash screen flag needs to be known very early in the
+		// This is handled a little differently from other jEdit settings
+		// as this flag needs to be known very early in the
 		// startup sequence, before the user properties have been loaded
-		String settingsDirectory = jEdit.getSettingsDirectory();
-		if(settingsDirectory != null)
-		{
-			File file = new File(settingsDirectory,"nosplash");
-			if(showSplash.isSelected())
-				file.delete();
-			else
-			{
-				FileOutputStream out = null;
-				try
-				{
-					out = new FileOutputStream(file);
-					out.write('\n');
-					out.close();
-				}
-				catch(IOException io)
-				{
-					Log.log(Log.ERROR,this,io);
-				}
-				finally
-				{
-					IOUtilities.closeQuietly(out);
-				}
-			}
-		}
+		setFileFlag("nosplash", !showSplash.isSelected());
+
 		jEdit.setBooleanProperty("textColors",textColors.isSelected());
 		jEdit.setBooleanProperty("decorate.frames",decorateFrames.isSelected());
 		jEdit.setBooleanProperty("decorate.dialogs",decorateDialogs.isSelected());
@@ -251,11 +226,10 @@ public class AppearanceOptionPane extends AbstractOptionPane
 	private FontSelector primaryFont;
 	private FontSelector secondaryFont;
 	private FontSelector helpViewerFont;
-	private JComboBox dockingFramework;
+
 	private JTextField history;
 	private JTextField menuSpillover;
 	private JCheckBox showTips;
-	private JCheckBox continuousLayout;
 	private JCheckBox showSplash;
 	private JCheckBox textColors;
 	private JCheckBox decorateFrames;
@@ -263,6 +237,7 @@ public class AppearanceOptionPane extends AbstractOptionPane
 	private JComboBox antiAliasExtras;
 	private JComboBox iconThemes;
 	private JCheckBox systemTrayIcon;
+	private JCheckBox useQuartz;
 	//}}}
 
 	//{{{ updateEnabled() method
@@ -283,22 +258,38 @@ public class AppearanceOptionPane extends AbstractOptionPane
 			secondaryFont.setEnabled(false);
 		}
 	} //}}}
-	private void addDockingFrameworkChooser()
-	{	
-		String [] frameworks =
-			ServiceManager.getServiceNames(View.DOCKING_FRAMEWORK_PROVIDER_SERVICE);
-		dockingFramework = new JComboBox(frameworks);
-		String framework = View.getDockingFrameworkName();
-		for (int i = 0; i < frameworks.length; i++)
-		{
-			if (frameworks[i].equals(framework))
-			{
-				dockingFramework.setSelectedIndex(i);
-				break;
-			}
-		}
-		addComponent(new JLabel(jEdit.getProperty("options.appearance.selectFramework.label")), dockingFramework);
-	}
 
 	//}}}
+
+	//{{{ setFileFlag() method
+	private void setFileFlag(String fileName, boolean present)
+	{
+		String settingsDirectory = jEdit.getSettingsDirectory();
+		if(settingsDirectory != null)
+		{
+			File file = new File(settingsDirectory, fileName);
+			if (!present)
+			{
+				file.delete();
+			}
+			else
+			{
+				FileOutputStream out = null;
+				try
+				{
+					out = new FileOutputStream(file);
+					out.write('\n');
+					out.close();
+				}
+				catch(IOException io)
+				{
+					Log.log(Log.ERROR,this,io);
+				}
+				finally
+				{
+					IOUtilities.closeQuietly(out);
+				}
+			}
+		}
+	} //}}}
 }

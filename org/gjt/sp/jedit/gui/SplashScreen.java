@@ -27,9 +27,8 @@ import org.gjt.sp.jedit.jEdit;
 import org.gjt.sp.util.Log;
 //}}}
 
-/**
- * The splash screen displayed on startup.
- * @version $Id: SplashScreen.java 13029 2008-07-08 08:43:48Z kpouer $
+/** The splash screen displayed on startup.
+ * @version $Id: SplashScreen.java 21515 2012-03-31 08:35:49Z jarekczek $
  */
 public class SplashScreen extends JComponent
 {
@@ -131,7 +130,8 @@ public class SplashScreen extends JComponent
 		if (lastLabel != null)
 		{
 			Log.log(Log.DEBUG, SplashScreen.class,
-				lastLabel +':'+(currentTime - lastAdvanceTime) + "ms");
+				lastLabel + ':' + (currentTime - lastAdvanceTime)
+				+ "/" + (currentTime - firstAdvanceTime) + "ms");
 		}
 		if (label != null)
 		{
@@ -200,6 +200,7 @@ public class SplashScreen extends JComponent
 	private static final int PROGRESS_COUNT = 28;
 	private String label;
 	private String lastLabel;
+	private long firstAdvanceTime = System.currentTimeMillis();
 	private long lastAdvanceTime = System.currentTimeMillis();
 	private Font defaultFont = new Font("Dialog",Font.PLAIN,10);
 	private Font labelFont = UIManager.getFont("Label.font").deriveFont(9.8f);

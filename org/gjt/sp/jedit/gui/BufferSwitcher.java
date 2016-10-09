@@ -30,13 +30,15 @@ import org.gjt.sp.util.ThreadUtilities;
 //}}}
 
 /** BufferSwitcher class
-   @version $Id: BufferSwitcher.java 20016 2011-09-24 12:18:28Z kpouer $
+   @version $Id: BufferSwitcher.java 20764 2012-01-12 21:05:23Z jarekczek $
 */
 public class BufferSwitcher extends JComboBox
 {
 	// private members
 	private final EditPane editPane;
 	private boolean updating;
+	// item that was selected before popup menu was opened
+	private Object itemSelectedBefore;
 
 	public BufferSwitcher(final EditPane editPane)
 	{
@@ -45,24 +47,32 @@ public class BufferSwitcher extends JComboBox
 		//setFont(new Font("Dialog",Font.BOLD,10));
 		setRenderer(new BufferCellRenderer());
 		setMaximumRowCount(jEdit.getIntegerProperty("bufferSwitcher.maxRowCount",10));
-		addActionListener(new ActionHandler());
 		addPopupMenuListener(new PopupMenuListener()
 		{
 			@Override
 			public void popupMenuWillBecomeVisible(
-				PopupMenuEvent e) {}
+				PopupMenuEvent e)
+			{
+				itemSelectedBefore = getSelectedItem();
+			}
 
 			@Override
 			public void popupMenuWillBecomeInvisible(
 				PopupMenuEvent e)
 			{
+				if (!updating)
+				{
+					Buffer buffer = (Buffer)getSelectedItem();
+					if(buffer != null)
+						editPane.setBuffer(buffer);
+				}
 				editPane.getTextArea().requestFocus();
 			}
 
 			@Override
 			public void popupMenuCanceled(PopupMenuEvent e)
 			{
-				editPane.getTextArea().requestFocus();
+				setSelectedItem(itemSelectedBefore);
 			}
 		});
 	}
@@ -91,20 +101,6 @@ public class BufferSwitcher extends JComboBox
 		ThreadUtilities.runInDispatchThread(runnable);
 	}
 
-	class ActionHandler implements ActionListener
-	{
-		@Override
-		public void actionPerformed(ActionEvent evt)
-		{
-			if(!updating)
-			{
-				Buffer buffer = (Buffer)getSelectedItem();
-				if(buffer != null) 
-					editPane.setBuffer(buffer);
-			}
-		}
-	}
-
 	static class BufferCellRenderer extends DefaultListCellRenderer
 	{
 		@Override
@@ -127,3 +123,5 @@ public class BufferSwitcher extends JComboBox
 		}
 	}
 }
+
+// :noTabs=false:

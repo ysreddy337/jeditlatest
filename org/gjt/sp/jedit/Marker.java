@@ -29,14 +29,14 @@ import javax.swing.text.Position;
  * as textual bookmarks.<p>
  *
  * A <code>Marker</code> has three key attributes: the
- * <code>Buffer</code> to which it relates, the line number to which
+ * <code>Buffer</code> to which it relates, the offset to which
  * the marker refers, and an optional shortcut character. The shortcut
- * identifies the the key that can be pressed with the
+ * identifies the key that can be pressed with the
  * <b>Markers</b>&gt;<b>Go To Marker</b> command.
  *
  * @author Slava Pestov
  * @author John Gellene (API documentation)
- * @version $Id: Marker.java 12504 2008-04-22 23:12:43Z ezust $
+ * @version $Id: Marker.java 21778 2012-06-10 01:15:15Z k_satoda $
  */
 public class Marker
 {
@@ -63,6 +63,13 @@ public class Marker
 	//{{{ Package-private members
 
 	//{{{ Marker constructor
+	/**
+	 * <p>After a marker is created using the constructor,
+	 * {@link #createPosition} should be called, to make the marker reflect
+	 * always the same place despite text editions. The position is maintained
+	 * by {@link org.gjt.sp.jedit.buffer.PositionManager} class, which is
+	 * maintained by {@link org.gjt.sp.jedit.buffer.JEditBuffer}.
+	 */
 	Marker(Buffer buffer, char shortcut, int position)
 	{
 		this.buffer = buffer;

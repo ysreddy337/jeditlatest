@@ -68,14 +68,11 @@
 		unless="init.done">
 		<echo message="Buildfile for ${ant.project.name} (${ant.file})"
 		      level="info"/>
-		<fail message="Ant 1.8 or newer (1.8.1 excluded due to a bug) is needed for jEdit to build, please install it and rerun">
+		<fail message="Ant 1.8.2 or newer is needed for jEdit to build, please install it and rerun">
 			<condition>
-				<or>
-					<not>
-						<antversion atleast="1.8"/>
-					</not>
-					<antversion exactly="1.8.1"/>
-				</or>
+				<not>
+					<antversion atleast="1.8.2"/>
+				</not>
 			</condition>
 		</fail>
 		<fail message="The ant-optional package is needed for jEdit to build, please install it and rerun">
@@ -163,10 +160,10 @@
 			major = Integer.parseInt(build.substring(0,2));
 			minor = Integer.parseInt(build.substring(3,5));
 			beta = Integer.parseInt(build.substring(6,8));
-			bugfix = Integer.parseInt(build.substring(9,11));
+			micro = Integer.parseInt(build.substring(9,11));
 			version = major
 			          + "." + minor
-			          + (beta != 99 ? "pre" + beta : "." + bugfix);
+			          + (beta != 99 ? "pre" + beta : "." + micro);
 			project.setUserProperty("jedit.version", version);
 			project.setUserProperty("jedit.build.number", build);
 			project.setUserProperty("jedit.version.final", Boolean.toString(beta == 99));
@@ -232,7 +229,42 @@
 		       compiler="modern"
 		       encoding="UTF-8"
 		       includeAntRuntime="false">
+			<classpath id="classpath.compile">
+				<fileset dir="${lib.dir}/compile"
+					 includes="*.jar"/>
+			</classpath>
 			<include name="org/**"/>
+			<compilerarg line="${config.build.compilerarg}"/>
+		</javac>
+	</target>
+
+	<target name="compile-test"
+		depends="init,retrieve,compile">
+		<mkdir dir="${classes.dir}/test"/>
+		<depend srcDir="${basedir}/test"
+			destDir="${classes.dir}/test"
+			cache="${classes.dir}"/>
+		<dependset>
+			<srcfilelist files="build.xml"/>
+			<srcfilelist files="ivy.xml"/>
+			<targetfileset dir="${classes.dir}/test"/>
+		</dependset>
+		<javac srcdir="test"
+		       destdir="${classes.dir}/test"
+		       debug="true"
+		       debuglevel="${config.build.debuglevel}"
+		       nowarn="${config.build.nowarn}"
+		       deprecation="${config.build.deprecation}"
+		       source="${target.java.version}"
+		       target="${target.java.version}"
+		       compiler="modern"
+		       encoding="UTF-8"
+		       includeAntRuntime="false">
+			<classpath id="classpath.test">
+				<fileset dir="${lib.dir}/test"
+					 includes="*.jar"/>
+				<pathelement location="${classes.dir}/core"/>
+			</classpath>
 			<compilerarg line="${config.build.compilerarg}"/>
 		</javac>
 	</target>
@@ -248,6 +280,7 @@
 		<copy todir="${textAreaPackage}/src">
 			<fileset dir="${basedir}">
 				<include name="modes/*"/>
+				<include name="keymaps/*"/>
 				<include name="org/gjt/sp/jedit/bsh/*"/>
 				<include name="org/gjt/sp/jedit/bsh/**/*"/>
 
@@ -349,10 +382,7 @@
 				<include name="org/gjt/sp/jedit/TextUtilities.java"/>
 				<include name="org/gjt/sp/jedit/actions.dtd"/>
 				<include name="org/gjt/sp/jedit/jedit.props"/>
-				<include name="org/gjt/sp/jedit/jedit_keys.props"/>
-
 				<include name="modes/*"/>
-
 				<include name="org/gjt/sp/util/Log*.java"/>
 				<include name="org/gjt/sp/util/IntegerArray.java"/>
 				<include name="org/gjt/sp/util/IOUtilities.java"/>
@@ -388,8 +418,32 @@
 		</javac>
 	</target>
 
+	<target name="test"
+		depends="init,retrieve,compile,compile-test"
+		description="run unit tests">
+		<delete dir="${build.dir}/test/raw-reports"/>
+		<mkdir dir="${build.dir}/test/raw-reports"/>
+		<junit printsummary="true"
+		       failureproperty="tests.failed"
+		       enabletestlistenerevents="true">
+			<classpath refid="classpath.test"/>
+			<classpath location="${classes.dir}/test"/>
+			<formatter type="xml"/>
+			<batchtest todir="${build.dir}/test/raw-reports">
+				<fileset dir="test"/>
+			</batchtest>
+		</junit>
+		<mkdir dir="${build.dir}/test/merged-reports"/>
+		<junitreport todir="${build.dir}/test/merged-reports">
+			<fileset dir="${build.dir}/test/raw-reports"/>
+			<report todir="${build.dir}/test/reports"/>
+		</junitreport>
+		<fail message="Unit test(s) failed! See reports at ${build.dir}/test/reports/index.html"
+		      if="tests.failed"/>
+	</target>
+
 	<target name="build"
-		depends="init,retrieve,setup,compile"
+		depends="init,retrieve,setup,compile,test"
 		description="build the jEdit JAR-file with full debug-information">
 		<mkdir dir="${jar.location}"/>
 		<jar destfile="${jar.location}/${jar.filename}"
@@ -408,10 +462,21 @@
 				<include name="org/gjt/sp/jedit/icons/**/*.gif"/>
 				<include name="org/gjt/sp/jedit/icons/**/*.jpg"/>
 				<include name="org/gjt/sp/jedit/icons/**/*.png"/>
+				<include name="org/jedit/localization/*.props"/>
 			</fileset>
 		</jar>
+		<loadfile srcfile="keymaps/jEdit_keys.props"
+			  property="jEdit.keymap"
+			  encoding="ISO-8859-1"/>
+		<fail message="jEdit keymap must not contain A+[a-z] shortcuts, those may conflict with main menu mnemonics in localizations">
+			<condition>
+				<matches string="${jEdit.keymap}"
+					 pattern="=A\+[a-z]"/>
+			</condition>
+		</fail>
 		<copy todir="${jar.location}">
 			<fileset dir="${basedir}">
+				<include name="keymaps/**"/>
 				<include name="macros/**"/>
 				<include name="modes/**"/>
 				<include name="properties/**"/>
@@ -498,7 +563,7 @@
 		description="build the textArea JAR-file with full debug-information">
 		<mkdir dir="${jar.location}"/>
 		<jar destfile="${jar.location}/${ant.project.name}-textArea.jar"
-		     compress="false"
+		     compress="true"
 		     duplicate="fail"
 		     index="true">
 			<fileset dir="${textAreaPackage}/build/"/>
@@ -507,7 +572,7 @@
 				<include name="org/gjt/sp/jedit/syntax/xmode.dtd"/>
 				<include name="org/gjt/sp/jedit/actions.dtd"/>
 				<include name="org/gjt/sp/jedit/jedit.props"/>
-				<include name="org/gjt/sp/jedit/jedit_keys.props"/>
+				<include name="keymaps/*.props"/>
 				<include name="modes/*"/>
 			</fileset>
 			<manifest>
@@ -609,11 +674,11 @@
 	<target name="generate-doc-news"
 		depends="init,retrieve,setup,unpack-docbook-xsl">
 		<dependset.html>
-			<srcfileset dir="doc/news45"/>
-			<targetfileset dir="${jar.location}/doc/news45"/>
+			<srcfileset dir="doc/whatsnew"/>
+			<targetfileset dir="${jar.location}/doc/whatsnew"/>
 		</dependset.html>
 		<contrib:if>
-			<available file="${jar.location}/doc/news45/toc.xml"
+			<available file="${jar.location}/doc/whatsnew/toc.xml"
 				   type="file"/>
 			<contrib:then>
 				<echo message="News is up-to-date"
@@ -621,10 +686,10 @@
 			</contrib:then>
 			<contrib:else>
 				<xslt.doc style="doc/jedithtml.xsl"
-					  in="doc/news45/news.xml"
-					  out="${jar.location}/doc/news45/index.html">
+					  in="doc/whatsnew/news.xml"
+					  out="${jar.location}/doc/whatsnew/index.html">
 					<param name="base.dir"
-					       expression="${jar.location}/doc/news45/"/>
+					       expression="${jar.location}/doc/whatsnew/"/>
 				</xslt.doc>
 			</contrib:else>
 		</contrib:if>
@@ -701,25 +766,38 @@
 				       includeAntRuntime="true">
 					<compilerarg line="${config.build.compilerarg}"/>
 				</javac>
-				<javadoc sourcepath="${basedir}"
+				<javadoc
+					 locale="en"
+					 sourcepath="${basedir}"
 					 destdir="${classes.dir}/javadoc/api"
 					 packagenames="org.*"
-					 classpath="${classes.dir}/core"
 					 doclet="doclet.GenerateTocXML"
 					 docletpath="${classes.dir}/javadoc"
 					 version="true"
 					 use="true"
 					 author="true"
 					 splitindex="true"
-					 locale="en"
-					 windowtitle="jEdit API"
+					 windowtitle="jEdit API Documentation"
 					 doctitle="jEdit API"
 					 failonerror="true"
-					 source="${target.java.version}">
-					<group title="jEdit"
-					       packages="org.gjt.sp*"/>
+					 source="${target.java.version}"
+					 encoding="UTF-8"
+					 docencoding="UTF-8"
+					 charset="UTF-8">
+					<group title="jEdit 5 API"
+					       packages="org.jedit.*"/>					       
+					<group title="jEdit 4 API"
+					       packages="org.gjt.*"/>
 					<group title="BeanShell"
 					       packages="org.gjt.sp.jedit.bsh*"/>
+					<tag name="todo" scope="all" description="To do:"/>
+					<tag name="example" scope="all" description="Example:"/>
+						<classpath>
+							<fileset dir="${classes.dir}/core/"
+								includes="*.class"/>
+							<fileset dir="${lib.dir}/compile"
+								includes="*.jar"/>
+						</classpath>
 				</javadoc>
 			</contrib:else>
 		</contrib:if>
@@ -874,17 +952,20 @@
 		depends="init,setup,prepare-dist-files"
 		description="build the Java-installer">
 		<tar destfile="${dist.dir}/jedit-macros.tar.bz2"
+		     longfile="gnu"
 		     compression="bzip2">
 			<tarfileset id="jedit-macros"
 				    dir="${dist.dir}"
 				    includes="macros/**"/>
 		</tar>
 		<tar destfile="${dist.dir}/jedit-program.tar.bz2"
+		     longfile="gnu"
 		     compression="bzip2">
 			<tarfileset id="jedit-program"
 				    dir="${dist.dir}"
 				    includes="doc/**
 					      jars/**
+					      keymaps/**
 					      modes/**
 					      properties/**
 					      startup/**
@@ -893,28 +974,25 @@
 					      jars/MacOSX.jar"/>
 		</tar>
 		<tar destfile="${dist.dir}/jedit-windows.tar.bz2"
+		     longfile="gnu"
 		     compression="bzip2">
 			<tarfileset id="jedit-windows"
 				    dir="${dist.dir}"
 				    includes="jedit.exe"/>
 		</tar>
 		<tar destfile="${dist.dir}/jedit-mac.tar.bz2"
+		     longfile="gnu"
 		     compression="bzip2">
 			<tarfileset id="jedit-mac"
 				    dir="${dist.dir}"
 				    includes="jars/MacOSX.jar"/>
 		</tar>
 		<tar destfile="${dist.dir}/jedit-api.tar.bz2"
+		     longfile="gnu"
 		     compression="bzip2">
 			<tarfileset id="jedit-api"
 				    dir="${dist.dir}"
 				    includes="doc/api/**"/>
-		</tar>
-		<tar destfile="${dist.dir}/jedit-os2.tar.bz2"
-		     compression="bzip2">
-			<tarfileset id="jedit-os2"
-				    dir="${dist.dir}/classes/package-files/os2"
-				    includes="jedit.cmd"/>
 		</tar>
 		<antcall target="compile-installer">
 			<param name="config.build.debuglevel"
@@ -952,10 +1030,6 @@
 				   disksizeproperty="jedit-api.disksize">
 			<fileset refid="jedit-api"/>
 		</mod:calculatesize>
-		<mod:calculatesize realsizeproperty="jedit-os2.realsize"
-				   disksizeproperty="jedit-os2.disksize">
-			<fileset refid="jedit-os2"/>
-		</mod:calculatesize>
 		<copy todir="${dist.dir}/classes/installer/installer"
 		      encoding="UTF-8"
 		      overwrite="true">
@@ -983,10 +1057,6 @@
 					value="${jedit-api.realsize}"/>
 				<filter token="jedit-api.disksize"
 					value="${jedit-api.disksize}"/>
-				<filter token="jedit-os2.realsize"
-					value="${jedit-os2.realsize}"/>
-				<filter token="jedit-os2.disksize"
-					value="${jedit-os2.disksize}"/>
 			</filterset>
 		</copy>
 		<jar destfile="${dist.dir}/${dist.jar.filename}"
@@ -1005,7 +1075,6 @@
 				    includes="jedit-api.tar.bz2
 					      jedit-mac.tar.bz2
 					      jedit-macros.tar.bz2
-					      jedit-os2.tar.bz2
 					      jedit-windows.tar.bz2
 					      jedit-program.tar.bz2"
 				    prefix="installer"/>
@@ -1040,6 +1109,7 @@
 		description="build the src-archive">
 		<mkdir dir="${dist.dir}"/>
 		<tar destfile="${dist.dir}/${src.archive.filename}"
+		     longfile="gnu"
 		     compression="bzip2">
 			<tarfileset dir="${basedir}"
 				    excludes="${config.lib.dir}/**
@@ -1128,6 +1198,7 @@
 			<javafileset dir="${dist.dir}"
 				     includes="doc/**
 					       jars/**
+					       keymaps/**
 					       macros/**
 					       modes/**
 					       properties/**
@@ -1197,15 +1268,18 @@
 			<contrib:else>
 				<tar destfile="${dist.dir}/jedit${jedit.version}-dist-mac-finish.tar.bz2"
 				     basedir="${basedir}"
+				     longfile="gnu"
 				     includes="build.xml
 					       ivy.xml
 					       ivysettings.xml
 					       icons/file.icns
 					       icons/icon.icns
+					       org/gjt/sp/jedit/jEdit.java
 					       ${config.dist.dir}/${jar.filename}
 					       ${config.dist.dir}/classes/jarbundler/**
 					       ${config.dist.dir}/doc/**
 					       ${config.dist.dir}/jars/**
+					       ${config.dist.dir}/keymaps/**
 					       ${config.dist.dir}/macros/**
 					       ${config.dist.dir}/modes/**
 					       ${config.dist.dir}/properties/**
@@ -1336,6 +1410,7 @@
 		depends="init,setup,prepare-dist-files"
 		description="build the Slackware Package">
 		<tar destfile="${dist.dir}/jedit-${jedit.version}-noarch-1sao.tgz"
+		     longfile="gnu"
 		     compression="gzip">
 			<tarfileset file="${basedir}"
 				    username="root"
@@ -1369,6 +1444,7 @@
 			<tarfileset dir="${dist.dir}"
 				    includes="doc/**
 					      jars/**
+					      keymaps/**
 					      macros/**
 					      modes/**
 					      properties/**
@@ -1507,6 +1583,7 @@
 					   classes/package-files/linux/jedit.1.gz
 					   doc/**
 					   jars/**
+					   keymaps/**
 					   macros/**
 					   modes/**
 					   properties/**
@@ -1564,6 +1641,7 @@
 				     fullpath="usr/share/jEdit/"/>
 			<datafileset dir="${dist.dir}"
 				     includes="doc/**
+					       keymaps/**
 					       macros/**
 					       modes/**
 					       properties/**
@@ -1606,7 +1684,7 @@
 						<filter token="deb.installed.size"
 							value="${deb.installed.size}"/>
 						<filter token="deb.repository.file"
-							value="./jedit/${jedit.version}/jedit_${jedit.version}_all.deb"/>
+							value="jedit/${jedit.version}/jedit_${jedit.version}_all.deb"/>
 						<filter token="deb.size"
 							value="${deb.size}"/>
 						<filter token="deb.md5"
@@ -1887,6 +1965,7 @@ Press Return key to continue...
 			<contrib:else>
 				<tar destfile="${dist.dir}/jedit${jedit.version}-dist-win-finish.tar.bz2"
 				     basedir="${basedir}"
+				     longfile="gnu"
 				     includes="build.properties.sample
 					       build.xml
 					       ivy.xml
@@ -1894,12 +1973,14 @@ Press Return key to continue...
 					       icons/jedit.ico
 					       icons/WindowsInstallerSmallImage.bmp
 					       icons/WindowsInstallerImage.bmp
+					       org/gjt/sp/jedit/jEdit.java
 					       package-files/windows/win32installer.iss
 					       ${config.dist.dir}/jedit.exe
 					       ${config.dist.dir}/${jar.filename}
 					       ${config.dist.dir}/classes/package-files/windows/**
 					       ${config.dist.dir}/doc/**
 					       ${config.dist.dir}/jars/**
+					       ${config.dist.dir}/keymaps/**
 					       ${config.dist.dir}/macros/**
 					       ${config.dist.dir}/modes/**
 					       ${config.dist.dir}/properties/**
@@ -1942,6 +2023,7 @@ Press Return key to continue...
 							<filename name="macros/**"/>
 							<filename name="doc/**"/>
 							<filename name="jars/**"/>
+							<filename name="keymaps/**"/>
 							<filename name="modes/**"/>
 							<filename name="properties/**"/>
 							<filename name="startup/**"/>

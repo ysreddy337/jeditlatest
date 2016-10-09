@@ -24,6 +24,7 @@
 package org.gjt.sp.jedit;
 
 //{{{ Imports
+import java.awt.Component;
 import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
@@ -43,6 +44,7 @@ import org.gjt.sp.jedit.bufferio.BufferAutosaveRequest;
 import org.gjt.sp.jedit.bufferio.BufferIORequest;
 import org.gjt.sp.jedit.bufferio.MarkersSaveRequest;
 import org.gjt.sp.jedit.bufferset.BufferSet;
+import org.gjt.sp.jedit.gui.DockableWindowManager;
 import org.gjt.sp.jedit.io.FileVFS;
 import org.gjt.sp.jedit.io.VFS;
 import org.gjt.sp.jedit.io.VFSFile;
@@ -51,6 +53,8 @@ import org.gjt.sp.jedit.msg.BufferUpdate;
 import org.gjt.sp.jedit.options.GeneralOptionPane;
 import org.gjt.sp.jedit.syntax.ModeProvider;
 import org.gjt.sp.jedit.syntax.ParserRuleSet;
+import org.gjt.sp.jedit.syntax.TokenHandler;
+import org.gjt.sp.jedit.syntax.TokenMarker;
 import org.gjt.sp.jedit.visitors.JEditVisitorAdapter;
 import org.gjt.sp.jedit.visitors.SaveCaretInfoVisitor;
 import org.gjt.sp.util.IntegerArray;
@@ -86,7 +90,7 @@ import org.gjt.sp.util.ThreadUtilities;
 
  *
  * @author Slava Pestov
- * @version $Id: Buffer.java 20007 2011-09-24 00:49:35Z Vampire0 $
+ * @version $Id: Buffer.java 22147 2012-09-03 18:51:56Z k_satoda $
  */
 public class Buffer extends JEditBuffer
 {
@@ -368,9 +372,16 @@ public class Buffer extends JEditBuffer
 	 */
 	public boolean saveAs(View view, boolean rename)
 	{
-		String[] files = GUIUtilities.showVFSFileDialog(view,path,
-			VFSBrowser.SAVE_DIALOG,false);
-
+		String fileSavePath = path;
+		if (jEdit.getBooleanProperty("saveAsUsesFSB")) 
+		{
+			DockableWindowManager dwm = view.getDockableWindowManager();
+			Component comp = dwm.getDockable("vfs.browser");
+			VFSBrowser browser = (VFSBrowser) comp;
+			if (browser != null) 
+				fileSavePath = browser.getDirectory() + "/";
+		}
+		String[] files = GUIUtilities.showVFSFileDialog(view, fileSavePath, VFSBrowser.SAVE_DIALOG,false);
 		// files[] should have length 1, since the dialog type is
 		// SAVE_DIALOG
 		if(files == null)
@@ -443,8 +454,7 @@ public class Buffer extends JEditBuffer
 		{
 			long newModTime = file.lastModified();
 
-			if(newModTime != modTime
-				&& jEdit.getBooleanProperty("view.checkModStatus"))
+			if((newModTime != modTime) && (getAutoReload() || getAutoReloadDialog()))
 			{
 				Object[] args = { this.path };
 				int result = GUIUtilities.confirm(view,
@@ -627,8 +637,8 @@ public class Buffer extends JEditBuffer
 	public static final int FILE_DELETED = 2;
 	/**
 	 * Check if the buffer has changed on disk.
-	 * @return One of <code>NOT_CHANGED</code>, <code>CHANGED</code>, or
-	 * <code>DELETED</code>.
+	 * @return One of <code>FILE_NOT_CHANGED</code>, <code>FILE_CHANGED</code>, or
+	 * <code>FILE_DELETED</code>.
 	 *
 	 * @since jEdit 4.2pre1
 	 */
@@ -955,6 +965,9 @@ public class Buffer extends JEditBuffer
 	public void propertiesChanged()
 	{
 		super.propertiesChanged();
+		longLineLimit = jEdit.getIntegerProperty("longLineLimit", 4000);
+		String largefilemode = getStringProperty("largefilemode");
+		longBufferMode = "limited".equals(largefilemode) || "nohighlight".equals(largefilemode);
 		if (!autoreloadOverridden)
 		{
 			setAutoReloadDialog(jEdit.getBooleanProperty("autoReloadDialog"));
@@ -1008,7 +1021,13 @@ public class Buffer extends JEditBuffer
 	{
 		String wrap = getStringProperty("wrap");
 		if(wrap.equals("none"))
-			wrap = "soft";
+		{
+			String largeFileMode = getStringProperty("largefilemode");
+			if ("limited".equals(largeFileMode) || "nohighlight".equals(largeFileMode))
+				wrap = "hard";
+			else
+				wrap = "soft";
+		}
 		else if(wrap.equals("soft"))
 			wrap = "hard";
 		else if(wrap.equals("hard"))
@@ -1019,6 +1038,29 @@ public class Buffer extends JEditBuffer
 		setProperty("wrap",wrap);
 		propertiesChanged();
 	} //}}}
+	
+	//{{{ toggleAutoIndent() method
+	/**
+	 * Toggles automatic indentation on and off.
+	 * @param view This view's status bar will display the message
+	 * @since jEdit 5.0
+	 */
+	public void toggleAutoIndent(View view)
+	{
+		String indent = getStringProperty("autoIndent");
+		if (indent.equals("none"))
+			indent = "simple";
+		else if (indent.equals("simple"))
+			indent = "full";
+		else if (indent.equals("full"))
+			indent = "none";
+		setProperty("autoIndent", indent);
+		
+		view.getStatus().setMessageAndClear(
+			jEdit.getProperty("view.status.autoindent-changed",
+				new String[] {indent}));
+	}
+			
 
 	//{{{ toggleLineSeparator() method
 	/**
@@ -1087,6 +1129,8 @@ public class Buffer extends JEditBuffer
 
 	//}}}
 
+	//}}}
+	
 	//{{{ Edit modes, syntax highlighting
 
 	//{{{ setMode() method
@@ -1110,41 +1154,67 @@ public class Buffer extends JEditBuffer
 		}
 		if (mode != null)
 		{
-			boolean forceInsensitive = false;
-			if (!getFlag(TEMPORARY) && getLength() > jEdit.getIntegerProperty("largeBufferSize", 4000000))
+			int largeBufferSize = jEdit.getIntegerProperty("largeBufferSize", 4000000);
+			if (!getFlag(TEMPORARY) && getLength() > largeBufferSize && largeBufferSize != 0)
 			{
 				boolean contextInsensitive = mode.getBooleanProperty("contextInsensitive");
-				if (!contextInsensitive)
+				String largeFileMode = jEdit.getProperty("largefilemode", "ask");
+				
+				if ("ask".equals(largeFileMode))
 				{
-					JTextPane tp = new JTextPane();
-					tp.setEditable(false);
-					tp.setText(jEdit.getProperty("largeBufferDialog.message"));
-					int i = JOptionPane.showOptionDialog(jEdit.getActiveView(),
-						tp,
-						jEdit.getProperty("largeBufferDialog.title", new String[]{name}),
-						JOptionPane.DEFAULT_OPTION,
-						JOptionPane.WARNING_MESSAGE,
-						null,
-						new String[]{
-							jEdit.getProperty("largeBufferDialog.fullSyntax"),
-							jEdit.getProperty("largeBufferDialog.contextInsensitive"),
-							jEdit.getProperty("largeBufferDialog.defaultMode")},
-						jEdit.getProperty("largeBufferDialog.fullSyntax"));
-					switch (i)
+					if (!contextInsensitive)
 					{
-						case 0:
-							// do nothing
-							break;
-						case 1:
-							forceInsensitive = true;
-							break;
-						case 2:
-							mode =  getDefaultMode();
-							break;
+						// the context is not insensitive 
+						JTextPane tp = new JTextPane();
+						tp.setEditable(false);
+						tp.setText(jEdit.getProperty("largeBufferDialog.message"));
+						int i = JOptionPane.showOptionDialog(jEdit.getActiveView(),
+										     tp,
+										     jEdit.getProperty("largeBufferDialog.title", new String[]{name}),
+										     JOptionPane.DEFAULT_OPTION,
+										     JOptionPane.WARNING_MESSAGE,
+										     null,
+										     new String[]{
+											     jEdit.getProperty("largeBufferDialog.fullSyntax"),
+											     jEdit.getProperty("largeBufferDialog.contextInsensitive"),
+											     jEdit.getProperty("largeBufferDialog.defaultMode")},
+										     jEdit.getProperty("largeBufferDialog.contextInsensitive"));
+						switch (i)
+						{
+							case 0:
+								setProperty("largefilemode", "full");
+								setMode(mode);
+								return;
+							case 1:
+								setProperty("largefilemode", "limited");
+								setMode(mode, true);
+								return;
+							case 2:
+								setProperty("largefilemode", "nohighlight");
+								mode =  getDefaultMode();
+								setMode(mode);
+								return;
+						}
 					}
 				}
+				else if ("full".equals(largeFileMode))
+				{
+					setProperty("largefilemode", "full");
+					setMode(mode);
+				}
+				else if ("limited".equals(largeFileMode))
+				{
+					setProperty("largefilemode", "limited");
+					setMode(mode, true);
+				}
+				else if ("nohighlight".equals(largeFileMode))
+				{
+					setProperty("largefilemode", "nohighlight");
+					mode =  getDefaultMode();
+					setMode(mode);
+				}
 			}
-			setMode(mode, forceInsensitive);
+			setMode(mode);
 			return;
 		}
 
@@ -1560,7 +1630,7 @@ public class Buffer extends JEditBuffer
 	Buffer(String path, boolean newFile, boolean temp, Map props)
 	{
 		super(props);
-
+		textTokenMarker = jEdit.getMode("text").getTokenMarker();
 		markers = new Vector<Marker>();
 
 		setFlag(TEMPORARY,temp);
@@ -1628,6 +1698,22 @@ public class Buffer extends JEditBuffer
 	//}}}
 
 	//{{{ Protected members
+
+	@Override
+	protected TokenMarker.LineContext markTokens(Segment seg, TokenMarker.LineContext prevContext,
+						      TokenHandler _tokenHandler)
+	{
+		TokenMarker.LineContext context;
+		if (longBufferMode && longLineLimit != 0 && longLineLimit < seg.length())
+		{
+			context = textTokenMarker.markTokens(prevContext, _tokenHandler, seg);
+		}
+		else
+		{
+			context = tokenMarker.markTokens(prevContext, _tokenHandler, seg);
+		}
+		return context;
+	}
 
 	//{{{ fireBeginUndo() method
 	protected void fireBeginUndo()
@@ -1742,6 +1828,8 @@ public class Buffer extends JEditBuffer
 
 	//{{{ Instance variables
 	/** Indicate if the autoreload property was overridden */
+	private int longLineLimit;
+	private TokenMarker textTokenMarker;
 	private boolean autoreloadOverridden;
 	private String path;
 	private String symlinkPath;
@@ -1752,10 +1840,7 @@ public class Buffer extends JEditBuffer
 	private long modTime;
 	private byte[] md5hash;
 	private int initialLength;
-	/**
-	 * The longBufferMode is an option
-	 */
-	private int longBufferMode;
+	private boolean longBufferMode;
 
 	private final Vector<Marker> markers;
 

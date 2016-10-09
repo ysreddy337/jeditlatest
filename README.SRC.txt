@@ -8,8 +8,7 @@ General jEdit documentation can be found in the 'doc' directory.
  For all tasks:
 
   - Apache Ant. Get it from <http://ant.apache.org>.
-    1.8 or newer has to be used.
-    1.8.1 cannot be used due to a classloading bug in the <xslt> task.
+    1.8.2 or newer has to be used.
   - The Ant Optional package. This is included in the download from ants website,
     as well as the AntPlugin from the Plugin Manager,
     but not in some default installs on various *nix systems.
@@ -71,6 +70,9 @@ General jEdit documentation can be found in the 'doc' directory.
   runs the jEdit-version in the build-folder, configured in build.properties.
   If there isn't any, it builds it in front of execution.
   The debug listening for this JVM is enabled.
+
+ - test                    run unit tests
+  runs the available unit tests.
 
  - docs-html               generate HTML docs
   builds the online help in HTML-format in the build-folder, configured in build.properties.

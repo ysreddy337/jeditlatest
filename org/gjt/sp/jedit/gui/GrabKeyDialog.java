@@ -450,7 +450,7 @@ public class GrabKeyDialog extends JDialog
 			if(debugBuffer == null)
 				updateAssignedTo(keyString.toString());
 		} //}}}
-
+		
 		protected String rawShortcut = "";
 	} //}}}
 
@@ -458,6 +458,7 @@ public class GrabKeyDialog extends JDialog
 	private class ActionHandler implements ActionListener
 	{
 		//{{{ actionPerformed() method
+		@Override
 		public void actionPerformed(ActionEvent evt)
 		{
 			if(evt.getSource() == ok)

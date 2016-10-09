@@ -32,9 +32,11 @@
  *  08-Jun-04: If an infinite loop is hit (1000 iterations) in the comment
  *           : parsing, it now opens the default save dialog, rather than
  *           : just returning.
- * $Id: Java_File_Save.bsh 12063 2008-03-02 06:58:51Z k_satoda $
+ * $Id: Java_File_Save.bsh 21353 2012-03-14 09:46:51Z jojaba_67 $
  */
 
+//Localization
+final static String InfiniteLoopError = jEdit.getProperty("macro.rs.JavaFileSave.InfiniteLoop.error", "Infinite loop:");
 
 // Check this is a new file
 if (buffer.isNewFile() && buffer.getPath() != null)
@@ -67,7 +69,7 @@ if (buffer.isNewFile() && buffer.getPath() != null)
             count++;
             if (count==1000)
             {
-               Log.log(Log.ERROR,BeanShell.class,"Infinite loop:["+txt+"]");
+               Log.log(Log.ERROR,BeanShell.class,InfiniteLoopError+"["+txt+"]");
                buffer.save(view,null,true);
                return;
             }

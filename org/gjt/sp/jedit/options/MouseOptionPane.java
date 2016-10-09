@@ -23,13 +23,9 @@
 package org.gjt.sp.jedit.options;
 
 //{{{ Imports
-import javax.swing.border.*;
+
 import javax.swing.*;
-import java.awt.event.*;
-import java.awt.*;
-import java.io.*;
 import org.gjt.sp.jedit.*;
-import org.gjt.sp.util.Log;
 //}}}
 
 public class MouseOptionPane extends AbstractOptionPane
@@ -96,6 +92,7 @@ public class MouseOptionPane extends AbstractOptionPane
 		for(int i = 0; i < c; i++)
 		{
 			JComboBox cb = new JComboBox(clickActionNames);
+
 			gutterClickActions[i] = cb;
 
 			String val = jEdit.getProperty("view.gutter."+clickModifierKeys[i]);
@@ -145,7 +142,7 @@ public class MouseOptionPane extends AbstractOptionPane
 		"toggle-fold",
 		"toggle-fold-fully"
 	};
-	
+
 	private static final String[] clickModifierKeys = new String[] {
 		"foldClick",
 		"SfoldClick"

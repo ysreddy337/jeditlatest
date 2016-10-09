@@ -40,12 +40,10 @@ import org.gjt.sp.jedit.*;
 
 //}}}
 
-/**
-
- * Buffer-specific options dialog.
+/** Buffer-specific options dialog.
  * @author Slava Pestov
- * @version $Id: BufferOptions.java 12504 2008-04-22 23:12:43Z ezust $
- * 
+ * @version $Id: BufferOptions.java 21502 2012-03-29 17:19:44Z ezust $
+ *
  */
 
 public class BufferOptions extends EnhancedDialog

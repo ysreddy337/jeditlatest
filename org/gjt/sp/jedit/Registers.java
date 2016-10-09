@@ -62,7 +62,7 @@ import org.gjt.sp.util.Log;
  *
  * @author Slava Pestov
  * @author John Gellene (API documentation)
- * @version $Id: Registers.java 20697 2011-12-25 17:23:17Z k_satoda $
+ * @version $Id: Registers.java 20594 2011-12-09 17:53:47Z kpouer $
  */
 public class Registers
 {
@@ -114,7 +114,7 @@ public class Registers
 			textArea.getToolkit().beep();
 	} //}}}
 
-	//{{{ append() method
+	//{{{ append() methods
 	/**
 	 * Appends the text selected in the text area to the specified register,
 	 * with a newline between the old and new text.
@@ -124,9 +124,8 @@ public class Registers
 	public static void append(TextArea textArea, char register)
 	{
 		append(textArea,register,"\n",false);
-	} //}}}
+	}
 
-	//{{{ append() method
 	/**
 	 * Appends the text selected in the text area to the specified register.
 	 * @param textArea The text area
@@ -137,9 +136,8 @@ public class Registers
 		String separator)
 	{
 		append(textArea,register,separator,false);
-	} //}}}
+	}
 
-	//{{{ append() method
 	/**
 	 * Appends the text selected in the  text area to the specified register.
 	 * @param textArea The text area
@@ -212,7 +210,7 @@ public class Registers
 	 * Insets the contents of the specified register into the text area.
 	 * @param textArea The text area
 	 * @param register The register
-     * @param preferredDataFlavor the preferred dataflavor. If not available
+	 * @param preferredDataFlavor the preferred dataflavor. If not available
 	 * <tt>DataFlavor.stringFlavor</tt> will be used
 	 * @since jEdit 4.4pre1
 	 */
@@ -275,54 +273,7 @@ public class Registers
 		}
 		JEditBuffer buffer = textArea.getBuffer();
 		applyMode(mode, buffer);
-		try
-		{
-			buffer.beginCompoundEdit();
-
-			/* vertical paste */
-			if(vertical && textArea.getSelectionCount() == 0)
-			{
-				int caret = textArea.getCaretPosition();
-				int caretLine = textArea.getCaretLine();
-				Selection.Rect rect = new Selection.Rect(
-					caretLine,caret,caretLine,caret);
-				textArea.setSelectedText(rect,selection);
-				caretLine = textArea.getCaretLine();
-
-				if(caretLine != textArea.getLineCount() - 1)
-				{
-
-					int startColumn = rect.getStartColumn(
-						buffer);
-					int offset = buffer
-						.getOffsetOfVirtualColumn(
-						caretLine + 1,startColumn,null);
-					if(offset == -1)
-					{
-						buffer.insertAtColumn(caretLine + 1,startColumn,"");
-						textArea.setCaretPosition(
-							buffer.getLineEndOffset(
-							caretLine + 1) - 1);
-					}
-					else
-					{
-						textArea.setCaretPosition(
-							buffer.getLineStartOffset(
-							caretLine + 1) + offset);
-					}
-				}
-			}
-			else /* Regular paste */
-			{
-				textArea.replaceSelection(selection);
-			}
-		}
-		finally
-		{
-			buffer.endCompoundEdit();
-		}
-
-		HistoryModel.getModel("clipboard").addItem(selection);
+		_paste(textArea, vertical, selection, buffer);
 	}
 
 	/**
@@ -378,7 +329,7 @@ public class Registers
 		int i = mime.indexOf(';');
 		if (i != -1)
 		{
-			mime = mime.substring(0,i); 
+			mime = mime.substring(0,i);
 		}
 		String mode = jEdit.getProperty("mime2mode."+mime);
 		if (mode != null)
@@ -389,6 +340,11 @@ public class Registers
 				applyMode(_mode, buffer);
 			}
 		}     */
+		_paste(textArea, vertical, selection, buffer);
+	}
+
+	private static void _paste(TextArea textArea, boolean vertical, String selection, JEditBuffer buffer)
+	{
 		try
 		{
 			buffer.beginCompoundEdit();
@@ -438,7 +394,8 @@ public class Registers
 
 		HistoryModel.getModel("clipboard").addItem(selection);
 	} //}}}
-	
+
+	//{{{ applyMode() method
 	private static void applyMode(Mode mode, JEditBuffer buffer)
 	{
 		if (mode != null &&
@@ -448,8 +405,9 @@ public class Registers
 		{
 			buffer.setMode(mode);
 		}
-	}
+	} //}}}
 
+	//{{{ getTextFromTransferable() method
 	private static String getTextFromTransferable(Transferable transferable, DataFlavor dataFlavor)
 	{
 		try
@@ -466,7 +424,7 @@ public class Registers
 			Log.log(Log.ERROR, Registers.class, e);
 		}
 		return null;
-	}
+	} //}}}
 
 	//{{{ getRegister() method
 	/**
@@ -487,7 +445,7 @@ public class Registers
 			return registers[name];
 	} //}}}
 
-	//{{{ setRegister() method
+	//{{{ setRegister() methods
 	/**
 	 * Sets the specified register.
 	 * @param name The name
@@ -509,9 +467,8 @@ public class Registers
 		registers[name] = newRegister;
 		if (listener != null)
 			listener.registerChanged(name);
-	} //}}}
+	}
 
-	//{{{ setRegister() method
 	/**
 	 * Sets the specified register.
 	 * @param name The name
@@ -520,9 +477,8 @@ public class Registers
 	public static void setRegister(char name, String value)
 	{
 		setRegister(name, new StringSelection(value));
-	} //}}}
+	}
 
-	//{{{ setRegister() method
 	/**
 	 * Sets the specified register.
 	 * @param name The name

@@ -23,14 +23,20 @@ package org.gjt.sp.jedit;
 
 //{{{ Imports
 import org.gjt.sp.jedit.datatransfer.JEditTransferableService;
-import org.gjt.sp.jedit.gui.tray.JEditSwingTrayIcon;
 import org.gjt.sp.jedit.gui.tray.JTrayIconManager;
+import org.gjt.sp.util.StringList;
+import org.jedit.core.MigrationService;
+import org.jedit.keymap.KeymapManager;
+import org.jedit.keymap.KeymapManagerImpl;
 import org.gjt.sp.jedit.visitors.JEditVisitor;
 
 import java.awt.*;
 
 import org.gjt.sp.jedit.View.ViewConfig;
 import org.gjt.sp.jedit.bsh.UtilEvalError;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.swing.*;
 import java.awt.event.*;
 import java.io.*;
@@ -61,7 +67,6 @@ import org.gjt.sp.jedit.bufferset.BufferSetManager;
 import org.gjt.sp.jedit.bufferset.BufferSet;
 import org.gjt.sp.util.Log;
 import org.gjt.sp.util.StandardUtilities;
-import org.gjt.sp.util.StringList;
 import org.gjt.sp.util.XMLUtilities;
 import org.gjt.sp.util.IOUtilities;
 import org.gjt.sp.util.SyntaxUtilities;
@@ -70,7 +75,7 @@ import org.gjt.sp.util.SyntaxUtilities;
 /**
  * The main class of the jEdit text editor.
  * @author Slava Pestov
- * @version $Id: jEdit.java 21522 2012-03-31 16:25:08Z Vampire0 $
+ * @version $Id: jEdit.java 22485 2012-11-17 15:40:15Z Vampire0 $
  */
 public class jEdit
 {
@@ -91,7 +96,7 @@ public class jEdit
 	public static String getBuild()
 	{
 		// (major).(minor).(<99 = preX, 99 = "final").(bug fix)
-		return "04.05.99.02";
+		return "05.00.99.00";
 	} //}}}
 
 	//{{{ main() method
@@ -119,11 +124,19 @@ public class jEdit
 		// the main thread
 		mainThread = Thread.currentThread();
 
-		settingsDirectory = ".jedit";
+		settingsDirectory = MiscUtilities.constructPath(
+				System.getProperty("user.home"), ".jedit");
 		// On mac, different rules (should) apply
 		if(OperatingSystem.isMacOS())
-			settingsDirectory = "Library/jEdit";
-
+			settingsDirectory = MiscUtilities.constructPath(
+				System.getProperty("user.home"), "Library/jEdit" );
+		else if (OperatingSystem.isWindows())
+		{
+			String appData = System.getenv("APPDATA");
+			if (appData != null)
+				settingsDirectory = MiscUtilities.constructPath(
+					appData, "jEdit");
+		}
 		// MacOS users expect the app to keep running after all windows
 		// are closed
 		background = OperatingSystem.isMacOS();
@@ -245,9 +258,6 @@ public class jEdit
 		//{{{ We need these initializations very early on
 		if(settingsDirectory != null)
 		{
-			settingsDirectory = MiscUtilities.constructPath(
-				System.getProperty("user.home"),
-				settingsDirectory);
 			settingsDirectory = MiscUtilities.resolveSymlinks(
 				settingsDirectory);
 		}
@@ -333,13 +343,26 @@ public class jEdit
 			System.exit(0);
 		} //}}}
 
+		// This must be done before anything graphical is displayed, so we can't even
+		// wait for the settings to be loaded, because the splash screen will already
+		// be visible
+		if (OperatingSystem.isMacOS() && !new File(settingsDirectory, "noquartz").exists())
+		{
+			System.setProperty("apple.awt.graphics.UseQuartz", "true");
+		}
+
 		// don't show splash screen if there is a file named
 		// 'nosplash' in the settings directory
+		logTime("before splash screen activation");
 		if(splash && (!new File(settingsDirectory,"nosplash").exists()))
 			GUIUtilities.showSplashScreen();
+		logTime("after splash screen activation");
 
-		//{{{ Mac settings migration code. Should eventually be removed
-		if(OperatingSystem.isMacOS() && shouldRelocateSettings && settingsDirectory != null)
+		//{{{ Settings migration code.
+		// Windows check introduced in 5.0pre1.
+		// MacOS check introduced in 4.3.
+		if((OperatingSystem.isMacOS() || OperatingSystem.isWindows())
+			&& shouldRelocateSettings && settingsDirectory != null)
 		{
 			relocateSettings();
 		}
@@ -391,7 +414,6 @@ public class jEdit
 		{
 			stream = null;
 		} //}}}
-
 		Log.setLogWriter(stream);
 
 		Log.log(Log.NOTICE,jEdit.class,"jEdit version " + getVersion());
@@ -413,6 +435,7 @@ public class jEdit
 
 		GUIUtilities.advanceSplashProgress("loading user properties");
 		initUserProperties();
+		initLocalizationProperties();
 
 		GUIUtilities.advanceSplashProgress("init GUI");
 		GUIUtilities.init();
@@ -446,6 +469,14 @@ public class jEdit
 		VFSManager.init();
 		GUIUtilities.advanceSplashProgress("init resources");
 		initResources();
+
+		if (settingsDirectory != null)
+		{
+			GUIUtilities.advanceSplashProgress("Migrate keymaps");
+			MigrationService keymapMigration = ServiceManager.getService(MigrationService.class, "keymap");
+			keymapMigration.migrate();
+		}
+
 		SearchAndReplace.load();
 
 		if(loadPlugins)
@@ -564,9 +595,31 @@ public class jEdit
 		// Open files, create the view and hide the splash screen.
 		SyntaxUtilities.propertyManager = jEdit.propertyManager;
 		finishStartup(gui,restore,newPlainView,userDir,args);
+		logTime("main done");
 	} //}}}
 
 	//{{{ Property methods
+
+	//{{{ getCurrentLanguage() method
+	/**
+	 * Returns the current language used by jEdit.
+	 *
+	 * @return the current language, never null
+	 * @since jEdit 5.0pre1
+	 */
+	public static String getCurrentLanguage()
+	{
+		String language;
+		if (getBooleanProperty("lang.usedefaultlocale"))
+		{
+			language = Locale.getDefault().getLanguage();
+		}
+		else
+		{
+			language = getProperty("lang.current", "en");
+		}
+		return language;
+	} //}}}
 
 	//{{{ getProperties() method
 	/**
@@ -928,6 +981,7 @@ public class jEdit
 	{
 		initPLAF();
 
+		keymapManager.reload();
 		initKeyBindings();
 
 		Autosave.setInterval(getIntegerProperty("autosave",30));
@@ -935,6 +989,7 @@ public class jEdit
 		saveCaret = getBooleanProperty("saveCaret");
 
 		UIDefaults defaults = UIManager.getDefaults();
+		defaults.put("SplitPane.continuousLayout", true);
 
 		// give all text areas the same font
 		Font font = getFontProperty("view.font");
@@ -973,8 +1028,8 @@ public class jEdit
 		}
 		EditBus.send(new PropertiesChanged(null));
 	} //}}}
-
-	//}}}
+	
+	//}}} Property methods fold end
 
 	//{{{ Plugin management methods
 
@@ -1130,13 +1185,20 @@ public class jEdit
 	{
 		PluginJAR jar = new PluginJAR(new File(path));
 		jars.addElement(jar);
-		jar.init();
-		jEdit.unsetProperty("plugin-blacklist."+MiscUtilities.getFileName(path));
-		EditBus.send(new PluginUpdate(jar,PluginUpdate.LOADED,false));
-		if(!isMainThread())
+		if (jar.init())
 		{
-			EditBus.send(new DynamicMenuChanged("plugins"));
-			initKeyBindings();
+			jEdit.unsetProperty("plugin-blacklist."+MiscUtilities.getFileName(path));
+			EditBus.send(new PluginUpdate(jar,PluginUpdate.LOADED,false));
+			if(!isMainThread())
+			{
+				EditBus.send(new DynamicMenuChanged("plugins"));
+				initKeyBindings();
+			}
+		}
+		else
+		{
+			jars.removeElement(jar);
+			jar.uninit(false);
 		}
 	} //}}}
 
@@ -1194,7 +1256,8 @@ public class jEdit
 		{
 			jar.uninit(false);
 			jars.removeElement(jar);
-			initKeyBindings();
+			if (!isMainThread())
+				initKeyBindings();
 		}
 
 		EditBus.send(new PluginUpdate(jar,PluginUpdate.UNLOADED,exit));
@@ -1332,10 +1395,11 @@ public class jEdit
 			if(!userCatalog.exists())
 			{
 				// create dummy catalog
-				FileWriter out = null;
+				BufferedWriter out = null;
 				try
 				{
-					out = new FileWriter(userCatalog);
+
+					out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(userCatalog), "UTF-8"));
 					out.write(jEdit.getProperty("defaultCatalog"));
 				}
 				catch(IOException io)
@@ -1577,8 +1641,13 @@ public class jEdit
 	//{{{ openTemporary() methods
 	/**
 	 * Opens a temporary buffer. A temporary buffer is like a normal
-	 * buffer, except that an event is not fired, the the buffer is
+	 * buffer, except that an event is not fired and the buffer is
 	 * not added to the buffers list.
+	 * <p>If a buffer for the given <code>path</code> was
+	 * already opened in jEdit, then this instance is returned.
+	 * Otherwise jEdit will not store a reference
+	 * to the returned Buffer object.
+	 * <p>This method is thread-safe.
 	 *
 	 * @param view The view to open the file in
 	 * @param parent The parent directory of the file
@@ -1595,9 +1664,8 @@ public class jEdit
 		return openTemporary(view, parent, path, newFile, null);
 	}
 	/**
-	 * Opens a temporary buffer. A temporary buffer is like a normal
-	 * buffer, except that an event is not fired, the the buffer is
-	 * not added to the buffers list.
+	 * Opens a temporary buffer.
+	 * Details: {@link #openTemporary(View, String, String, boolean)}
 	 *
 	 * @param view The view to open the file in
 	 * @param parent The parent directory of the file
@@ -2643,7 +2711,11 @@ public class jEdit
 	 * are stored. This will be <code>null</code> if jEdit was
 	 * started with the <code>-nosettings</code> command-line switch; do not
 	 * blindly use this method without checking for a <code>null</code>
-	 * return value first.
+	 * return value first. <p>
+	 *
+	 * <b>NOTE</b>: plugins should <b>not</b> use this directory as a base to 
+	 * store their files. Instead, they should use EditPlugin.getPluginHome().
+	 * @see EditPlugin#getPluginHome()
 	 */
 	public static String getSettingsDirectory()
 	{
@@ -2695,6 +2767,7 @@ public class jEdit
 			return;
 
 		Abbrevs.save();
+		keymapManager.getKeymap().save();
 		FavoritesVFS.saveFavorites();
 		HistoryModel.saveHistory();
 		Registers.saveRegisters();
@@ -2814,10 +2887,11 @@ public class jEdit
 			EditBus.send(new EditorExiting(null));
 
 			// Save view properties here
-			if(view != null)
+			view = viewsFirst;
+			while(view != null)
 			{
-				view.close();
-				removeViewFromList(view);
+				closeView(view,false);
+				view = view.next;
 			}
 
 			// Stop autosave timer
@@ -2889,7 +2963,22 @@ public class jEdit
 				      registerNameString});
 	} //}}}
 
-	//}}}
+	//{{{ getKeyMapManager() method
+	public static KeymapManager getKeymapManager()
+	{
+		return keymapManager;
+	} //}}}
+
+	//{{{ logTime(String) method
+	/** Logs time since startup, for benchmarking */
+	private static void logTime(String label)
+	{
+		long currentTime = System.currentTimeMillis();
+		Log.log(Log.DEBUG, jEdit.class,
+			label + ':' + (currentTime - startupTime) + " ms");
+	} //}}}
+
+	//}}} Miscellaneous methods fold end
 
 	//{{{ Package-private members
 
@@ -3055,9 +3144,13 @@ public class jEdit
 	private static Vector<ErrorListDialog.ErrorEntry> pluginErrors;
 	private static final Object pluginErrorLock = new Object();
 	private static Vector<PluginJAR> jars;
+	private static final JEditPropertyManager propertyManager =
+	                     new JEditPropertyManager();
+	private static long startupTime = System.currentTimeMillis();
 
 	private static boolean saveCaret;
 	private static InputHandler inputHandler;
+	private static KeymapManager keymapManager;
 
 	private static BufferSetManager bufferSetManager;
 
@@ -3100,7 +3193,6 @@ public class jEdit
 		System.out.println("	<file> +line:<line>,<column>: Positions caret"
 			+ " at line number <line> and column number <column>");
 		System.out.println("	--: End of options");
-		System.out.println("	-nosplash: Don't show splash screen");
 		System.out.println("	-background: Run in background mode");
 		System.out.println("	-nobackground: Disable background mode (default)");
 		System.out.println("	-gui: Only if running in background mode; open initial view (default)");
@@ -3121,6 +3213,7 @@ public class jEdit
 		System.out.println("	-noserver: Don't start edit server");
 		System.out.println("	-settings=<path>: Load user-specific settings from <path>");
 		System.out.println("	-nosettings: Don't load user-specific settings");
+		System.out.println("	-nosplash: Don't show splash screen");
 		System.out.println("	-startupscripts: Run startup scripts (default)");
 		System.out.println("	-nostartupscripts: Don't run startup scripts");
 		System.out.println("	-usage: Print this message and exit");
@@ -3261,6 +3354,11 @@ public class jEdit
 
 		bufferHash = new HashMap<String, Buffer>();
 
+		File userKeymapFolder = null;
+		if (settingsDirectory != null)
+		{
+			userKeymapFolder = new File(settingsDirectory, "keymaps");
+		}
 		inputHandler = new DefaultInputHandler(null);
 		// Add our protocols to java.net.URL's list
 		System.getProperties().put("java.protocol.handler.pkgs",
@@ -3322,6 +3420,9 @@ public class jEdit
 		jEditHome = MiscUtilities.resolveSymlinks(jEditHome);
 
 		Log.log(Log.MESSAGE,jEdit.class,"jEdit home directory is " + jEditHome);
+		keymapManager = new KeymapManagerImpl(propertyManager,
+		      new File(jEditHome, "keymaps"),
+		      userKeymapFolder);
 
 		if(settingsDirectory != null)
 		{
@@ -3356,6 +3457,33 @@ public class jEdit
 		});
 	} //}}}
 
+	//{{{ getResourceAsUTF8Text() method
+	private static Reader getResourceAsUTF8Text(String name)
+		throws IOException
+	{
+		InputStream bytes = jEdit.class.getResourceAsStream(name);
+		if (bytes == null)
+		{
+			return null;
+		}
+		Reader text = null;
+		try
+		{
+			// Using our CharsetEncoding to reliably detect
+			// encoding errors.
+			CharsetEncoding utf8 = new CharsetEncoding("UTF-8");
+			text = utf8.getTextReader(bytes);
+		}
+		finally
+		{
+			if (text == null)
+			{
+				bytes.close();
+			}
+		}
+		return text;
+	} //}}}
+
 	//{{{ initSystemProperties() method
 	/**
 	 * Load system properties.
@@ -3366,12 +3494,12 @@ public class jEdit
 
 		try
 		{
-			propMgr.loadSystemProps(jEdit.class.getResourceAsStream(
+			propMgr.loadSystemProps(getResourceAsUTF8Text(
 				"/org/gjt/sp/jedit/jedit.props"));
-			propMgr.loadSystemProps(jEdit.class.getResourceAsStream(
+			propMgr.loadSystemProps(getResourceAsUTF8Text(
 				"/org/gjt/sp/jedit/jedit_gui.props"));
-			propMgr.loadSystemProps(jEdit.class.getResourceAsStream(
-				"/org/gjt/sp/jedit/jedit_keys.props"));
+			propMgr.loadSystemProps(getResourceAsUTF8Text(
+				"/org/jedit/localization/jedit_en.props"));
 		}
 		catch(Exception e)
 		{
@@ -3381,7 +3509,7 @@ public class jEdit
 				"One of the following property files could not be loaded:\n"
 				+ "- jedit.props\n"
 				+ "- jedit_gui.props\n"
-				+ "- jedit_keys.props\n"
+				+ "- jedit_en.props\n"
 				+ "jedit.jar is probably corrupt.");
 			Log.log(Log.ERROR,jEdit.class,e);
 			System.exit(1);
@@ -3514,6 +3642,38 @@ public class jEdit
 		}
 	} //}}}
 
+	//{{{ initLocalizationProperties() method
+	/**
+	 * Loads localization property file(s).
+	 */
+	private static void initLocalizationProperties()
+	{
+		String language = getCurrentLanguage();
+		if ("en".equals(language))
+		{
+			// no need to load english as localization property as it always loaded as default language
+			return;
+		}
+		Reader langResource = null;
+		try
+		{
+			langResource = getResourceAsUTF8Text("/org/jedit/localization/jedit_" + language + ".props");
+			propMgr.loadLocalizationProps(langResource);
+		}
+		catch (IOException e)
+		{
+			if (getBooleanProperty("lang.usedefaultlocale"))
+			{
+				// if it is the default locale, it is not an error
+				Log.log(Log.ERROR, jEdit.class, "Unable to load language", e);
+			}
+		}
+		finally
+		{
+			IOUtilities.closeQuietly(langResource);
+		}
+	} //}}}
+
 	//{{{ fontStyleToString() method
 	private static String fontStyleToString(int style)
 	{
@@ -3546,7 +3706,14 @@ public class jEdit
 	private static void initPLAF()
 	{
 		String lf = getProperty("lookAndFeel");
-		if (isStartupDone() && UIManager.getLookAndFeel().getClass().getName().equals(lf))
+		String sLfOld = null;
+		String sLfNew = null;
+		LookAndFeel lfOld = UIManager.getLookAndFeel();
+		if (lfOld != null)
+			sLfOld = lfOld.getClass().getName(); 
+
+		// do not change anything if Look and Feel did not change
+		if (isStartupDone() && getPLAFClassName(lf).equals(sLfOld))
 		{
 			return;
 		}
@@ -3593,23 +3760,26 @@ public class jEdit
 
 		try
 		{
-			if(lf != null && lf.length() != 0)
-				UIManager.setLookAndFeel(lf);
-			else if(OperatingSystem.isMacOS())
-			{
-				UIManager.setLookAndFeel(UIManager
-					.getSystemLookAndFeelClassName());
-			}
-			else
-			{
-				UIManager.setLookAndFeel(UIManager
-					.getCrossPlatformLookAndFeelClassName());
-			}
+			UIManager.setLookAndFeel(getPLAFClassName(lf));
 		}
 		catch(Exception e)
 		{
 			Log.log(Log.ERROR,jEdit.class,e);
 		}
+
+		LookAndFeel lfNew = UIManager.getLookAndFeel();
+		if (lfNew != null)
+			sLfNew = lfNew.getClass().getName();
+			Log.log(Log.DEBUG, jEdit.class,
+				"initPLAF " +
+				(EventQueue.isDispatchThread() ? "edt"
+				                               : "non-edt") +
+				" old=" + sLfOld +
+				" requested=" + lf + 
+				" new=" + sLfNew );
+		if (lf == null || !lf.equals(sLfNew))
+			Log.log(Log.WARNING, jEdit.class,
+				"inifPLAF failed to set required l&f");
 
 		UIDefaults defaults = UIManager.getDefaults();
 
@@ -3663,12 +3833,42 @@ public class jEdit
 
 		if (isStartupDone())
 		{
+			int iWindow = 0;
 			for (Window window : Window.getWindows())
 			{
-				SwingUtilities.updateComponentTreeUI(window);
+				try
+				{
+					SwingUtilities.updateComponentTreeUI(window);
+				}
+				catch(Exception e)
+				{
+					Log.log(Log.ERROR, jEdit.class,
+						"Window " + iWindow
+						+ ": " + window, e);
+					break;
+				}
+				iWindow++;
 			}
 		}
+
 	} //}}}
+
+	@Nonnull
+	private static String getPLAFClassName(@Nullable String lf)
+	{
+		if (lf != null && lf.length() != 0)
+		{
+			return lf;
+		}
+		else if(OperatingSystem.isMacOS())
+		{
+			return UIManager.getSystemLookAndFeelClassName();
+		}
+		else
+		{
+			return UIManager.getCrossPlatformLookAndFeelClassName();
+		}
+	}
 
 	//{{{ getNextUntitledBufferId() method
 	public static int getNextUntitledBufferId()
@@ -3905,7 +4105,9 @@ public class jEdit
 				GUIUtilities.hideSplashScreen();
 
 				Log.log(Log.MESSAGE,jEdit.class,"Startup "
-					+ "complete");
+					+ "complete: "
+					+ (System.currentTimeMillis() - 
+					   startupTime) + " ms");
 
 				//{{{ Report any plugin errors
 				if(pluginErrors != null)
@@ -4403,5 +4605,4 @@ loop:		for(int i = 0; i < list.length; i++)
 		}
 	} //}}}
 
-	private static final JEditPropertyManager propertyManager = new JEditPropertyManager();
 }

@@ -28,8 +28,9 @@ import javax.swing.DefaultListModel;
 import java.util.*;
 //}}}
 
-/**
- * A history list. One history list can be used by several history text
+/** A named history list
+ *
+ * One history list can be used by several history text
  * fields. Note that the list model implementation is incomplete; no events
  * are fired when the history model changes.
  * The max size of the history is defined globally via setDefaultMax(),
@@ -38,7 +39,7 @@ import java.util.*;
  *
  * @author Slava Pestov
  * @author Eric Le Lay
- * @version $Id: HistoryModel.java 20108 2011-10-18 12:16:38Z evanpw $
+ * @version $Id: HistoryModel.java 21506 2012-03-29 17:58:53Z ezust $
  */
 public class HistoryModel extends DefaultListModel
 	implements MutableListModel
@@ -65,19 +66,20 @@ public class HistoryModel extends DefaultListModel
 	{
 		if(text == null || text.length() == 0)
 			return;
-		
+
 		// Don't add duplicates
 		int index = indexOf(text);
 		if (index == 0)
 			return;
 		if (index != -1)
 			removeElementAt(index);
-		
+
 		// Make room so that adding this new item doesn't cause the history model to run
 		// over its maximum size
 		int myMaxSize = (maxSize == -1) ? defaultMaxSize : maxSize;
 		if (text.length() > myMaxSize)
 		{
+			// ??? Is this really correct?
 			return;
 		}
 		int currentSize = getCurrentSize();
@@ -192,7 +194,7 @@ public class HistoryModel extends DefaultListModel
 	{
 		return max;
 	} //}}}
-	
+
 	//{{{ setMaxSize() method
 	/**
 	 * Sets the maximum size (in characters) for this history model
@@ -234,7 +236,7 @@ public class HistoryModel extends DefaultListModel
 	{
 		return HistoryModel.defaultMax;
 	} //}}}
-	
+
 	//{{{ setDefaultMaxSize() method
 	/**
 	 * Sets the default max size (in characters) for all history models. To change the max
@@ -245,7 +247,7 @@ public class HistoryModel extends DefaultListModel
 	{
 		HistoryModel.defaultMaxSize = newMax;
 	} //}}}
-	
+
 	//{{{ getDefaultMaxSize() method
 	/**
 	 * Gets the default maximum size (in characters) for all history models.
@@ -265,7 +267,7 @@ public class HistoryModel extends DefaultListModel
 	//{{{ Private members
 	private int max;
 	private static int defaultMax;
-	
+
 	private int maxSize;
 	private static int defaultMaxSize;
 
@@ -274,7 +276,7 @@ public class HistoryModel extends DefaultListModel
 
 	private static boolean modified;
 	private static HistoryModelSaver saver;
-	
+
 	//{{{ getCurrentSize() method
 	/**
 	 * Gets the current size (in characters) of the entire history model.
@@ -286,7 +288,7 @@ public class HistoryModel extends DefaultListModel
 		{
 			currentSize += getItem(i).length();
 		}
-		
+
 		return currentSize;
 	}
 	//}}}

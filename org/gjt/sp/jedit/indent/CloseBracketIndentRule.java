@@ -29,7 +29,7 @@ import org.gjt.sp.util.StandardUtilities;
 
 /**
  * @author Slava Pestov
- * @version $Id: CloseBracketIndentRule.java 18919 2010-11-04 10:52:55Z kpouer $
+ * @version $Id: CloseBracketIndentRule.java 21723 2012-05-27 14:34:13Z k_satoda $
  */
 public class CloseBracketIndentRule extends BracketIndentRule
 {

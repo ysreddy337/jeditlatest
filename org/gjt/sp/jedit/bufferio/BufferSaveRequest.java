@@ -35,7 +35,7 @@ import java.nio.charset.UnsupportedCharsetException;
 /**
  * A buffer save request.
  * @author Slava Pestov
- * @version $Id: BufferSaveRequest.java 19409 2011-02-28 14:58:27Z kpouer $
+ * @version $Id: BufferSaveRequest.java 22385 2012-10-15 03:59:45Z ezust $
  */
 public class BufferSaveRequest extends BufferIORequest
 {
@@ -217,15 +217,28 @@ public class BufferSaveRequest extends BufferIORequest
 	/**
 	 * Make the backup.
 	 */
-	private void makeBackup() throws IOException
+	private void makeBackup()
 	{
-		// Only backup once per session
-		if(buffer.getProperty(Buffer.BACKED_UP) == null
-			|| jEdit.getBooleanProperty("backupEverySave"))
+		try
 		{
-			if (jEdit.getIntegerProperty("backups",1) > 0)
-				vfs._backup(session,path,view);
-			buffer.setBooleanProperty(Buffer.BACKED_UP, true);
+			// Only backup once per session
+			if(buffer.getProperty(Buffer.BACKED_UP) == null
+				|| jEdit.getBooleanProperty("backupEverySave"))
+			{
+				if (jEdit.getIntegerProperty("backups",1) > 0)
+					vfs._backup(session,path,view);
+				buffer.setBooleanProperty(Buffer.BACKED_UP, true);
+			}
+		}
+		catch (IOException ioe)
+		{
+			// Backup failure shouldn't stop caller's activity, like
+			// saving a buffer, so catching the exception.
+			// Most backup failures are reported directly in _backup,
+			// with lesser severity.
+			// Only rare cases manifest with IOException, like #3574500 
+			String[] pp = { ioe.getMessage() };
+			VFSManager.error(view,path,"ioerror.backup-failed",pp);
 		}
 	} //}}}
 

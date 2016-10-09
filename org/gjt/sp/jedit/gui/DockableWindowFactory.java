@@ -23,6 +23,7 @@
 package org.gjt.sp.jedit.gui;
 
 //{{{ Imports
+import java.awt.Color;
 import java.io.IOException;
 import java.net.URL;
 import java.util.HashMap;
@@ -32,10 +33,13 @@ import java.util.Map;
 import java.util.Stack;
 
 import javax.swing.JComponent;
+import javax.swing.LookAndFeel;
+import javax.swing.UIManager;
 
 import org.gjt.sp.jedit.ActionSet;
 import org.gjt.sp.jedit.BeanShell;
 import org.gjt.sp.jedit.EditAction;
+import org.gjt.sp.jedit.GUIUtilities;
 import org.gjt.sp.jedit.MiscUtilities;
 import org.gjt.sp.jedit.PluginJAR;
 import org.gjt.sp.jedit.View;
@@ -50,8 +54,7 @@ import org.gjt.sp.jedit.bsh.NameSpace;
 import org.gjt.sp.jedit.bsh.UtilEvalError;
 //}}}
 
-/**
- * Loads <code>dockable.xml</code> files and manages creation
+/** Loads <code>dockable.xml</code> files and manages creation
  * of new dockable windows.
  *
  * @see DockableWindowManager
@@ -170,7 +173,7 @@ public class DockableWindowFactory
 	{
 		return dockableWindowFactories.get(name);
 	}
-	
+
 	public String getDockableWindowPluginClass(String name)
 	{
 		Window w = getDockableWindowFactory(name);
@@ -178,7 +181,7 @@ public class DockableWindowFactory
 			return null;
 		return w.plugin.getPlugin().getClassName();
 	}
-	
+
 	//{{{ getDockableWindowIterator() method
 	Iterator<Window> getDockableWindowIterator()
 	{
@@ -306,7 +309,7 @@ public class DockableWindowFactory
 		{
 			return booleanListToArray(cachedDockableMovableFlags);
 		} //}}}
-		
+
 		//{{{ booleanListToArray() method
 		/**
 		 * This method transforms a List<Boolean> into the corresponding
@@ -336,13 +339,13 @@ public class DockableWindowFactory
 		private java.util.List<String> cachedDockableNames;
 		private java.util.List<Boolean> cachedDockableActionFlags;
 		private java.util.List<Boolean> cachedDockableMovableFlags;
-		
+
 		private String dockableName;
 		private StringBuilder code;
 		private boolean actions;
 		private boolean movable;
 		static final boolean MOVABLE_DEFAULT = false;
-		
+
 		private Stack<String> stateStack;
 		//}}}
 
@@ -451,21 +454,25 @@ public class DockableWindowFactory
 				return null;
 			}
 
-			NameSpace nameSpace = new NameSpace(
-				BeanShell.getNameSpace(),
-				"DockableWindowManager.Factory"
-				+ ".createDockableWindow()");
+			NameSpace nameSpace = new NameSpace(BeanShell.getNameSpace(),
+				"DockableWindowManager.Factory.createDockableWindow()");
 			try
 			{
-				nameSpace.setVariable(
-					"position",position);
+				nameSpace.setVariable("position",position);
 			}
 			catch(UtilEvalError e)
 			{
 				Log.log(Log.ERROR,this,e);
 			}
-			JComponent win = (JComponent)BeanShell.eval(view,
-				nameSpace,code);
+			JComponent win = (JComponent)BeanShell.eval(view,nameSpace,code);
+
+			if (jEdit.getBooleanProperty("textColors")) {
+				LookAndFeel laf = UIManager.getLookAndFeel();
+				if (!laf.getID().equals("Metal")) {
+					GUIUtilities.applyTextAreaColors(win);
+				}
+			}
+
 			synchronized(this)
 			{
 				isBeingCreated = false;

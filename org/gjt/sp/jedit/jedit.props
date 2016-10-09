@@ -2,7 +2,7 @@
 ### jEdit global properties
 ### :tabSize=8:indentSize=8:noTabs=false:
 ### :folding=explicit:collapseFolds=1:
-### :encoding=ISO-8859-1:
+### :encoding=UTF-8:
 ###
 ### Copyright (C) 1998, 2003 Slava Pestov
 ###
@@ -27,6 +27,9 @@ metal.secondary.fontstyle=0
 # Decorate frames and dialogs using Swing L&F? (JDK 1.4 only)
 decorate.frames=false
 decorate.dialogs=false
+
+# Draw multi-key shortcuts on screen menu bar? (OS X only)
+menu.multiShortcut=false
 
 # If true, welcome screen will be displayed.
 # Set to false after initial startup.
@@ -134,8 +137,9 @@ encodingDetectors=BOM XML-PI html python buffer-local-property
 #}}}
 
 # The critical size, over it a buffer will prompt when setting the edit mode
-# to switch to context insensitive or default mode
 largeBufferSize=4000000
+longLineLimit=4000
+largefilemode=ask
 
 #{{{ Buffer settings
 # These can also be specified as buffer-local properties
@@ -160,11 +164,14 @@ buffer.tabSize=8
 # Indent width
 buffer.indentSize=8
 
+# Automatic indentation
+buffer.autoIndent=full
+
 # Soft tabs
 buffer.noTabs=false
 
 #elastic tabstops
-buffer.elasticTabstops=false 
+buffer.elasticTabstops=false
 
 # Default edit mode
 buffer.defaultMode=text
@@ -216,6 +223,10 @@ view.font=Monospaced
 view.fontsize=12
 # 0=plain, 1=bold, 2=italic, 3=boldItalic
 view.fontstyle=0
+
+# Font Substitution
+view.enableFontSubst=false
+view.enableFontSubstSystemFonts=true
 
 # Background and foreground colors (for the text area)
 view.bgColor=#ffffff
@@ -270,6 +281,9 @@ view.ctrlForRectangularSelection=true
 view.minStartupWidth=200
 view.minStartupHeight=200
 
+Combined\ Options.width=1024
+Combined\ Options.height=768
+
 # The default bufferSet scope
 editpane.bufferset.default=view
 
@@ -315,7 +329,7 @@ view.gutter.fontsize=10
 view.gutter.borderWidth=2
 
 # Gutter displays line numbers
-view.gutter.lineNumbers=false
+view.gutter.lineNumbers=true
 
 # Line numbers are drawn with this alignment (left, center, right)
 view.gutter.numberAlignment=right
@@ -471,7 +485,7 @@ browser.custom.context=
 plugin-manager.downloadSource=false
 plugin-manager.installUser=true
 plugin-manager.showAll=true
-plugin-manager.mirror.id=switch
+plugin-manager.mirror.id=NONE
 plugin-manager.deleteDownloads=true
 plugin-manager.hide-libraries.toggle=true
 plugin-blacklist.MacOS.jar=true
@@ -487,5 +501,19 @@ server.brokenToFront=false
 
 # restore remote VFS files by default (new option)
 options.general.restore.remote=true
-
+optional.title-template={0} {1}
 mime2mode.text/html=html
+
+#{{{ Keymaps
+# the current keymap name
+keymap.current=jEdit
+# the default keymap name
+keymap.default=jEdit
+#}}}
+
+
+available.lang=en de fr ja cs ru
+# if lang.usedefaultlocale is true, the lang.current is not used
+lang.usedefaultlocale=true
+lang.current=en
+

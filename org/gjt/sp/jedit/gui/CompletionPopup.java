@@ -24,13 +24,14 @@ package org.gjt.sp.jedit.gui;
 //{{{ Imports
 import java.awt.BorderLayout;
 import java.awt.Component;
+import java.awt.EventQueue;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.Window;
 
+import java.awt.event.InputEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowEvent;
@@ -44,14 +45,12 @@ import javax.swing.JWindow;
 import javax.swing.ListSelectionModel;
 import javax.swing.ListCellRenderer;
 import javax.swing.ScrollPaneConstants;
-import javax.swing.SwingUtilities;
 
 import org.gjt.sp.jedit.GUIUtilities;
 import org.gjt.sp.jedit.View;
 //}}}
 
-/**
- * Popup window for word completion in text area.
+/** Popup window for word completion in text area.
  * This class provides basic UI of completion popup.
  *
  * @since jEdit 4.3pre11
@@ -78,7 +77,7 @@ public class CompletionPopup extends JWindow
 		 * Do the completion.
 		 */
 		public void complete(int index);
-	
+
 		/**
 		 * Returns a component to render a cell for the index
 		 * in the popup.
@@ -101,7 +100,7 @@ public class CompletionPopup extends JWindow
 	 * candidates. All key events for the view are intercepted by
 	 * this popup untill end of completion.
 	 * @since jEdit 4.3pre13
-	 */ 
+	 */
 	public CompletionPopup(View view)
 	{
 		super(view);
@@ -140,6 +139,7 @@ public class CompletionPopup extends JWindow
 	/**
 	 * Quit completion.
 	 */
+	@Override
 	public void dispose()
 	{
 		if (isDisplayable())
@@ -160,8 +160,9 @@ public class CompletionPopup extends JWindow
 			// "Frame does not receives focus after closing
 			// of the owned window"
 			// http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4810575
-			SwingUtilities.invokeLater(new Runnable()
+			EventQueue.invokeLater(new Runnable()
 			{
+				@Override
 				public void run()
 				{
 					view.getTextArea().requestFocus();
@@ -350,11 +351,13 @@ public class CompletionPopup extends JWindow
 	//{{{ CandidateListModel class
 	private class CandidateListModel extends AbstractListModel
 	{
+		@Override
 		public int getSize()
 		{
 			return candidates.getSize();
 		}
 
+		@Override
 		public Object getElementAt(int index)
 		{
 			// This value is not used.
@@ -367,6 +370,7 @@ public class CompletionPopup extends JWindow
 	//{{{ CellRenderer class
 	private class CellRenderer implements ListCellRenderer
 	{
+		@Override
 		public Component getListCellRendererComponent(JList list,
 			Object value, int index,
 			boolean isSelected, boolean cellHasFocus)
@@ -380,6 +384,7 @@ public class CompletionPopup extends JWindow
 	private class KeyHandler extends KeyAdapter
 	{
 		//{{{ keyPressed() method
+		@Override
 		public void keyPressed(KeyEvent e)
 		{
 			CompletionPopup.this.keyPressed(e);
@@ -416,13 +421,15 @@ public class CompletionPopup extends JWindow
 					e.consume();
 					break;
 				case KeyEvent.VK_P:
-					if (e.getModifiersEx() == KeyEvent.CTRL_DOWN_MASK) {
+					if (e.getModifiersEx() == InputEvent.CTRL_DOWN_MASK)
+					{
 						moveRelative(-1);
 						e.consume();
 					}
 					break;
 				case KeyEvent.VK_N:
-					if (e.getModifiersEx() == KeyEvent.CTRL_DOWN_MASK) {
+					if (e.getModifiersEx() == InputEvent.CTRL_DOWN_MASK)
+					{
 						moveRelative(1);
 						e.consume();
 					}
@@ -438,12 +445,10 @@ public class CompletionPopup extends JWindow
 				default:
 					if(e.isActionKey()
 						|| e.isAltDown()
-						|| e.isMetaDown())
+						|| e.isMetaDown()
+						|| e.isControlDown())
 					{
 						dispose();
-					}
-					else if (e.isControlDown()) {
-						e.consume();
 					}
 					break;
 				}
@@ -456,6 +461,7 @@ public class CompletionPopup extends JWindow
 		} //}}}
 
 		//{{{ keyTyped() method
+		@Override
 		public void keyTyped(KeyEvent e)
 		{
 			if (e.isControlDown())
@@ -482,6 +488,7 @@ public class CompletionPopup extends JWindow
 	//{{{ MouseHandler class
 	private class MouseHandler extends MouseAdapter
 	{
+		@Override
 		public void mouseClicked(MouseEvent e)
 		{
 			if (doSelectedCompletion())
@@ -498,10 +505,12 @@ public class CompletionPopup extends JWindow
 	//{{{ WindowFocusHandler class
 	private class WindowFocusHandler implements WindowFocusListener
 	{
+		@Override
 		public void windowGainedFocus(WindowEvent e)
 		{
 		}
 
+		@Override
 		public void windowLostFocus(WindowEvent e)
 		{
 			dispose();

@@ -1,18 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <appendix id="history">
     <title>History Text Fields</title>
-
     <!-- jEdit buffer-local properties: -->
-
     <!-- :indentSize=1:noTabs=true: -->
-
     <!-- :xml.root=users-guide.xml: -->
 
     <para>The text fields in many jEdit components, such as the file system
     browser, incremental search bar, and action bar, all remember the last 20
     entered strings by default. The number of strings to remember can be changed
     in the <guibutton>Appearance</guibutton> pane of the
-    <guimenu>Utilities</guimenu>&gt;<guimenuitem>Global Options</guimenuitem>
+    <guimenu>Utilities</guimenu>&gt;<guimenuitem>Options</guimenuitem>
     dialog box; see <xref linkend="appearance-pane" />.</para>
 
     <para>Pressing <keycap>UP</keycap> recalls previous strings. Pressing

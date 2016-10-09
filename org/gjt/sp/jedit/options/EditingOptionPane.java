@@ -35,7 +35,7 @@ import org.gjt.sp.util.StandardUtilities;
 
 /**
  * @author Slava Pestov
- * @version $Id: EditingOptionPane.java 20348 2011-11-15 08:07:58Z ezust $
+ * @version $Id: EditingOptionPane.java 21723 2012-05-27 14:34:13Z k_satoda $
  */
 public class EditingOptionPane extends AbstractOptionPane
 {
@@ -103,22 +103,33 @@ public class EditingOptionPane extends AbstractOptionPane
 		addComponent(jEdit.getProperty("options.editing.maxLineLen"), maxLineLen);
 		maxLineLen.setEditable(true);
 
+		String[] indentModes = {
+			"none",
+			"simple",
+			"full"
+		};
+		addComponent(jEdit.getProperty("options.editing.autoIndent"),
+			autoIndent = new JComboBox(indentModes));
+
+
 		String[] tabSizes = { "2", "4", "8" };
 		addComponent(jEdit.getProperty("options.editing.tabSize"),
 			tabSize = new JComboBox(tabSizes));
+
 		tabSize.setEditable(true);
 
 		addComponent(jEdit.getProperty("options.editing.indentSize"),
 			indentSize = new JComboBox(tabSizes));
 		indentSize.setEditable(true);
 
+
 		addComponent(noTabs = new JCheckBox(jEdit.getProperty(
 			"options.editing.noTabs")));
-		
+
 		addComponent(elasticTabstops = new JCheckBox(jEdit.getProperty(
 		"options.editing.elasticTabstops")));
 		elasticTabstops.setToolTipText(jEdit.getProperty("options.editing.elasticTabstops.tooltip"));
-		
+
 		addComponent(deepIndent = new JCheckBox(jEdit.getProperty(
 			"options.editing.deepIndent")));
 
@@ -135,6 +146,7 @@ public class EditingOptionPane extends AbstractOptionPane
 		addSeparator();
 
 		defaultMode = new JComboBox(modes);
+
 		defaultMode.setSelectedItem(jEdit.getMode(
 			jEdit.getProperty("buffer.defaultMode")));
 		addComponent(jEdit.getProperty("options.editing.defaultMode"),
@@ -149,6 +161,37 @@ public class EditingOptionPane extends AbstractOptionPane
 		addComponent(resetUndoOnSave);
 		//}}}
 
+		//{{{ Large file mode
+		addSeparator(jEdit.getProperty("options.editing.largefilemode.title"));
+
+		addComponent(new JLabel(jEdit.getProperty("options.editing.largefilemode")));
+		addComponent(askLargeFileMode = new JRadioButton(jEdit.getProperty("options.editing.largefilemode.option.ask")));
+		addComponent(fullSyntaxLargeFileMode = new JRadioButton(jEdit.getProperty("options.editing.largefilemode.option.full")));
+		addComponent(limitedSyntaxLargeFileMode = new JRadioButton(jEdit.getProperty("options.editing.largefilemode.option.limited")));
+		addComponent(noHighlightLargeFileMode = new JRadioButton(jEdit.getProperty("options.editing.largefilemode.option.nohighlight")));
+		String option = jEdit.getProperty("largefilemode", "ask");
+		if ("full".equals(option))
+		{
+			fullSyntaxLargeFileMode.setSelected(true);
+		}
+		else if ("limited".equals(option))
+		{
+			limitedSyntaxLargeFileMode.setSelected(true);
+		}
+		else if ("nohighlight".equals(option))
+		{
+			noHighlightLargeFileMode.setSelected(true);
+		}
+		else
+		{
+			askLargeFileMode.setSelected(true);
+		}
+		ButtonGroup largeFileModeButtonGroup = new ButtonGroup();
+		largeFileModeButtonGroup.add(askLargeFileMode);
+		largeFileModeButtonGroup.add(fullSyntaxLargeFileMode);
+		largeFileModeButtonGroup.add(limitedSyntaxLargeFileMode);
+		largeFileModeButtonGroup.add(noHighlightLargeFileMode);
+		//}}}
 	} //}}}
 
 	//{{{ _save() method
@@ -167,6 +210,23 @@ public class EditingOptionPane extends AbstractOptionPane
 		for(int i = 0; i < modeProps.length; i++)
 		{
 			modeProps[i].save();
+		}
+
+		if (fullSyntaxLargeFileMode.isSelected())
+		{
+			jEdit.setProperty("largefilemode", "full");
+		}
+		else if (limitedSyntaxLargeFileMode.isSelected())
+		{
+			jEdit.setProperty("largefilemode", "limited");
+		}
+		else if (noHighlightLargeFileMode.isSelected())
+		{
+			jEdit.setProperty("largefilemode", "nohighlight");
+		}
+		else
+		{
+			jEdit.setProperty("largefilemode", "ask");
 		}
 	} //}}}
 
@@ -194,7 +254,13 @@ public class EditingOptionPane extends AbstractOptionPane
 	private JComboBox indentSize;
 	private JCheckBox noTabs;
 	private JCheckBox elasticTabstops;
+	private JComboBox autoIndent;
 	private JCheckBox deepIndent;
+	private JRadioButton largeFileMode;
+	private JRadioButton askLargeFileMode;
+	private JRadioButton noHighlightLargeFileMode;
+	private JRadioButton limitedSyntaxLargeFileMode;
+	private JRadioButton fullSyntaxLargeFileMode;
 	//}}}
 
 	//{{{ saveMode() method
@@ -213,6 +279,7 @@ public class EditingOptionPane extends AbstractOptionPane
 		current.indentSize = (String)indentSize.getSelectedItem();
 		current.noTabs = noTabs.isSelected();
 		current.elasticTabstops = elasticTabstops.isSelected();
+		current.autoIndent = (String)autoIndent.getSelectedItem();
 		current.deepIndent = deepIndent.isSelected();
 	} //}}}
 
@@ -242,6 +309,7 @@ public class EditingOptionPane extends AbstractOptionPane
 		indentSize.setSelectedItem(current.indentSize);
 		noTabs.setSelected(current.noTabs);
 		elasticTabstops.setSelected(current.elasticTabstops);
+		autoIndent.setSelectedItem(current.autoIndent);
 		deepIndent.setSelected(current.deepIndent);
 
 		updateEnabled();
@@ -278,6 +346,7 @@ public class EditingOptionPane extends AbstractOptionPane
 		indentSize.setEnabled(enabled);
 		noTabs.setEnabled(enabled);
 		elasticTabstops.setEnabled(enabled);
+		autoIndent.setEnabled(enabled);
 		deepIndent.setEnabled(enabled);
 	} //}}}
 
@@ -324,6 +393,7 @@ public class EditingOptionPane extends AbstractOptionPane
 		String indentSize;
 		boolean noTabs;
 		boolean elasticTabstops;
+		String autoIndent;
 		boolean deepIndent;
 		//}}}
 
@@ -364,6 +434,7 @@ public class EditingOptionPane extends AbstractOptionPane
 				indentSize = mode.getProperty("indentSize").toString();
 				noTabs = mode.getBooleanProperty("noTabs");
 				elasticTabstops = mode.getBooleanProperty("elasticTabstops");
+				autoIndent = mode.getProperty("autoIndent").toString();
 				deepIndent = mode.getBooleanProperty("deepIndent");
 			}
 			else
@@ -378,6 +449,7 @@ public class EditingOptionPane extends AbstractOptionPane
 				indentSize = jEdit.getProperty("buffer.indentSize");
 				noTabs = jEdit.getBooleanProperty("buffer.noTabs");
 				elasticTabstops= jEdit.getBooleanProperty("buffer.elasticTabstops");
+				autoIndent = jEdit.getProperty("buffer.autoIndent");
 				deepIndent = jEdit.getBooleanProperty("buffer.deepIndent");
 			}
 		} //}}}
@@ -414,6 +486,7 @@ public class EditingOptionPane extends AbstractOptionPane
 					jEdit.resetProperty(prefix + "indentSize");
 					jEdit.resetProperty(prefix + "noTabs");
 					jEdit.resetProperty(prefix + "elasticTabstops");
+					jEdit.resetProperty(prefix + "autoIndent");
 					jEdit.resetProperty(prefix + "deepIndent");
 
 					if(!(StandardUtilities.objectsEqual(oldFilenameGlob,
@@ -453,6 +526,7 @@ public class EditingOptionPane extends AbstractOptionPane
 			jEdit.setProperty(prefix + "maxLineLen",maxLineLen);
 			jEdit.setProperty(prefix + "tabSize",tabSize);
 			jEdit.setProperty(prefix + "indentSize",indentSize);
+			jEdit.setProperty(prefix + "autoIndent", autoIndent);
 			jEdit.setBooleanProperty(prefix + "noTabs",noTabs);
 			jEdit.setBooleanProperty(prefix + "elasticTabstops",elasticTabstops);
 			jEdit.setBooleanProperty(prefix + "deepIndent",deepIndent);

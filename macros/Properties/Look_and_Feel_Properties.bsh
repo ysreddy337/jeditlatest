@@ -20,12 +20,15 @@
  * along with the jEdit program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
- * $Id: Look_and_Feel_Properties.bsh 19599 2011-06-19 15:14:10Z kerik-sf $
+ * $Id: Look_and_Feel_Properties.bsh 21353 2012-03-14 09:46:51Z jojaba_67 $
  *
  * Checked for jEdit 4.0 API
  *
  */
+// Localization
+final static String ListingLabel = jEdit.getProperty("macro.rs.LookAndFeelProperties.Listing.label", "--listing look and feel property names--");
 
+// Process
 void lookAndFeelProperties()
 {
 	defaults = javax.swing.UIManager.getLookAndFeelDefaults();
@@ -38,7 +41,7 @@ void lookAndFeelProperties()
 		Object o = e.getValue();
 		p.put(s.toString(),o.toString());
 	}
-	p.store(sb,"--listing look and feel property names--");
+	p.store(sb,ListingLabel);
 	newbuf = jEdit.newFile(view);
 	newbuf.insert(0, sb.toString());
 }

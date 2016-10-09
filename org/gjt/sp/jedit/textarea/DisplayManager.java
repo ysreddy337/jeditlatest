@@ -35,7 +35,7 @@ import org.gjt.sp.util.Log;
  * 
  * @since jEdit 4.2pre1
  * @author Slava Pestov
- * @version $Id: DisplayManager.java 21374 2012-03-14 23:52:09Z ezust $
+ * @version $Id: DisplayManager.java 22366 2012-10-13 22:21:34Z ezust $
  */
 public class DisplayManager
 {
@@ -120,7 +120,7 @@ public class DisplayManager
 
 	//{{{ isLineVisible() method
 	/**
-	 * Returns if the specified line is visible.
+	 * Returns if the specified physical line is visible.
 	 * @param line A physical line index
 	 * @since jEdit 4.2pre1
 	 */
@@ -241,7 +241,7 @@ public class DisplayManager
 	 */
 	public final int getScrollLineCount()
 	{
-		return scrollLineCount.scrollLine;
+		return scrollLineCount.getScrollLine();
 	} //}}}
 
 	//{{{ collapseFold() method
@@ -258,7 +258,7 @@ public class DisplayManager
 		// if the caret is on a collapsed fold, collapse the
 		// parent fold
 		if(line != 0
-			&& line != buffer.getLineCount() - 1
+			&& line != lineCount - 1
 			&& buffer.isFoldStart(line)
 			&& !isLineVisible(line + 1))
 		{
@@ -381,23 +381,25 @@ public class DisplayManager
 		if(buffer.getFoldHandler() instanceof IndentFoldHandler)
 			foldLevel = (foldLevel - 1) * buffer.getIndentSize() + 1;
 
-		showLineRange(0,buffer.getLineCount() - 1);
+		int lineCount = buffer.getLineCount();
+		int end = lineCount - 1;
+		showLineRange(0,end);
 
 		int leastFolded = -1;
 		int firstInvisible = 0;
 
-		for(int i = 0; i < buffer.getLineCount(); i++)
+		for(int i = 0; i < lineCount; i++)
 		{
+			int level = buffer.getFoldLevel(i);
 			// Keep track of the least fold level up to this point in the file,
 			// because we can't hide a line at this level since there will be no "root"
 			// line to unfold it from
-			if (leastFolded == -1 || buffer.getFoldLevel(i) < leastFolded)
+			if (leastFolded == -1 || level < leastFolded)
 			{
-				leastFolded = buffer.getFoldLevel(i);
+				leastFolded = level;
 			}
 		
-			if (buffer.getFoldLevel(i) < foldLevel ||
-			    buffer.getFoldLevel(i) == leastFolded)
+			if (level < foldLevel || level == leastFolded)
 			{
 				if(firstInvisible != i)
 				{
@@ -408,8 +410,8 @@ public class DisplayManager
 			}
 		}
 
-		if(firstInvisible != buffer.getLineCount())
-			hideLineRange(firstInvisible,buffer.getLineCount() - 1);
+		if(firstInvisible != lineCount)
+			hideLineRange(firstInvisible,end);
 
 		notifyScreenLineChanges();
 		if(update && textArea.getDisplayManager() == this)
@@ -439,7 +441,8 @@ public class DisplayManager
 	 */
 	public void narrow(int start, int end)
 	{
-		if(start > end || start < 0 || end >= buffer.getLineCount())
+		int lineCount = buffer.getLineCount();
+		if(start > end || start < 0 || end >= lineCount)
 			throw new ArrayIndexOutOfBoundsException(start + ", " + end);
 
 		if(start < getFirstVisibleLine() || end > getLastVisibleLine())
@@ -447,12 +450,11 @@ public class DisplayManager
 
 		if(start != 0)
 			hideLineRange(0,start - 1);
-		if(end != buffer.getLineCount() - 1)
-			hideLineRange(end + 1,buffer.getLineCount() - 1);
+		if(end != lineCount - 1)
+			hideLineRange(end + 1,lineCount - 1);
 
 		// if we narrowed to a single collapsed fold
-		if(start != buffer.getLineCount() - 1
-			&& !isLineVisible(start + 1))
+		if(start != lineCount - 1 && !isLineVisible(start + 1))
 			expandFold(start,false);
 
 		textArea.fireNarrowActive();
@@ -497,6 +499,10 @@ public class DisplayManager
 	} //}}}
 
 	//{{{ notifyScreenLineChanges() method
+	/**
+	 * FirstLine or ScrollLineCount changed
+	 * Update ScrollBar, etc.
+	 */
 	void notifyScreenLineChanges()
 	{
 		if(Debug.SCROLL_DEBUG)
@@ -509,21 +515,22 @@ public class DisplayManager
 
 		try
 		{
-			if(firstLine.callReset)
+			if(firstLine.isCallReset())
 				firstLine.reset();
-			else if(firstLine.callChanged)
+			else if(firstLine.isCallChanged())
 				firstLine.changed();
 
-			if(scrollLineCount.callReset)
+			if(scrollLineCount.isCallReset())
 			{
 				scrollLineCount.reset();
+				//FIXME: Why here?
 				firstLine.ensurePhysicalLineIsVisible();
-			}
-			else if(scrollLineCount.callChanged)
+			} else if(scrollLineCount.isCallChanged())
 				scrollLineCount.changed();
-			
-			if(firstLine.callChanged || scrollLineCount.callReset
-				|| scrollLineCount.callChanged)
+
+			if(firstLine.isCallChanged() ||
+			   scrollLineCount.isCallReset() ||
+			   scrollLineCount.isCallChanged())
 			{
 				textArea.updateScrollBar();
 				textArea.recalculateLastPhysicalLine();
@@ -531,36 +538,43 @@ public class DisplayManager
 		}
 		finally
 		{
-			firstLine.callReset = firstLine.callChanged = false;
-			scrollLineCount.callReset = scrollLineCount.callChanged = false;
+			firstLine.resetCallState();
+			scrollLineCount.resetCallState();
 		}
 	} //}}}
 
 	//{{{ setFirstLine() method
-	void setFirstLine(int oldFirstLine, int firstLine)
+	/**
+	 * Sets the vertical scroll bar position
+	 *
+	 * @param currentFirstLine the current scroll bar position
+	 * @param newFirstLine The to-be scroll bar position
+	 */
+	void setFirstLine(int currentFirstLine, int newFirstLine)
 	{
 		int visibleLines = textArea.getVisibleLines();
 
-		if(firstLine >= oldFirstLine + visibleLines)
+		if(newFirstLine >= currentFirstLine + visibleLines)
 		{
-			this.firstLine.scrollDown(firstLine - oldFirstLine);
+			this.firstLine.scrollDown(newFirstLine - currentFirstLine);
 			textArea.chunkCache.invalidateAll();
 		}
-		else if(firstLine <= oldFirstLine - visibleLines)
+		else if(newFirstLine <= currentFirstLine - visibleLines)
 		{
-			this.firstLine.scrollUp(oldFirstLine - firstLine);
+			this.firstLine.scrollUp(currentFirstLine - newFirstLine);
 			textArea.chunkCache.invalidateAll();
 		}
-		else if(firstLine > oldFirstLine)
+		else if(newFirstLine > currentFirstLine)
 		{
-			this.firstLine.scrollDown(firstLine - oldFirstLine);
-			textArea.chunkCache.scrollDown(firstLine - oldFirstLine);
+			this.firstLine.scrollDown(newFirstLine - currentFirstLine);
+			textArea.chunkCache.scrollDown(newFirstLine - currentFirstLine);
 		}
-		else if(firstLine < oldFirstLine)
+		else if(newFirstLine < currentFirstLine)
 		{
-			this.firstLine.scrollUp(oldFirstLine - firstLine);
-			textArea.chunkCache.scrollUp(oldFirstLine - firstLine);
-		}
+			this.firstLine.scrollUp(currentFirstLine - newFirstLine);
+			textArea.chunkCache.scrollUp(currentFirstLine - newFirstLine);
+		} else
+			assert true;
 
 		notifyScreenLineChanges();
 	} //}}}
@@ -574,11 +588,11 @@ public class DisplayManager
 	 */
 	void setFirstPhysicalLine(int amount, int skew)
 	{
-		int oldFirstLine = textArea.getFirstLine();
+		int currentFirstLine = textArea.getFirstLine();
 
 		if(amount == 0)
 		{
-			skew -= this.firstLine.skew;
+			skew -= this.firstLine.getSkew();
 
 			// JEditTextArea.scrollTo() needs this to simplify
 			// its code
@@ -600,20 +614,20 @@ public class DisplayManager
 		int firstLine = textArea.getFirstLine();
 		int visibleLines = textArea.getVisibleLines();
 
-		if(firstLine == oldFirstLine)
+		if(firstLine == currentFirstLine)
 			/* do nothing */;
-		else if(firstLine >= oldFirstLine + visibleLines
-			|| firstLine <= oldFirstLine - visibleLines)
+		else if(firstLine >= currentFirstLine + visibleLines
+			|| firstLine <= currentFirstLine - visibleLines)
 		{
 			textArea.chunkCache.invalidateAll();
 		}
-		else if(firstLine > oldFirstLine)
+		else if(firstLine > currentFirstLine)
 		{
-			textArea.chunkCache.scrollDown(firstLine - oldFirstLine);
+			textArea.chunkCache.scrollDown(firstLine - currentFirstLine);
 		}
-		else if(firstLine < oldFirstLine)
+		else if(firstLine < currentFirstLine)
 		{
-			textArea.chunkCache.scrollUp(oldFirstLine - firstLine);
+			textArea.chunkCache.scrollUp(currentFirstLine - firstLine);
 		}
 
 		// we have to be careful
@@ -624,8 +638,8 @@ public class DisplayManager
 	void invalidateScreenLineCounts()
 	{
 		screenLineMgr.invalidateScreenLineCounts();
-		firstLine.callReset = true;
-		scrollLineCount.callReset = true;
+		firstLine.setCallReset(true);
+		scrollLineCount.setCallReset(true);
 	} //}}}
 
 	//{{{ updateScreenLineCount() method
@@ -641,9 +655,9 @@ public class DisplayManager
 
 		if(!screenLineMgr.isScreenLineCountValid(line))
 		{
-			int newCount = textArea.chunkCache
-				.getLineSubregionCount(line);
+			int newCount = textArea.chunkCache.getLineSubregionCount(line);
 
+			assert newCount > 0;
 			setScreenLineCount(line,newCount);
 		}
 	} //}}}
@@ -732,8 +746,8 @@ public class DisplayManager
 	//{{{ resetAnchors() method
 	private void resetAnchors()
 	{
-		firstLine.callReset = true;
-		scrollLineCount.callReset = true;
+		firstLine.setCallReset(true);
+		scrollLineCount.setCallReset(true);
 		notifyScreenLineChanges();
 	} //}}}
 
@@ -745,6 +759,7 @@ public class DisplayManager
 	} //}}}
 
 	//{{{ showLineRange() method
+	// for folding
 	private void showLineRange(int start, int end)
 	{
 		if(Debug.FOLD_VIS_DEBUG)
@@ -760,13 +775,11 @@ public class DisplayManager
 			{
 				// important: not screenLineMgr.getScreenLineCount()
 				int screenLines = getScreenLineCount(i);
-				if(firstLine.physicalLine >= i)
+				if(firstLine.getPhysicalLine() >= i)
 				{
-					firstLine.scrollLine += screenLines;
-					firstLine.callChanged = true;
+					firstLine.moveScrollLine(screenLines);
 				}
-				scrollLineCount.scrollLine += screenLines;
-				scrollLineCount.callChanged = true;
+				scrollLineCount.moveScrollLine(screenLines);
 			}
 		}
 
@@ -783,44 +796,41 @@ public class DisplayManager
 				+ ',' + end + ')');
 		}
 
-		int i = start;
-		if(!isLineVisible(i))
-			i = getNextVisibleLine(i);
-		while(i != -1 && i <= end)
+		int physicalLine = start;
+		if(!isLineVisible(physicalLine))
+			physicalLine = getNextVisibleLine(physicalLine);
+
+		int scrollLines = 0;
+		while(physicalLine != -1 && physicalLine <= end)
 		{
-			int screenLines = getScreenLineCount(i);
-			if(i < firstLine.physicalLine)
+			int screenLines = getScreenLineCount(physicalLine);
+			if(physicalLine < firstLine.getPhysicalLine())
 			{
-				firstLine.scrollLine -= screenLines;
-				firstLine.skew = 0;
-				firstLine.callChanged = true;
+				firstLine.setSkew(0);
+				firstLine.moveScrollLine(-screenLines);
 			}
 
-			scrollLineCount.scrollLine -= screenLines;
-			scrollLineCount.callChanged = true;
-
-			i = getNextVisibleLine(i);
+			scrollLines -= screenLines;
+			physicalLine = getNextVisibleLine(physicalLine);
 		}
+		scrollLineCount.moveScrollLine(scrollLines);
 
 		/* update fold visibility map. */
 		folds.hide(start,end);
 
-		if(!isLineVisible(firstLine.physicalLine))
+		if(!isLineVisible(firstLine.getPhysicalLine()))
 		{
 			int firstVisible = getFirstVisibleLine();
-			if(firstLine.physicalLine < firstVisible)
+			if(firstLine.getPhysicalLine() < firstVisible)
 			{
-				firstLine.physicalLine = firstVisible;
-				firstLine.scrollLine = 0;
+				firstLine.setPhysicalLine(firstVisible);
+				firstLine.setScrollLine(0);
 			}
 			else
 			{
-				firstLine.physicalLine = getPrevVisibleLine(
-					firstLine.physicalLine);
-				firstLine.scrollLine -= getScreenLineCount(
-					firstLine.physicalLine);
+				firstLine.setPhysicalLine(getPrevVisibleLine(firstLine.getPhysicalLine()));
+				firstLine.moveScrollLine(-getScreenLineCount(firstLine.getPhysicalLine()));
 			}
-			firstLine.callChanged = true;
 		}
 	} //}}}
 
@@ -828,38 +838,15 @@ public class DisplayManager
 	/**
 	 * Sets the number of screen lines that the specified physical line
 	 * is split into.
-	 * @param line the line number
-	 * @param count the line count (1 if no wrap)
+	 * @param line the physical line number
+	 * @param count the line count (== 1 if no wrap, > 1 if soft wrap)
 	 * @since jEdit 4.2pre1
 	 */
 	private void setScreenLineCount(int line, int count)
 	{
-		int oldCount = screenLineMgr.getScreenLineCount(line);
-
-		// old one so that the screen line manager sets the
-		// validity flag!
-
+		assert count > 0;
 		screenLineMgr.setScreenLineCount(line,count);
 
-		if(count == oldCount)
-			return;
-
-		if(!isLineVisible(line))
-			return;
-
-		if(firstLine.physicalLine >= line)
-		{
-			if(firstLine.physicalLine == line)
-				firstLine.callChanged = true;
-			else
-			{
-				firstLine.scrollLine += count - oldCount;
-				firstLine.callChanged = true;
-			}
-		}
-
-		scrollLineCount.scrollLine += count - oldCount;
-		scrollLineCount.callChanged = true;
 	} //}}}
 
 	//{{{ _expandFold() method

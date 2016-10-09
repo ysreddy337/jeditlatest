@@ -43,7 +43,7 @@ import org.gjt.sp.util.ThreadUtilities;
 /**
  * VFS browser tree view.
  * @author Slava Pestov
- * @version $Id: BrowserView.java 20867 2012-01-19 21:14:50Z ezust $
+ * @version $Id: BrowserView.java 21962 2012-07-31 16:44:29Z ezust $
  */
 class BrowserView extends JPanel
 {
@@ -78,7 +78,6 @@ class BrowserView extends JPanel
 		splitPane = new JSplitPane(
 			browser.isHorizontalLayout()
 			? JSplitPane.HORIZONTAL_SPLIT : JSplitPane.VERTICAL_SPLIT,
-			jEdit.getBooleanProperty("appearance.continuousLayout"),
 			parentScroller, tableScroller);
 		splitPane.setOneTouchExpandable(true);
 
@@ -329,7 +328,6 @@ class BrowserView extends JPanel
 	{
 		showIcons = jEdit.getBooleanProperty("vfs.browser.showIcons");
 		table.propertiesChanged();
-		GUIUtilities.initContinuousLayout(splitPane);
 		splitPane.setBorder(null);
 	} //}}}
 
@@ -631,15 +629,6 @@ class BrowserView extends JPanel
 	
 	class ParentDirectoryList extends JList
 	{
-
-		public String getPath(int row)
-		{
-			Collection<String> components = new LinkedList<String>();
-			for (int i=1; i<=row; ++i)
-				components.add(getModel().getElementAt(i).toString());
-			return getModel().getElementAt(0) + TextUtilities.join(components, File.separator);
-		}
-
 		@Override
 		protected void processKeyEvent(KeyEvent evt)
 		{
@@ -696,9 +685,19 @@ class BrowserView extends JPanel
 					break;
 				case KeyEvent.VK_ENTER: 
 					evt.consume();
-					String path = getPath(row);
-					getBrowser().setDirectory(path);
-					table.requestFocus();
+					if(row != -1)
+					{
+						// basically the same handling as in ParentMouseHandler#mouseReleased
+						Object obj = parentDirectories.getModel()
+								.getElementAt(row);
+						if(obj instanceof VFSFile)
+						{
+							VFSFile dirEntry = (VFSFile)obj;
+							browser.setDirectory(dirEntry.getPath());
+							if(browser.getMode() == VFSBrowser.BROWSER)
+								focusOnFileView();
+						}
+					}
 					break;
 /* These actions don't work because they look at the EntryTable for the current selected
  * 	item. We need actions that look at the parentDirectoryList item instead.

@@ -80,7 +80,7 @@ public class PrintOptionPane extends AbstractOptionPane
 			+ ".folds"));
 		printFolds.setSelected(jEdit.getBooleanProperty("print.folds",true));
 		addComponent(printFolds);
-		
+
 		addSeparator("options.print.workarounds");
 
 		/* Spacing workaround */

@@ -27,8 +27,8 @@ import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
-import java.awt.Font;
 
+import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
@@ -53,8 +53,8 @@ import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
-import javax.swing.SwingUtilities;
 
+import javax.swing.SwingWorker;
 import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkListener;
 
@@ -68,7 +68,6 @@ import org.gjt.sp.jedit.MiscUtilities;
 
 import org.gjt.sp.jedit.EditBus.EBHandler;
 import org.gjt.sp.jedit.msg.PluginUpdate;
-import org.gjt.sp.jedit.msg.PropertiesChanged;
 
 import org.gjt.sp.util.Log;
 
@@ -79,7 +78,7 @@ import static org.gjt.sp.jedit.help.HelpHistoryModel.HistoryEntry;
  * jEdit's searchable help viewer. It uses a Swing JEditorPane to display the HTML,
  * and implements a URL history.
  * @author Slava Pestov
- * @version $Id: HelpViewer.java 18419 2010-08-26 09:21:29Z kerik-sf $
+ * @version $Id: HelpViewer.java 21419 2012-03-23 08:21:20Z kpouer $
  */
 public class HelpViewer extends JFrame implements HelpViewerInterface, HelpHistoryModelListener
 {
@@ -167,7 +166,6 @@ public class HelpViewer extends JFrame implements HelpViewerInterface, HelpHisto
 		rightPanel.add(BorderLayout.CENTER,viewerScrollPane);
 
 		splitter = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
-					  jEdit.getBooleanProperty("appearance.continuousLayout"),
 					  tabs,
 					  rightPanel);
 		splitter.setBorder(null);
@@ -192,8 +190,9 @@ public class HelpViewer extends JFrame implements HelpViewerInterface, HelpHisto
 
 		setVisible(true);
 
-		SwingUtilities.invokeLater(new Runnable()
+		EventQueue.invokeLater(new Runnable()
 		{
+			@Override
 			public void run()
 			{
 				splitter.setDividerLocation(jEdit.getIntegerProperty(
@@ -212,6 +211,7 @@ public class HelpViewer extends JFrame implements HelpViewerInterface, HelpHisto
 	 * 			 history?
 	 * @param scrollPosition The vertical scrollPosition
 	 */
+	@Override
 	public void gotoURL(String url, final boolean addToHistory, final int scrollPosition)
 	{
 		// the TOC pane looks up user's guide URLs relative to the
@@ -275,55 +275,59 @@ public class HelpViewer extends JFrame implements HelpViewerInterface, HelpHisto
 			   Once jEdit sets JDK 7 as dependency, all this should be
 			   reverted to synchronous code.
 			 */
-			Thread t = new Thread()
+			SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>()
 			{
-				public void run()
+				private boolean success;
+				@Override
+				protected Void doInBackground() throws Exception
 				{
 					try
 					{
 						viewer.setPage(_url);
-						SwingUtilities.invokeLater(new Runnable()
-						{
-							public void run()
-							{
-								if (0 != scrollPosition)
-								{
-									viewerScrollPane.getVerticalScrollBar().setValue(scrollPosition);
-								}
-								if(addToHistory)
-								{
-									historyModel.addToHistory(_url.toString());
-								}
-		
-								HelpViewer.this.shortURL = _shortURL;
-						
-								// select the appropriate tree node.
-								if(_shortURL != null)
-								{
-									toc.selectNode(_shortURL);
-								}
-								
-								viewer.requestFocus();
-							}
-						});
+						success = true;
 					}
 					catch(IOException io)
 					{
 						Log.log(Log.ERROR,this,io);
 						String[] args = { _url.toString(), io.toString() };
 						GUIUtilities.error(HelpViewer.this,"read-error",args);
-						return;
+					}
+					return null;
+				}
+
+				@Override
+				protected void done()
+				{
+					if (success)
+					{
+						if (scrollPosition != 0)
+						{
+							viewerScrollPane.getVerticalScrollBar().setValue(scrollPosition);
+						}
+						if(addToHistory)
+						{
+							historyModel.addToHistory(_url.toString());
+						}
+
+						HelpViewer.this.shortURL = _shortURL;
+
+						// select the appropriate tree node.
+						if(_shortURL != null)
+						{
+							toc.selectNode(_shortURL);
+						}
+
+						viewer.requestFocus();
 					}
 				}
 			};
-			t.start();
+			worker.execute();
 		}
 		catch(MalformedURLException mf)
 		{
 			Log.log(Log.ERROR,this,mf);
 			String[] args = { url, mf.getMessage() };
 			GUIUtilities.error(this,"badurl",args);
-			return;
 		}
 	} //}}}
 
@@ -338,6 +342,7 @@ public class HelpViewer extends JFrame implements HelpViewerInterface, HelpHisto
 	} //}}}
 
 	//{{{ dispose() method
+	@Override
 	public void dispose()
 	{
 		EditBus.removeFromBus(this);
@@ -362,26 +367,22 @@ public class HelpViewer extends JFrame implements HelpViewerInterface, HelpHisto
 			}
 	} //}}}
 
-	//{{{ handlePropertiesChanged() method
-	@EBHandler
-	public void handlePropertiesChanged(PropertiesChanged msg)
-	{
-		GUIUtilities.initContinuousLayout(splitter);
-	} //}}}
-
 	//{{{ getBaseURL() method
+	@Override
 	public String getBaseURL()
 	{
 		return baseURL;
 	} //}}}
 
 	//{{{ getShortURL() method
+	@Override
 	public String getShortURL()
 	{
 		return shortURL;
 	} //}}}
 
 	//{{{ historyUpdated() method
+	@Override
 	public void historyUpdated()
 	{
 		back.setEnabled(historyModel.hasPrevious());
@@ -389,6 +390,7 @@ public class HelpViewer extends JFrame implements HelpViewerInterface, HelpHisto
 	} //}}}
 
 	//{{{ getComponent method
+	@Override
 	public Component getComponent()
 	{
 		return getRootPane();
@@ -399,22 +401,24 @@ public class HelpViewer extends JFrame implements HelpViewerInterface, HelpHisto
 	//{{{ Instance members
 	private String baseURL;
 	private String shortURL;
-	private HistoryButton back;
-	private HistoryButton forward;
-	private JEditorPane viewer;
-	private JScrollPane viewerScrollPane;
-	private JLabel title;
-	private JSplitPane splitter;
-	private HelpHistoryModel historyModel;
-	private HelpTOCPanel toc;
+	private final HistoryButton back;
+	private final HistoryButton forward;
+	private final JEditorPane viewer;
+	private final JScrollPane viewerScrollPane;
+	private final JLabel title;
+	private final JSplitPane splitter;
+	private final HelpHistoryModel historyModel;
+	private final HelpTOCPanel toc;
 	private boolean queuedTOCReload;
 	//}}}
 
 	//{{{ queueTOCReload() method
+	@Override
 	public void queueTOCReload()
 	{
-		SwingUtilities.invokeLater(new Runnable()
+		EventQueue.invokeLater(new Runnable()
 		{
+			@Override
 			public void run()
 			{
 				queuedTOCReload = false;
@@ -431,6 +435,7 @@ public class HelpViewer extends JFrame implements HelpViewerInterface, HelpHisto
 	class ActionHandler implements ActionListener
 	{
 		//{{{ actionPerformed() class
+		@Override
 		public void actionPerformed(ActionEvent evt)
 		{
 			Object source = evt.getSource();
@@ -448,7 +453,7 @@ public class HelpViewer extends JFrame implements HelpViewerInterface, HelpHisto
 				url = actionCommand.substring(0,separatorPosition);
 				scrollPosition = Integer.parseInt(actionCommand.substring(separatorPosition+1));
 			}
-			if (url.length() != 0)
+			if (!url.isEmpty())
 			{
 				gotoURL(url,false,scrollPosition);
 				return;
@@ -485,6 +490,7 @@ public class HelpViewer extends JFrame implements HelpViewerInterface, HelpHisto
 	class LinkHandler implements HyperlinkListener
 	{
 		//{{{ hyperlinkUpdate() method
+		@Override
 		public void hyperlinkUpdate(HyperlinkEvent evt)
 		{
 			if(evt.getEventType() == HyperlinkEvent.EventType.ACTIVATED)
@@ -519,6 +525,7 @@ public class HelpViewer extends JFrame implements HelpViewerInterface, HelpHisto
 	//{{{ PropertyChangeHandler class
 	class PropertyChangeHandler implements PropertyChangeListener
 	{
+		@Override
 		public void propertyChange(PropertyChangeEvent evt)
 		{
 			if("page".equals(evt.getPropertyName()))
@@ -540,6 +547,7 @@ public class HelpViewer extends JFrame implements HelpViewerInterface, HelpHisto
 	//{{{ KeyHandler class
 	private class KeyHandler extends KeyAdapter
 	{
+		@Override
 		public void keyPressed(KeyEvent ke)
 		{
 			switch (ke.getKeyCode())

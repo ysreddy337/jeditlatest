@@ -1,6 +1,8 @@
 /*
  * ContextOptionPane.java - Context menu options panel
  * Copyright (C) 2000, 2001 Slava Pestov
+ * :tabSize=4:indentSize=4:noTabs=false:
+ * :folding=explicit:collapseFolds=1:
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -19,19 +21,33 @@
 
 package org.gjt.sp.jedit.options;
 
+import javax.swing.JCheckBox;
+
 import org.gjt.sp.jedit.gui.*;
 import org.gjt.sp.jedit.*;
 
 /**
  * Right-click context menu editor.
  * @author Slava Pestov
- * @version $Id: ContextOptionPane.java 19655 2011-07-07 10:02:06Z kpouer $
+ * @version $Id: ContextOptionPane.java 21983 2012-08-07 15:29:11Z ezust $
  */
 public class ContextOptionPane extends AbstractContextOptionPane
 {
+	private JCheckBox includeOptionsLink;
+	
 	public ContextOptionPane()
 	{
 		super("context", jEdit.getProperty("options.context.caption"));
+	}
+
+	protected void _init()
+	{
+		super._init();
+		includeOptionsLink = new JCheckBox(
+			jEdit.getProperty("options.context.includeOptionsLink.label"));
+		includeOptionsLink.setSelected(
+			jEdit.getBooleanProperty("options.context.includeOptionsLink"));
+		addButton(includeOptionsLink);
 	}
 
 	/**
@@ -54,5 +70,8 @@ public class ContextOptionPane extends AbstractContextOptionPane
 	protected void saveContextMenu(String menu)
 	{
 		jEdit.setProperty("view.context", menu);
+		jEdit.setBooleanProperty(
+			"options.context.includeOptionsLink",
+			includeOptionsLink.isSelected());
 	}
 }

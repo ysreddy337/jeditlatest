@@ -39,7 +39,7 @@ import org.gjt.sp.util.XMLUtilities;
 
 /**
  * XML handler for mode definition files.
- * @version $Id: XModeHandler.java 19412 2011-03-01 15:07:08Z kpouer $
+ * @version $Id: XModeHandler.java 21612 2012-04-28 16:49:03Z k_satoda $
  */
 public abstract class XModeHandler extends DefaultHandler
 {
@@ -372,7 +372,17 @@ public abstract class XModeHandler extends DefaultHandler
 			{
 				byte token = Token.stringToToken(tag.tagName);
 				if(token != -1)
-					addKeyword(tag.lastKeyword.toString(),token);
+				{
+					if (tag.lastKeyword == null
+						|| tag.lastKeyword.length() == 0)
+					{
+						error("empty-keyword", null);
+					}
+					else
+					{
+						addKeyword(tag.lastKeyword.toString(),token);
+					}
+				}
 			} //}}}
 		}
 		else
@@ -474,12 +484,6 @@ public abstract class XModeHandler extends DefaultHandler
 	//{{{ addKeyword() method
 	private void addKeyword(String k, byte id)
 	{
-		if(k == null)
-		{
-			error("empty-keyword",null);
-			return;
-		}
-
 		if (keywords == null) return;
 		keywords.add(k,id);
 	} //}}}

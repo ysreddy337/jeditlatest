@@ -35,12 +35,19 @@ class PropertyManager
 		for (Properties plugin : plugins)
 			total.putAll(plugin);
 		total.putAll(site);
+		total.putAll(localization);
 		total.putAll(user);
 		return total;
 	} //}}}
 
-	//{{{ loadSystemProps() method
+	//{{{ loadSystemProps() methods
 	void loadSystemProps(InputStream in)
+		throws IOException
+	{
+		loadProps(system,in);
+	}
+
+	void loadSystemProps(Reader in)
 		throws IOException
 	{
 		loadProps(system,in);
@@ -51,6 +58,16 @@ class PropertyManager
 		throws IOException
 	{
 		loadProps(site,in);
+	} //}}}
+
+	//{{{ loadLocalizationProps() method
+	void loadLocalizationProps(Reader in)
+		throws IOException
+	{
+		if (in == null)
+			localization.clear();
+		else
+			loadProps(localization,in);
 	} //}}}
 
 	//{{{ loadUserProps() method
@@ -95,8 +112,12 @@ class PropertyManager
 		String value = user.getProperty(name);
 		if(value != null)
 			return value;
-		else
-			return getDefaultProperty(name);
+
+		value = localization.getProperty(name);
+		if (value != null)
+			return value;
+
+		return getDefaultProperty(name);
 	} //}}}
 
 	//{{{ setProperty() method
@@ -150,10 +171,11 @@ class PropertyManager
 	} //}}}
 
 	//{{{ Private members
-	private Properties system = new Properties();
-	private List<Properties> plugins = new LinkedList<Properties>();
-	private Properties site = new Properties();
-	private Properties user = new Properties();
+	private final Properties system = new Properties();
+	private final List<Properties> plugins = new LinkedList<Properties>();
+	private final Properties site = new Properties();
+	private final Properties localization = new Properties();
+	private final Properties user = new Properties();
 
 	//{{{ getDefaultProperty() method
 	private String getDefaultProperty(String name)
@@ -174,6 +196,20 @@ class PropertyManager
 
 	//{{{ loadProps() method
 	private static void loadProps(Properties into, InputStream in)
+		throws IOException
+	{
+		try
+		{
+			into.load(in);
+		}
+		finally
+		{
+			in.close();
+		}
+	} //}}}
+
+	//{{{ loadProps() method
+	private static void loadProps(Properties into, Reader in)
 		throws IOException
 	{
 		try

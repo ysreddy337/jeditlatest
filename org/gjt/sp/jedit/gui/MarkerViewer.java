@@ -34,7 +34,7 @@ import org.gjt.sp.jedit.msg.BufferUpdate;
 import org.gjt.sp.jedit.msg.EditPaneUpdate;
 import org.gjt.sp.jedit.msg.ViewUpdate;
 //}}}
-
+/** Dockable view of markers in the current buffer */
 public class MarkerViewer extends JPanel implements ActionListener
 {
 	//{{{ MarkerViewer constructor
@@ -85,6 +85,7 @@ public class MarkerViewer extends JPanel implements ActionListener
 		markerList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		markerList.setCellRenderer(new Renderer());
 		markerList.addMouseListener(new MouseHandler());
+		markerList.addKeyListener(new KeyHandler());
 
 		add(BorderLayout.CENTER,new JScrollPane(markerList));
 
@@ -279,6 +280,21 @@ public class MarkerViewer extends JPanel implements ActionListener
 			markerList.setSelectedIndex(index);
 
 			goToSelectedMarker();
+		}
+	} //}}}
+	
+	//{{{ KeyHandler Class
+	class KeyHandler extends KeyAdapter
+	{
+		@Override
+		public void keyPressed(KeyEvent evt)
+		{			
+			if(evt.getKeyCode() == KeyEvent.VK_SPACE
+			   || evt.getKeyCode() == KeyEvent.VK_ENTER)
+			{
+				evt.consume();
+				goToSelectedMarker();
+			}
 		}
 	} //}}}
 

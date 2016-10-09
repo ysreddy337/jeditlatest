@@ -40,7 +40,7 @@ import org.gjt.sp.util.StandardUtilities;
  * or font style for painting that token.
  *
  * @author Slava Pestov, mike dillon
- * @version $Id: TokenMarker.java 21339 2012-03-12 05:39:19Z ezust $
+ * @version $Id: TokenMarker.java 21285 2012-03-09 15:46:47Z k_satoda $
  *
  * @see org.gjt.sp.jedit.syntax.Token
  * @see org.gjt.sp.jedit.syntax.TokenHandler

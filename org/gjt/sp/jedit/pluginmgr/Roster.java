@@ -1,6 +1,6 @@
 /*
  * Roster.java - A list of things to do, used in various places
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2001, 2004 Slava Pestov
@@ -37,7 +37,7 @@ import static org.gjt.sp.jedit.io.FileVFS.recursiveDelete;
 //}}}
 
 /**
- * @author $Id: Roster.java 21669 2012-05-13 20:40:12Z ezust $
+ * @author $Id: Roster.java 21750 2012-06-02 12:34:56Z jarekczek $
  */
 class Roster
 {
@@ -330,6 +330,14 @@ class Roster
 						try
 						{
 							in = zipFile.getInputStream(entry);
+							// According to java 6/7 doc "in" should never be
+							// null, but it happens with filenames
+							// containing non-ascii characaters, #3531320
+							if (in == null)
+								throw new ZipException("Entry "
+									+ entry.getName() + " from archive "
+									+ zipFile.getName()
+									+ " could not be processed."); 
 							out = new FileOutputStream(file);
 							IOUtilities.copyStream(4096,
 								null,

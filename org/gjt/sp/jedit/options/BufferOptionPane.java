@@ -57,6 +57,7 @@ public class BufferOptionPane extends AbstractOptionPane
 	private JCheckBox noTabs;
 	private Buffer buffer;
 	private JCheckBox elasticTabstops;
+	private JComboBox autoIndent;
 
 	public BufferOptionPane()
 	{
@@ -162,6 +163,13 @@ public class BufferOptionPane extends AbstractOptionPane
 			folding);
 		//}}}
 
+		//{{{ Automatic indentation
+		String[] indentModes = {"none", "simple", "full"};
+		autoIndent = new JComboBox(indentModes);
+		autoIndent.setSelectedItem(buffer.getStringProperty("autoIndent"));
+		addComponent(jEdit.getProperty("options.editing.autoIndent"), autoIndent);
+		//}}}
+
 		//{{{ Wrap mode
 		String[] wrapModes = {
 			"none",
@@ -207,7 +215,7 @@ public class BufferOptionPane extends AbstractOptionPane
 		noTabs.setSelected(buffer.getBooleanProperty("noTabs"));
 		addComponent(noTabs);
 		//}}}
-		
+
 		//{{{ Elastic tabstops
 		elasticTabstops = new JCheckBox(jEdit.getProperty(
 			"options.editing.elasticTabstops"));
@@ -294,6 +302,7 @@ public class BufferOptionPane extends AbstractOptionPane
 
 		buffer.setBooleanProperty("noTabs",noTabs.isSelected());
 		buffer.setBooleanProperty("elasticTabstops",elasticTabstops.isSelected());
+		buffer.setStringProperty("autoIndent", (String)autoIndent.getSelectedItem());
 
 		index = mode.getSelectedIndex();
 		buffer.setMode(modes[index]);

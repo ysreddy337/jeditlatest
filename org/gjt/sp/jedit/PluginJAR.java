@@ -23,6 +23,7 @@
 package org.gjt.sp.jedit;
 
 //{{{ Imports
+import java.awt.EventQueue;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
@@ -33,9 +34,13 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Reader;
 import java.lang.reflect.Modifier;
 import java.net.URL;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -43,6 +48,8 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -52,7 +59,10 @@ import org.gjt.sp.jedit.browser.VFSBrowser;
 import org.gjt.sp.jedit.buffer.DummyFoldHandler;
 import org.gjt.sp.jedit.buffer.FoldHandler;
 import org.gjt.sp.jedit.gui.DockableWindowFactory;
+import org.gjt.sp.jedit.gui.DockableWindowManager;
+import org.gjt.sp.jedit.io.CharsetEncoding;
 import org.gjt.sp.jedit.msg.PluginUpdate;
+import org.gjt.sp.jedit.msg.PropertiesChanged;
 import org.gjt.sp.util.Log;
 import org.gjt.sp.util.StandardUtilities;
 import org.gjt.sp.util.IOUtilities;
@@ -77,12 +87,12 @@ import static org.gjt.sp.jedit.EditBus.EBHandler;
  * syntax.</li>
  * <li>A file named <code>dockables.xml</code> defining dockable windows.
  * Only one such file per plugin is allowed. See {@link
- * org.gjt.sp.jedit.gui.DockableWindowManager} for
+ * DockableWindowManager} for
  * syntax.</li>
  * <li>A file named <code>services.xml</code> defining additional services
  * offered by the plugin, such as virtual file systems.
  * Only one such file per plugin is allowed. See {@link
- * org.gjt.sp.jedit.ServiceManager} for
+ * ServiceManager} for
  * syntax.</li>
  * <li>File with extension <code>.props</code> containing name/value pairs
  * separated by an equals sign.
@@ -91,6 +101,14 @@ import static org.gjt.sp.jedit.EditBus.EBHandler;
  * settings and strings used by the plugin. See {@link EditPlugin} for
  * information about properties used by jEdit. See
  * <code>java.util.Properties</code> for property file syntax.</li>
+ * <li>Since jEdit 5.0, files named lang_[language_iso_code].properties are
+ * localization files. If one of those files match the current language, jEdit
+ * will load it. If a label is missing in the localization file, it will be
+ * loaded from the other .props files.
+ * Those files will be ignored by jEdit's versions older than 5.0 and do not
+ * cause any problem
+ * See <a href="http://sourceforge.net/apps/mediawiki/jedit/index.php?title=Localization">
+ *         jEdit's localization wiki</a>
  * </ul>
  *
  * For a plugin to actually do something once it is resident in memory,
@@ -109,21 +127,21 @@ import static org.gjt.sp.jedit.EditBus.EBHandler;
  * {@link EditPlugin#start()} for a full description.
  *
  *
- * @see org.gjt.sp.jedit.jEdit#getProperty(String)
- * @see org.gjt.sp.jedit.jEdit#getPlugin(String)
- * @see org.gjt.sp.jedit.jEdit#getPlugins()
- * @see org.gjt.sp.jedit.jEdit#getPluginJAR(String)
- * @see org.gjt.sp.jedit.jEdit#getPluginJARs()
- * @see org.gjt.sp.jedit.jEdit#addPluginJAR(String)
- * @see org.gjt.sp.jedit.jEdit#removePluginJAR(PluginJAR,boolean)
- * @see org.gjt.sp.jedit.ActionSet
- * @see org.gjt.sp.jedit.gui.DockableWindowManager
- * @see org.gjt.sp.jedit.OptionPane
- * @see org.gjt.sp.jedit.PluginJAR
- * @see org.gjt.sp.jedit.ServiceManager
+ * @see jEdit#getProperty(String)
+ * @see jEdit#getPlugin(String)
+ * @see jEdit#getPlugins()
+ * @see jEdit#getPluginJAR(String)
+ * @see jEdit#getPluginJARs()
+ * @see jEdit#addPluginJAR(String)
+ * @see jEdit#removePluginJAR(PluginJAR,boolean)
+ * @see ActionSet
+ * @see DockableWindowManager
+ * @see OptionPane
+ * @see PluginJAR
+ * @see ServiceManager
  *
  * @author Slava Pestov
- * @version $Id: PluginJAR.java 21669 2012-05-13 20:40:12Z ezust $
+ * @version $Id: PluginJAR.java 22145 2012-09-03 14:46:14Z kpouer $
  * @since jEdit 4.2pre1
  */
 public class PluginJAR
@@ -136,6 +154,7 @@ public class PluginJAR
 	private final JARClassLoader classLoader;
 	private ZipFile zipFile;
 	private Properties properties;
+	private Map<String, Properties> localizationProperties;
 	/**
 	 * The class list contained in this jar.
 	 */
@@ -174,6 +193,8 @@ public class PluginJAR
 		}
 		jEdit.addPluginJAR(path);
 		jar = jEdit.getPluginJAR(path);
+		if (jar == null)
+			return null;
 		EditPlugin plugin = jar.getPlugin();
 		if (plugin == null)
 		{
@@ -324,7 +345,7 @@ public class PluginJAR
 				continue;
 			}
 
-			if(pluginDepends.what.equals("plugin"))
+			if("plugin".equals(pluginDepends.what))
 			{
 				int index2 = pluginDepends.arg.indexOf(' ');
 				if ( index2 == -1)
@@ -397,7 +418,7 @@ public class PluginJAR
 	/**
 	 * Returns the plugin's action set for the file system browser action
 	 * context {@link
-	 * org.gjt.sp.jedit.browser.VFSBrowser#getActionContext()}.
+	 * VFSBrowser#getActionContext()}.
 	 * These actions are loaded from
 	 * the <code>browser.actions.xml</code> file; see {@link ActionSet}.
 	 *.
@@ -440,7 +461,7 @@ public class PluginJAR
 				continue;
 			}
 
-			if(pluginDepends.what.equals("jdk"))
+			if("jdk".equals(pluginDepends.what))
 			{
 				if(!pluginDepends.optional && StandardUtilities.compareStrings(
 					System.getProperty("java.version"),
@@ -452,7 +473,7 @@ public class PluginJAR
 					ok = false;
 				}
 			}
-			else if(pluginDepends.what.equals("jedit"))
+			else if("jedit".equals(pluginDepends.what))
 			{
 				if(pluginDepends.arg.length() != 11)
 				{
@@ -472,7 +493,7 @@ public class PluginJAR
 					ok = false;
 				}
 			}
-			else if(pluginDepends.what.equals("plugin"))
+			else if("plugin".equals(pluginDepends.what))
 			{
 				int index2 = pluginDepends.arg.indexOf(' ');
 				if(index2 == -1)
@@ -537,7 +558,7 @@ public class PluginJAR
 					}
 				}
 			}
-			else if(pluginDepends.what.equals("class"))
+			else if("class".equals(pluginDepends.what))
 			{
 				if(!pluginDepends.optional)
 				{
@@ -662,8 +683,16 @@ public class PluginJAR
   				listModel.add(jarPath);
   				PluginJAR jar = jEdit.getPluginJAR(
   					jarPath);
-  				transitiveClosure(jar.getDependentPlugins(),
-  					listModel);
+				if (jar == null)
+				{
+					Log.log(Log.WARNING, PluginJAR.class, "The jar file " + jarPath +
+						" doesn't exist, the plugin may have been partially removed");
+				}
+				else
+				{
+					transitiveClosure(jar.getDependentPlugins(),
+									  listModel);
+				}
   			}
   		}
   	} //}}}
@@ -1023,12 +1052,13 @@ public class PluginJAR
 	} //}}}
 
 	//{{{ init() method
-	void init()
+	boolean init()
 	{
 		PluginCacheEntry cache = getPluginCache(this);
 		if(cache != null)
 		{
-			loadCache(cache);
+			if (!loadCache(cache))
+				return false;
 			classLoader.activate();
 		}
 		else
@@ -1040,6 +1070,10 @@ public class PluginJAR
 				{
 					setPluginCache(this,cache);
 					classLoader.activate();
+				}
+				else
+				{
+					return false;
 				}
 			}
 			catch(IOException io)
@@ -1054,6 +1088,7 @@ public class PluginJAR
 				uninit(false);
 			}
 		}
+		return true;
 	} //}}}
 
 	//{{{ uninit() method
@@ -1090,7 +1125,14 @@ public class PluginJAR
 			ServiceManager.unloadServices(this);
 
 			jEdit.removePluginProps(properties);
-
+			if (localizationProperties != null)
+			{
+				Collection<Properties> values = localizationProperties.values();
+				for (Properties value : values)
+				{
+					jEdit.removePluginProps(value);
+				}
+			}
 			try
 			{
 				if(zipFile != null)
@@ -1131,10 +1173,40 @@ public class PluginJAR
 	} //}}}
 
 	//{{{ loadCache() method
-	private void loadCache(PluginCacheEntry cache)
+	private boolean loadCache(PluginCacheEntry cache)
 	{
+		// Check if a plugin with the same name
+		// is already loaded
+		if(cache.pluginClass != null)
+		{
+			// Check if a plugin with the same name
+			// is already loaded
+			if (!continueLoading(cache.pluginClass, cache.cachedProperties))
+			{
+				return false;
+			}
+			else
+			{
+				EditPlugin otherPlugin = jEdit.getPlugin(cache.pluginClass);
+				if (otherPlugin != null)
+					jEdit.removePluginJAR(otherPlugin.getPluginJAR(), false);
+			}
+		}
+
 		classes = cache.classes;
 		resources = cache.resources;
+
+		// this must be done before loading cachedProperties
+		if (cache.localizationProperties != null)
+		{
+			localizationProperties = cache.localizationProperties;
+			String currentLanguage = jEdit.getCurrentLanguage();
+			Properties langProperties = localizationProperties.get(currentLanguage);
+			if (langProperties != null)
+			{
+				jEdit.addPluginProps(langProperties);
+			}
+		}
 
 		/* this should be before dockables are initialized */
 		if(cache.cachedProperties != null)
@@ -1199,37 +1271,28 @@ public class PluginJAR
 
 		if(cache.pluginClass != null)
 		{
-			// Check if a plugin with the same name
-			// is already loaded
-			if(jEdit.getPlugin(cache.pluginClass) != null)
-			{
-				jEdit.pluginError(path, "plugin-error.already-loaded",
-					null);
-				uninit(false);
-			}
-			else
-			{
-				String label = jEdit.getProperty(
-					"plugin." + cache.pluginClass
-					+ ".name");
-				actions.setLabel(jEdit.getProperty(
-					"action-set.plugin",
-					new String[] { label }));
-				plugin = new EditPlugin.Deferred(this,
-					cache.pluginClass);
-			}
+			String label = jEdit.getProperty(
+				"plugin." + cache.pluginClass
+				+ ".name");
+			actions.setLabel(jEdit.getProperty(
+				"action-set.plugin",
+				new String[] { label }));
+			plugin = new EditPlugin.Deferred(this,
+				cache.pluginClass);
 		}
 		else
 		{
 			if(actions.size() != 0)
 				actionsPresentButNotCoreClass();
 		}
+		return true;
 	} //}}}
 
 	//{{{ generateCache() method
 	public PluginCacheEntry generateCache() throws IOException
 	{
 		properties = new Properties();
+		localizationProperties = new HashMap<String, Properties>();
 
 		List<String> classes = new LinkedList<String>();
 		List<String> resources = new LinkedList<String>();
@@ -1240,37 +1303,45 @@ public class PluginJAR
 
 		PluginCacheEntry cache = new PluginCacheEntry();
 		cache.modTime = file.lastModified();
-		cache.cachedProperties = new Properties();
 
 		Enumeration<? extends ZipEntry> entries = zipFile.entries();
+		Pattern languageFilePattern = Pattern.compile("lang_(\\w+).properties");
+
 		while(entries.hasMoreElements())
 		{
 			ZipEntry entry = entries.nextElement();
 			String name = entry.getName();
 			String lname = name.toLowerCase();
-			if(lname.equals("actions.xml"))
+			if("actions.xml".equals(lname))
 			{
 				cache.actionsURI = classLoader.getResource(name);
 			}
-			else if(lname.equals("browser.actions.xml"))
+			else if("browser.actions.xml".equals(lname))
 			{
 				cache.browserActionsURI = classLoader.getResource(name);
 			}
-			else if(lname.equals("dockables.xml"))
+			else if("dockables.xml".equals(lname))
 			{
 				dockablesURI = classLoader.getResource(name);
 				cache.dockablesURI = dockablesURI;
 			}
-			else if(lname.equals("services.xml"))
+			else if("services.xml".equals(lname))
 			{
 				servicesURI = classLoader.getResource(name);
 				cache.servicesURI = servicesURI;
 			}
 			else if(lname.endsWith(".props"))
 			{
-				InputStream in = classLoader.getResourceAsStream(name);
-				properties.load(in);
-				in.close();
+				InputStream in = null;
+				try
+				{
+					in = classLoader.getResourceAsStream(name);
+					properties.load(in);
+				}
+				finally
+				{
+					IOUtilities.closeQuietly(in);
+				}
 			}
 			else if(name.endsWith(".class"))
 			{
@@ -1284,11 +1355,45 @@ public class PluginJAR
 			}
 			else
 			{
-				resources.add(name);
+				Matcher matcher = languageFilePattern.matcher(lname);
+				if (matcher.matches())
+				{
+					String languageName = matcher.group(1);
+					Properties props = new Properties();
+					InputStream in = null;
+					try
+					{
+						in = classLoader.getResourceAsStream(name);
+						CharsetEncoding utf8 = new CharsetEncoding("UTF-8");
+						Reader utf8in = utf8.getTextReader(in);
+						props.load(utf8in);
+						localizationProperties.put(languageName, props);
+					}
+					finally
+					{
+						IOUtilities.closeQuietly(in);
+					}
+				}
+				else
+					resources.add(name);
 			}
 		}
 
 		cache.cachedProperties = properties;
+		cache.localizationProperties = localizationProperties;
+
+		// this must be done before loading cachedProperties
+		if (cache.localizationProperties != null)
+		{
+			localizationProperties = cache.localizationProperties;
+			String currentLanguage = jEdit.getCurrentLanguage();
+			Properties langProperties = localizationProperties.get(currentLanguage);
+			if (langProperties != null)
+			{
+				jEdit.addPluginProps(langProperties);
+			}
+		}
+
 		jEdit.addPluginProps(properties);
 
 		this.classes = cache.classes =
@@ -1317,12 +1422,20 @@ public class PluginJAR
 
 				// Check if a plugin with the same name
 				// is already loaded
-				if(jEdit.getPlugin(className) != null)
+				if (!continueLoading(className, cache.cachedProperties))
 				{
-					jEdit.pluginError(path, "plugin-error.already-loaded",
-						null);
 					return null;
 				}
+				else
+				{
+					EditPlugin otherPlugin = jEdit.getPlugin(className);
+					if (otherPlugin != null)
+					{
+						jEdit.removePluginJAR(otherPlugin.getPluginJAR(), false);
+//						otherPlugin.getPluginJAR().uninit(false);
+					}
+				}
+
 				plugin = new EditPlugin.Deferred(this,
 				     className);
 				label = _label;
@@ -1393,6 +1506,18 @@ public class PluginJAR
 
 		return cache;
 	} //}}}
+	
+	private static boolean continueLoading(String clazz, Properties cachedProperties)
+	{
+		if(jEdit.getPlugin(clazz) != null)
+		{
+			String otherVersion = jEdit.getProperty("plugin."+clazz+".version");
+			String thisVersion = cachedProperties.getProperty("plugin."+clazz+".version");
+			if (otherVersion.compareTo(thisVersion) > 0)
+				return false;
+		}
+		return true;
+	}
 
 	//{{{ startPlugin() method
 	private void startPlugin()
@@ -1422,7 +1547,7 @@ public class PluginJAR
 				// behavior, where a PropertiesChanged
 				// was sent after plugins were started
 				((EBComponent)plugin).handleMessage(
-					new org.gjt.sp.jedit.msg.PropertiesChanged(null));
+					new PropertiesChanged(null));
 			}
 			EditBus.addToBus(plugin);
 		}
@@ -1450,11 +1575,12 @@ public class PluginJAR
 	//{{{ startPluginLater() method
 	private void startPluginLater()
 	{
-		SwingUtilities.invokeLater(new Runnable()
+		EventQueue.invokeLater(new Runnable()
 		{
+			@Override
 			public void run()
 			{
-				if(!activated)
+				if (!activated)
 					return;
 
 				startPlugin();
@@ -1491,7 +1617,7 @@ public class PluginJAR
 	 */
 	public static class PluginCacheEntry
 	{
-		public static final int MAGIC = 0xB7A2E422;
+		public static final int MAGIC = 0xB7A2E424;
 
 		//{{{ Instance variables
 		public PluginJAR plugin;
@@ -1513,6 +1639,7 @@ public class PluginJAR
 		ServiceManager.Descriptor[] cachedServices;
 
 		public Properties cachedProperties;
+		public Map<String, Properties> localizationProperties;
 		public String pluginClass;
 		//}}}
 
@@ -1572,7 +1699,8 @@ public class PluginJAR
 			resources = readStringArray(din);
 
 			cachedProperties = readMap(din);
-
+			localizationProperties = readLanguagesMap(din);
+			
 			pluginClass = readString(din);
 
 			return true;
@@ -1616,6 +1744,7 @@ public class PluginJAR
 			writeStringArray(dout,resources);
 
 			writeMap(dout,cachedProperties);
+			writeLanguages(dout, localizationProperties);
 
 			writeString(dout,pluginClass);
 		} //}}}
@@ -1688,9 +1817,29 @@ public class PluginJAR
 				String value = readString(din);
 				if(value == null)
 					value = "";
-				returnValue.put(key,value);
+				returnValue.setProperty(key, value);
 			}
 			return returnValue;
+		} //}}}
+
+		//{{{ readLanguagesMap() method
+		private static Map<String, Properties> readLanguagesMap(DataInputStream din)
+			throws IOException
+		{
+			int languagesCount = din.readInt();
+			if (languagesCount == 0)
+				return Collections.emptyMap();
+			
+			
+			Map<String, Properties> languages = new HashMap<String, Properties>(languagesCount);
+			for (int i = 0;i<languagesCount;i++)
+			{
+				String lang = readString(din);
+				Properties props = readMap(din);
+				languages.put(lang, props);
+			}
+
+			return languages;
 		} //}}}
 
 		//{{{ writeString() method
@@ -1746,15 +1895,27 @@ public class PluginJAR
 		} //}}}
 
 		//{{{ writeMap() method
-		private static void writeMap(DataOutputStream dout, Map map)
+		private static void writeMap(DataOutputStream dout, Properties properties)
 			throws IOException
 		{
-			dout.writeInt(map.size());
-			Set<Map.Entry<Object, Object>> set = map.entrySet();
+			dout.writeInt(properties.size());
+			Set<Map.Entry<Object, Object>> set = properties.entrySet();
 			for (Map.Entry<Object, Object> entry : set)
 			{
 				writeString(dout,entry.getKey());
 				writeString(dout,entry.getValue());
+			}
+		} //}}}
+
+		//{{{ writeLanguages() method
+		private static void writeLanguages(DataOutputStream dout, Map<String, Properties> languages)
+			throws IOException
+		{
+			dout.writeInt(languages.size());
+			for (Map.Entry<String, Properties> entry : languages.entrySet())
+			{
+				writeString(dout, entry.getKey());
+				writeMap(dout, entry.getValue());
 			}
 		} //}}}
 

@@ -39,7 +39,7 @@ import org.gjt.sp.util.Log;
 /**
  * Local filesystem VFS.
  * @author Slava Pestov
- * @version $Id: FileVFS.java 19252 2011-01-22 21:27:03Z vanza $
+ * @version $Id: FileVFS.java 21721 2012-05-27 09:03:56Z jarekczek $
  */
 public class FileVFS extends VFS
 {
@@ -50,6 +50,7 @@ public class FileVFS extends VFS
 	{
 		super("file",READ_CAP | WRITE_CAP | BROWSE_CAP | DELETE_CAP
 			| RENAME_CAP | MKDIR_CAP | LOW_LATENCY_CAP
+			| NON_AWT_SESSION_CAP
 			| (OperatingSystem.isCaseInsensitiveFS()
 			? CASE_INSENSITIVE_CAP : 0),
 			new String[] { EA_TYPE, EA_SIZE, EA_STATUS,
@@ -60,7 +61,7 @@ public class FileVFS extends VFS
 	@Override
 	public String getParentOfPath(String path)
 	{
-		if(OperatingSystem.isDOSDerived())
+		if(OperatingSystem.isWindows())
 		{
 			if(path.length() == 2 && path.charAt(1) == ':')
 				return FileRootsVFS.PROTOCOL + ':';
@@ -358,6 +359,8 @@ public class FileVFS extends VFS
 		File directory = new File(path);
 		File[] list = null;
 		if(directory.exists())
+			if (fsView == null)
+				fsView = FileSystemView.getFileSystemView();
 			list = fsView.getFiles(directory,false);
 
 		if(list == null)
@@ -503,48 +506,6 @@ public class FileVFS extends VFS
 		return retVal;
 	} //}}}
 
-	//{{{ _backup() method
-	@Override
-	public void _backup(Object session, String path, Component comp)
-		throws IOException
-	{
-		// Fetch properties
-
-		String backupPrefix = jEdit.getProperty("backup.prefix");
-		String backupSuffix = jEdit.getProperty("backup.suffix");
-
-		String backupDirectory = jEdit.getProperty("backup.directory");
-
-		int backupTimeDistance = jEdit.getIntegerProperty("backup.minTime",0);
-		File file = new File(path);
-
-		if (!file.exists())
-			return;
-
-		// Check for backup.directory, and create that
-		// directory if it doesn't exist
-		if(backupDirectory == null || backupDirectory.length() == 0)
-			backupDirectory = file.getParent();
-		else
-		{
-			backupDirectory = MiscUtilities.constructPath(
-				System.getProperty("user.home"), backupDirectory);
-
-			// Perhaps here we would want to guard with
-			// a property for parallel backups or not.
-			backupDirectory = MiscUtilities.concatPath(
-				backupDirectory,file.getParent());
-
-			File dir = new File(backupDirectory);
-
-			if (!dir.exists())
-				dir.mkdirs();
-		}
-
-		MiscUtilities.saveBackup(file, jEdit.getIntegerProperty("backups",1), backupPrefix,
-			backupSuffix,backupDirectory,backupTimeDistance);
-	} //}}}
-
 	//{{{ _createInputStream() method
 	@Override
 	public InputStream _createInputStream(Object session, String path,
@@ -680,6 +641,6 @@ public class FileVFS extends VFS
 	//}}}
 
 	//{{{ Private members
-	private static final FileSystemView fsView = FileSystemView.getFileSystemView();
+	private static FileSystemView fsView = null;
 	//}}}
 }

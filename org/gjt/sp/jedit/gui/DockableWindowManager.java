@@ -19,16 +19,17 @@ import org.gjt.sp.jedit.jEdit;
 import org.gjt.sp.jedit.EditBus.EBHandler;
 import org.gjt.sp.jedit.View.ViewConfig;
 import org.gjt.sp.jedit.gui.KeyEventTranslator.Key;
+import org.jedit.keymap.Keymap;
+import org.jedit.keymap.KeymapManager;
 import org.gjt.sp.jedit.msg.DockableWindowUpdate;
 import org.gjt.sp.jedit.msg.PluginUpdate;
 import org.gjt.sp.jedit.msg.PropertiesChanged;
 import org.gjt.sp.util.Log;
 // }}}
 
-@SuppressWarnings("serial")
 // {{{ abstract class DockableWindowManager
-/**
- * <p>Keeps track of all dockable windows for a single View, and provides
+
+/** <p> Keeps track of all dockable windows for a single View, and provides
  * an API for getting/showing/hiding them. </p>
  *
  * <p>Each {@link org.gjt.sp.jedit.View} has an instance of this class.</p>
@@ -112,11 +113,12 @@ import org.gjt.sp.util.Log;
  * @author Slava Pestov
  * @author John Gellene (API documentation)
  * @author Shlomy Reinstein (refactoring into a base and an impl)
- * @version $Id: DockableWindowManager.java 20108 2011-10-18 12:16:38Z evanpw $
+ * @version $Id: DockableWindowManager.java 21504 2012-03-29 17:45:22Z ezust $
  * @since jEdit 2.6pre3
  *
  */
- public abstract class DockableWindowManager extends JPanel
+@SuppressWarnings("serial")
+public abstract class DockableWindowManager extends JPanel
 {
 
 	//{{{ Constants
@@ -631,8 +633,10 @@ import org.gjt.sp.util.Log;
 
 		KeyHandler(String dockableName)
 		{
-			String shortcut1=jEdit.getProperty(action + ".shortcut");
-			String shortcut2=jEdit.getProperty(action + ".shortcut2");
+			KeymapManager keymapManager = jEdit.getKeymapManager();
+			Keymap keymap = keymapManager.getKeymap();
+			String shortcut1 = keymap.getShortcut(action + ".shortcut");
+			String shortcut2 = keymap.getShortcut(action + ".shortcut2");
 			if (shortcut1 != null)
 				b1 = parseShortcut(shortcut1);
 			if (shortcut2 != null)

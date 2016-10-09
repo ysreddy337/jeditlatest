@@ -23,9 +23,13 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
- * $Id: HyperSearch_Results_to_Buffer.bsh 14007 2008-11-04 21:37:36Z shlomy $
+ * $Id: HyperSearch_Results_to_Buffer.bsh 21353 2012-03-14 09:46:51Z jojaba_67 $
  */
 
+//Localization
+final static String WindowNotOpenError = jEdit.getProperty("macro.rs.HyperSearchResults.WindowNotOpen.error", "The 'HyperSearch Results' window is not open.");
+final static String NoMatchError = jEdit.getProperty("macro.rs.HyperSearchResults.NotMatch.error", "No HyperSearch matches.");
+ 
 traverseTree(javax.swing.tree.DefaultMutableTreeNode node, StringBuffer results){
 	if (node.getUserObject() instanceof org.gjt.sp.jedit.search.HyperSearchFileNode)
 	{
@@ -46,17 +50,17 @@ traverseTree(javax.swing.tree.DefaultMutableTreeNode node, StringBuffer results)
 }
 
 writeHypersearchResultsToBuffer(View view){
-	hs = view.getDockableWindowManager().getDockableWindow("hypersearch-results");
+        hs = view.getDockableWindowManager().getDockableWindow("hypersearch-results");
 	if (hs == null)
 	{
-		Macros.error(view, "The 'HyperSearch Results' window is not open.");
+		Macros.error(view, WindowNotOpenError);
 		return;
 	}
 
 	root = hs.getTreeModel().getRoot();
 	if(root == null || root.getDepth() == 0)
 	{
-		Macros.error(view, "No HyperSearch matches.");
+		Macros.error(view, NoMatchError);
 		return;
 	}
 

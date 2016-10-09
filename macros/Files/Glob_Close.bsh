@@ -4,25 +4,30 @@
  *
  * Copyright (C) 2003-2004 Ollie Rutherfurd <oliver@rutherfurd.net>
  *
- * $Id: Glob_Close.bsh 12063 2008-03-02 06:58:51Z k_satoda $
+ * $Id: Glob_Close.bsh 22348 2012-10-11 12:27:46Z kpouer $
  */
 
 import java.util.regex.Pattern;
 
+//Localization
+final static String GlobPatternLabel = jEdit.getProperty("macro.rs.GlobClose.GlobPattern.label", "Glob Pattern:");
+final static String ErrorGlobPattern = jEdit.getProperty("macro.rs.GlobClose.ErrorGlobPattern.error", "Error in glob pattern:");
+	
+//Process
 void globClose(View view)
 {
-	String glob = Macros.input(view, "Glob Pattern:");
+	String glob = Macros.input(view, GlobPatternLabel);
 	if(glob == null || glob.length() == 0)
 		return;
 
 	Pattern re = null;
 	try
 	{
-		re = Pattern.compile(MiscUtilities.globToRE(glob));
+		re = Pattern.compile(StandardUtilities.globToRE(glob));
 	}
 	catch(Exception e)
 	{
-		Macros.error(view,"Error in glob pattern: " + e.toString());
+		Macros.error(view, ErrorGlobPattern + " " + e.toString());
 		return;
 	}
 

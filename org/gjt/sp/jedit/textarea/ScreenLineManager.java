@@ -33,7 +33,7 @@ import org.gjt.sp.util.Log;
  * 
  * @since jEdit 4.3pre1
  * @author Slava Pestov
- * @version $Id: ScreenLineManager.java 15570 2009-06-25 00:43:57Z ezust $
+ * @version $Id: ScreenLineManager.java 22366 2012-10-13 22:21:34Z ezust $
  */
 class ScreenLineManager
 {
@@ -61,6 +61,7 @@ class ScreenLineManager
 	 */
 	int getScreenLineCount(int line)
 	{
+		assert isScreenLineCountValid(line);
 		return screenLines[line] >> SCREEN_LINES_SHIFT;
 	} //}}}
 
@@ -73,6 +74,8 @@ class ScreenLineManager
 	 */
 	void setScreenLineCount(int line, int count)
 	{
+		assert count > 0 : "New line count is bogus!";
+
 		if(count > Short.MAX_VALUE)
 		{
 			// limitations...
@@ -81,15 +84,13 @@ class ScreenLineManager
 
 		if(Debug.SCREEN_LINES_DEBUG)
 			Log.log(Log.DEBUG,this,new Exception("setScreenLineCount(" + line + ',' + count + ')'));
-		screenLines[line] = (short)(count << SCREEN_LINES_SHIFT
-			| SCREEN_LINES_VALID_MASK);
+		screenLines[line] = (short)(count << SCREEN_LINES_SHIFT | SCREEN_LINES_VALID_MASK);
 	} //}}}
 
 	//{{{ invalidateScreenLineCounts() method
 	void invalidateScreenLineCounts()
 	{
-		int lineCount = buffer.getLineCount();
-		for(int i = 0; i < lineCount; i++)
+		for(int i = 0, lineCount = buffer.getLineCount(); i < lineCount; i++)
 			screenLines[i] &= ~SCREEN_LINES_VALID_MASK;
 	} //}}}
 
@@ -143,7 +144,8 @@ class ScreenLineManager
 	private static final int SCREEN_LINES_VALID_MASK = 1;
 
 	private final JEditBuffer buffer;
-	/** This array contains the line count for each physical line. */
+
+	/** This array contains the screen line count for each physical line. */
 	private short[] screenLines;
 	//}}}
 }

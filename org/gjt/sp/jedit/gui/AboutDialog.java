@@ -30,10 +30,13 @@ import java.awt.*;
 import java.awt.geom.*;
 import java.awt.image.BufferedImage;
 import java.util.*;
+import java.util.List;
+
 import org.gjt.sp.jedit.*;
 import org.gjt.sp.util.Log;
 //}}}
-
+/** "About jEdit" dialog
+*/
 public class AboutDialog extends JDialog implements ActionListener
 {
 	//{{{ AboutDialog constructor
@@ -103,7 +106,7 @@ public class AboutDialog extends JDialog implements ActionListener
 		private final Font bottomLineFont = defaultFont.deriveFont(9.8f);
 		private final String sBottomLine;
 		private final ImageIcon image;
-		private final Vector<String> vLines;
+		private final List<String> vLines;
 		private static boolean doWork;
 		private Thread th;
 		private final FontMetrics fm;
@@ -136,7 +139,6 @@ public class AboutDialog extends JDialog implements ActionListener
 			fm = getFontMetrics(defaultFont);
 			FontMetrics fmBottom = getFontMetrics(bottomLineFont);
 			iLineHeight = fm.getHeight();
-			vLines = new Vector<String>(50);
 			image = (ImageIcon)GUIUtilities.loadIcon("about.png");
 			MediaTracker tracker = new MediaTracker(this);
 			tracker.addImage(image.getImage(), 0);
@@ -157,12 +159,12 @@ public class AboutDialog extends JDialog implements ActionListener
 			h = d.height;
 			iBottomLineXOffset = (w / 2) - (fmBottom.stringWidth(sBottomLine) / 2);
 			iBottomLineYOffset = h-iLineHeight/2;
-			StringTokenizer st = new StringTokenizer(
-				jEdit.getProperty("about.text"),"\n");
-			while(st.hasMoreTokens())
-			{
-				vLines.add(st.nextToken());
-			}
+
+			String aboutText = jEdit.getProperty("about.text.prefix") + "\n \n"
+				+ jEdit.getProperty("about.text.contributors") + "\n \n" +
+				jEdit.getProperty("about.text.suffix");
+			String[] contributors = aboutText.split("\n");
+			vLines = Arrays.asList(contributors);
 
 			iLineCount = vLines.size();
 			iListHeight = iLineCount * iLineHeight;
@@ -184,12 +186,12 @@ public class AboutDialog extends JDialog implements ActionListener
 			}
 			else if ((e.getKeyCode() == KeyEvent.VK_LEFT) ||
 					(e.getKeyCode() == KeyEvent.VK_RIGHT) ||
-					(e.getKeyCode() == KeyEvent.VK_SPACE)) 
+					(e.getKeyCode() == KeyEvent.VK_SPACE))
 			{
 				skipDrain = ! skipDrain;
 				e.consume();
 			}
-			else if ((e.getKeyCode()) == KeyEvent.VK_ESCAPE) 
+			else if ((e.getKeyCode()) == KeyEvent.VK_ESCAPE)
 			{
 				e.consume();
 				JDialog d = GUIUtilities.getParentDialog(this);

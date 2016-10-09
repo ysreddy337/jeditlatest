@@ -37,9 +37,10 @@ import org.gjt.sp.jedit.gui.ColorWellButton;
 import org.gjt.sp.jedit.gui.RolloverButton;
 //}}}
 
+
 /**
  * @author Slava Pestov
- * @version $Id: TextAreaOptionPane.java 18808 2010-10-21 20:54:15Z daleanson $
+ * @version $Id: TextAreaOptionPane.java 20953 2012-01-25 19:35:49Z ezust $
  */
 public class TextAreaOptionPane extends AbstractOptionPane
 {
@@ -57,14 +58,15 @@ public class TextAreaOptionPane extends AbstractOptionPane
 
 		addComponent(jEdit.getProperty("options.textarea.font"),font);
 
-		fontSubst = new JCheckBox(jEdit.getProperty("options.textarea.fontsubst"));
-		fontSubst.setToolTipText(jEdit.getProperty("options.textarea.fontsubst.tooltip"));
+		fontSubst = new JCheckBox(jEdit.getProperty("options.textarea.fontSubst"));
+		fontSubst.setToolTipText(jEdit.getProperty("options.textarea.fontSubst.tooltip"));
 		fontSubst.setSelected(jEdit.getBooleanProperty("view.enableFontSubst"));
 		fontSubst.addActionListener(new ActionListener()
 			{
 				public void actionPerformed(ActionEvent evt)
 				{
 					fontSubstList.setVisible(fontSubst.isSelected());
+					fontSubstSystemFonts.setVisible(fontSubst.isSelected());
 				}
 			});
 		addComponent(fontSubst);
@@ -73,8 +75,28 @@ public class TextAreaOptionPane extends AbstractOptionPane
 		fontSubstList.setVisible(fontSubst.isSelected());
 		addComponent(fontSubstList, GridBagConstraints.HORIZONTAL);
 
+		fontSubstSystemFonts = new JCheckBox(jEdit.getProperty("options.textarea.fontSubstSystemFonts"));
+		fontSubstSystemFonts.setSelected(jEdit.getBooleanProperty("view.enableFontSubstSystemFonts"));
+		fontSubstSystemFonts.setVisible(fontSubst.isSelected());
+		fontSubstSystemFonts.addActionListener(new ActionListener()
+			{
+				public void actionPerformed(ActionEvent evt)
+				{
+					if (!fontSubstSystemFonts.isSelected()
+						&& (fontSubstList.listSize() == 0))
+					{
+						JOptionPane.showMessageDialog(fontSubstSystemFonts.getParent(),
+							jEdit.getProperty("options.textarea.fontSubstWarning"),
+							jEdit.getProperty("options.textarea.fontSubstWarning.label"),
+							JOptionPane.WARNING_MESSAGE);
+					}
+				}
+			});
+		addComponent(fontSubstSystemFonts, GridBagConstraints.HORIZONTAL);
+
 		/* Anti-aliasing */
 		antiAlias = new JComboBox(AntiAlias.comboChoices);
+
 		antiAlias.setToolTipText(jEdit.getProperty("options.textarea.antiAlias.tooltip"));
 		AntiAlias antiAliasValue = new AntiAlias(jEdit.getProperty("view.antiAlias"));
 		font.setAntiAliasEnabled(antiAliasValue.val()>0);
@@ -98,7 +120,7 @@ public class TextAreaOptionPane extends AbstractOptionPane
 		addComponent(fracFontMetrics);
 
 		/* Extra line spacing */
-		IntegerInputVerifier integerInputVerifier = new IntegerInputVerifier();		
+		IntegerInputVerifier integerInputVerifier = new IntegerInputVerifier();
 		JPanel lineSpacingPanel = new JPanel();
 		lineSpacing = new JTextField(String.valueOf(jEdit.getIntegerProperty("options.textarea.lineSpacing", 0)));
 		lineSpacing.setColumns(4);
@@ -109,7 +131,7 @@ public class TextAreaOptionPane extends AbstractOptionPane
 		addComponent(lineSpacingPanel);
 
 		addSeparator();
-		
+
 		/* Text color */
 		addComponent(jEdit.getProperty("options.textarea.foreground"),
 			foregroundColor = new ColorWellButton(
@@ -201,7 +223,7 @@ public class TextAreaOptionPane extends AbstractOptionPane
 			GridBagConstraints.VERTICAL);
 
 		addSeparator();
-		
+
 		/* Electric borders */
 		electricBorders = new JCheckBox(jEdit.getProperty("options.textarea"
 			+ ".electricBorders"));
@@ -227,6 +249,8 @@ public class TextAreaOptionPane extends AbstractOptionPane
 		jEdit.setFontProperty("view.font",font.getFont());
 		jEdit.setBooleanProperty("view.enableFontSubst",fontSubst.isSelected());
 		fontSubstList.save();
+		jEdit.setBooleanProperty("view.enableFontSubstSystemFonts",
+			fontSubstSystemFonts.isSelected());
 
 		jEdit.setColorProperty("view.fgColor",foregroundColor
 			.getSelectedColor());
@@ -268,7 +292,7 @@ public class TextAreaOptionPane extends AbstractOptionPane
 		jEdit.setBooleanProperty("view.fracFontMetrics",fracFontMetrics.isSelected());
 		jEdit.setBooleanProperty("stripTrailingEOL", stripTrailingEOL.isSelected());
 		jEdit.setBooleanProperty("completeFromAllBuffers", completeFromAllBuffers.isSelected());
-		jEdit.setIntegerProperty("options.textarea.lineSpacing", 
+		jEdit.setIntegerProperty("options.textarea.lineSpacing",
 					 Integer.valueOf(lineSpacing.getText()));
 	} //}}}
 
@@ -276,6 +300,7 @@ public class TextAreaOptionPane extends AbstractOptionPane
 	private FontSelector font;
 	private JCheckBox fontSubst;
 	private FontList fontSubstList;
+	private JCheckBox fontSubstSystemFonts;
 	private ColorWellButton foregroundColor;
 	private ColorWellButton backgroundColor;
 	private JCheckBox blinkCaret;
@@ -321,7 +346,7 @@ public class TextAreaOptionPane extends AbstractOptionPane
 			setLayout(new BorderLayout());
 
 			/* Label. */
-			JLabel l = new JLabel(jEdit.getProperty("options.textarea.fontsubstlist"));
+			JLabel l = new JLabel(jEdit.getProperty("options.textarea.fontSubstList"));
 
 			/* Substitution font list. */
 			Font f;
@@ -430,6 +455,10 @@ public class TextAreaOptionPane extends AbstractOptionPane
 			}
 		}
 
+		public int listSize()
+		{
+			return fontsModel.size();
+		}
 
 		private DefaultListModel fontsModel;
 		private JList fonts;

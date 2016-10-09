@@ -41,6 +41,7 @@ import org.gjt.sp.util.Log;
 import org.gjt.sp.util.ProgressObserver;
 import org.gjt.sp.util.IOUtilities;
 import org.gjt.sp.util.StandardUtilities;
+import org.gjt.sp.util.ThreadUtilities;
 import org.gjt.sp.util.WorkThread;
 //}}}
 
@@ -66,12 +67,15 @@ import org.gjt.sp.util.WorkThread;
  * persistence return a dummy object as a session.<p>
  *
  * Methods whose names are prefixed with "_" expect to be given a
- * previously-obtained session object. A session must be obtained from the AWT
- * thread this method:
+ * previously-obtained session object. A session must be obtained with
+ * this method:
  *
  * <ul>
  * <li>{@link #createVFSSession(String,Component)}</li>
  * </ul>
+ *
+ * That method should be called from the AWT (EDT) thread, unless
+ * the filesystem has <code>NON_AWT_SESSION_CAP</code> capability.<p>
  *
  * When done, the session must be disposed of using
  * {@link #_endVFSSession(Object,Component)}.<p>
@@ -81,7 +85,8 @@ import org.gjt.sp.util.WorkThread;
  * The following methods cannot be called from an I/O thread:
  *
  * <ul>
- * <li>{@link #createVFSSession(String,Component)}</li>
+ * <li>{@link #createVFSSession(String,Component)} - unless
+ *     <code>NON_AWT_SESSION_CAP</code> capability is set</li>
  * <li>{@link #insert(View,Buffer,String)}</li>
  * <li>{@link #load(View,Buffer,String)}</li>
  * <li>{@link #save(View,Buffer,String)}</li>
@@ -99,7 +104,7 @@ import org.gjt.sp.util.WorkThread;
  * @see VFSManager#getVFSForProtocol(String)
  *
  * @author Slava Pestov
- * @author $Id: VFS.java 19908 2011-09-02 23:08:54Z Vampire0 $
+ * @author $Id: VFS.java 22457 2012-11-11 17:16:21Z ezust $
  */
 public abstract class VFS
 {
@@ -161,6 +166,16 @@ public abstract class VFS
 	 * @since jEdit 4.1pre1
 	 */
 	public static final int CASE_INSENSITIVE_CAP = 1 << 7;
+
+	/**
+	 * Sessions created outside Event Dispatching Thread -
+	 * file system capability. Set for the file system that does not
+	 * require that <code>createVFSSession</code> is called on edt.
+	 * All systems that do not implement <code>createVFSSession</code>
+	 * should set it, but others may too.
+	 * @since jEdit 5.0pre1
+	 */
+	public static final int NON_AWT_SESSION_CAP = 1 << 8;
 
 	//}}}
 
@@ -411,11 +426,13 @@ public abstract class VFS
 	 */
 	public void reloadDirectory(String path) {} //}}}
 
-	//{{{ createVFSSession() method
+	//{{{ createVFSSession() methods
 	/**
 	 * Creates a VFS session. This method is called from the AWT thread,
 	 * so it should not do any I/O. It could, however, prompt for
-	 * a login name and password, for example.
+	 * a login name and password, for example. A simpler filesystem
+	 * may set the <code>NON_AWT_SESSION_CAP</code> capability. When set,
+	 * sessions may be obtained from any thread.
 	 * @param path The path in question
 	 * @param comp The component that will parent any dialog boxes shown
 	 * @return The session. The session can be null if there were errors
@@ -424,7 +441,30 @@ public abstract class VFS
 	public Object createVFSSession(String path, Component comp)
 	{
 		return new Object();
-	} //}}}
+	}
+	
+	/**
+	* Same as {@link #createVFSSession}, but may be called fromy any
+	* thread. It first checks the <code>NON_AWT_SESSION_CAP</code>
+	* capability and enters EDT thread if necessary.
+	*/
+	public Object createVFSSessionSafe(final String path,
+	                                   final Component comp)
+	{
+		Object session = null;
+		if ((getCapabilities() & NON_AWT_SESSION_CAP) != 0)
+		{
+			session = createVFSSession(path, comp);
+		}
+		else
+		{
+			SessionGetter getter = new SessionGetter(path, comp);
+			ThreadUtilities.runInDispatchThreadAndWait(getter);
+			session = getter.get();
+		}
+		return session;
+	}
+	//}}}
 
 	//{{{ load() method
 	/**
@@ -516,9 +556,46 @@ public abstract class VFS
 	 * @since jEdit 4.3pre3
 	 */
 	public static boolean copy(ProgressObserver progress, VFS sourceVFS, Object sourceSession,String sourcePath,
-		VFS targetVFS, Object targetSession,String targetPath, Component comp, boolean canStop)
+				   VFS targetVFS, Object targetSession,String targetPath, Component comp, boolean canStop)
+		throws IOException
+	{
+		return copy(progress, sourceVFS, sourceSession, sourcePath, targetVFS, targetSession, targetPath,
+			    comp, canStop, true);
+	}
+
+	/**
+	 * Copy a file to another using VFS.
+	 *
+	 * @param progress the progress observer. It could be null if you don't want to monitor progress. If not null
+	 *                  you should probably launch this command in a WorkThread
+	 * @param sourceVFS the source VFS
+	 * @param sourceSession the VFS session
+	 * @param sourcePath the source path. It must be a file and must exists
+	 * @param targetVFS the target VFS
+	 * @param targetSession the target session
+	 * @param targetPath the target path.
+	 * If it is a path, it must exists, if it is a file, the parent must
+	 * exists
+	 * @param comp comp The component that will parent error dialog boxes
+	 * @param canStop could this copy be stopped ?
+	 * @param sendVFSUpdate true if you want to send a VFS update after the copy. False otherwise (if you do a lot
+	 *                      of copy)
+	 * @return true if the copy was successful
+	 * @throws IOException  IOException If an I/O error occurs
+	 * @since jEdit 5.0
+	 */
+	public static boolean copy(ProgressObserver progress, VFS sourceVFS, Object sourceSession,String sourcePath,
+		VFS targetVFS, Object targetSession,String targetPath, Component comp, boolean canStop,
+		boolean sendVFSUpdate)
 	throws IOException
 	{
+		if (sourcePath.equals(targetPath))
+		{
+			Log.log(Log.WARNING, VFS.class,
+				jEdit.getProperty("ioerror.copy-self",
+					new Object[] { sourcePath }));
+			return false;
+		}
 		if (progress != null)
 			progress.setStatus("Initializing");
 
@@ -560,7 +637,8 @@ public abstract class VFS
 			in = new BufferedInputStream(sourceVFS._createInputStream(sourceSession, sourcePath, false, comp));
 			out = new BufferedOutputStream(targetVFS._createOutputStream(targetSession, targetPath, comp));
 			boolean copyResult = IOUtilities.copyStream(IOBUFSIZE, progress, in, out, canStop);
-			VFSManager.sendVFSUpdate(targetVFS, targetPath, true);
+			if (sendVFSUpdate)
+				VFSManager.sendVFSUpdate(targetVFS, targetPath, true);
 			return copyResult;
 		}
 		finally
@@ -579,6 +657,45 @@ public abstract class VFS
 	 * @param targetPath the target path
 	 * @param comp comp The component that will parent error dialog boxes
 	 * @param canStop if true the copy can be stopped
+	 * @param sendVFSUpdate true if you want to send a VFS update after the copy. False otherwise (if you do a lot
+	 *                      of copy)
+	 * @return true if the copy was successful
+	 * @throws IOException IOException If an I/O error occurs
+	 * @since jEdit 5.0
+	 */
+	public static boolean copy(ProgressObserver progress, String sourcePath,String targetPath, Component comp,
+				   boolean canStop, boolean sendVFSUpdate)
+		throws IOException
+	{
+		VFS sourceVFS = VFSManager.getVFSForPath(sourcePath);
+		Object sourceSession = sourceVFS.createVFSSession(sourcePath, comp);
+		if (sourceSession == null)
+		{
+			Log.log(Log.WARNING, VFS.class, "Unable to get a valid session from " + sourceVFS +
+							" for path " + sourcePath);
+			return false;
+		}
+		VFS targetVFS = VFSManager.getVFSForPath(targetPath);
+		Object targetSession = targetVFS.createVFSSession(targetPath, comp);
+		if (targetSession == null)
+		{
+			Log.log(Log.WARNING, VFS.class, "Unable to get a valid session from " + targetVFS +
+							" for path " + targetPath);
+			return false;
+		}
+		return copy(progress, sourceVFS, sourceSession, sourcePath, targetVFS, targetSession, targetPath,
+			    comp,canStop, sendVFSUpdate);
+	}
+
+	/**
+	 * Copy a file to another using VFS.
+	 *
+	 * @param progress the progress observer. It could be null if you don't want to monitor progress. If not null
+	 *                  you should probably launch this command in a WorkThread
+	 * @param sourcePath the source path
+	 * @param targetPath the target path
+	 * @param comp comp The component that will parent error dialog boxes
+	 * @param canStop if true the copy can be stopped
 	 * @return true if the copy was successful
 	 * @throws IOException IOException If an I/O error occurs
 	 * @since jEdit 4.3pre3
@@ -586,21 +703,7 @@ public abstract class VFS
 	public static boolean copy(ProgressObserver progress, String sourcePath,String targetPath, Component comp, boolean canStop)
 	throws IOException
 	{
-		VFS sourceVFS = VFSManager.getVFSForPath(sourcePath);
-		Object sourceSession = sourceVFS.createVFSSession(sourcePath, comp);
-		if (sourceSession == null)
-		{
-			Log.log(Log.WARNING, VFS.class, "Unable to get a valid session from " + sourceVFS + " for path " + sourcePath);
-			return false;
-		}
-		VFS targetVFS = VFSManager.getVFSForPath(targetPath);
-		Object targetSession = targetVFS.createVFSSession(targetPath, comp);
-		if (targetSession == null)
-		{
-			Log.log(Log.WARNING, VFS.class, "Unable to get a valid session from " + targetVFS + " for path " + targetPath);
-			return false;
-		}
-		return copy(progress, sourceVFS, sourceSession, sourcePath, targetVFS, targetSession, targetPath, comp,canStop);
+		return copy(progress, sourcePath, targetPath, comp, canStop, true);
 	} //}}}
 
 	//{{{ insert() method
@@ -829,8 +932,9 @@ public abstract class VFS
 
 	//{{{ _backup() method
 	/**
-	 * Backs up the specified file. This should only be overriden by
-	 * the local filesystem VFS.
+	 * Backs up the specified file. Default implementation in 5.0pre1
+	 * copies the file to the backup directory. Before 5.0pre1 it was
+	 * empty. 
 	 * @param session The VFS session
 	 * @param path The path
 	 * @param comp The component that will parent error dialog boxes
@@ -840,6 +944,61 @@ public abstract class VFS
 	public void _backup(Object session, String path, Component comp)
 		throws IOException
 	{
+		VFS vfsSrc = VFSManager.getVFSForPath(path);
+		if (null == vfsSrc._getFile(session, path, comp))
+			// file to backup does not exist
+			return;
+
+		// maybe the file is not applicable to local filesystem
+		// but don't worry - for backup purposes it may be out
+		// of a real filesystem
+		File backupDir = MiscUtilities.prepareBackupDirectory(path);
+		if (backupDir == null)
+		{
+			Log.log(Log.WARNING, VFS.class, "Backup of remote file "
+				+ path + " failed, because there is no backup directory.");
+			return;
+		}
+		if (!backupDir.exists())
+		{
+			// Usually that means there is no specified backup
+			// directory.
+			Log.log(Log.WARNING, VFS.class, "Backup of file " + 
+				path + " failed. Directory " + backupDir +
+				" does not exist.");
+			return;
+		}
+
+		File backupFile = MiscUtilities.prepareBackupFile(path, backupDir);
+		if (backupFile == null)
+		{
+			return;
+		}
+		
+		// do copy using VFS.copy
+		VFS vfsDst = VFSManager.getVFSForPath(backupFile.getPath());
+		Object sessionDst = vfsDst.createVFSSessionSafe(
+				backupFile.getPath(), comp);
+		if (sessionDst == null)
+			{
+			return;
+			}
+		try
+		{
+			if (!copy(null, vfsSrc, session, path,
+				vfsDst, sessionDst, backupFile.getPath(),
+				comp, true))
+			{
+				Log.log(Log.WARNING, VFS.class, "Backup of file " + 
+					path + " failed. Copy to " + backupFile +
+					" failed.");
+			}
+		}
+		finally
+		{
+			vfsDst._endVFSSession(sessionDst, comp);
+		}
+		
 	} //}}}
 
 	//{{{ _createInputStream() method
@@ -1021,10 +1180,9 @@ public abstract class VFS
 		List<String> files, String directory, VFSFileFilter filter, boolean recursive,
 		Component comp, boolean skipBinary, boolean skipHidden) throws IOException
 	{
-		String resolvedPath = directory;
 		if (recursive && !MiscUtilities.isURL(directory))
 		{
-			resolvedPath = MiscUtilities.resolveSymlinks(directory);
+			String resolvedPath = MiscUtilities.resolveSymlinks(directory);
 			/*
 			 * If looking at a symlink, do not traverse the
 			 * resolved path more than once.
@@ -1144,6 +1302,27 @@ public abstract class VFS
 			this.re = re;
 			this.color = color;
 		}
+	} //}}}
+
+	//{{{ SessionGetter class
+	private class SessionGetter implements Runnable
+	{
+		public SessionGetter(String path, Component comp)
+		{
+			this.path = path;
+			this.comp = comp;
+		}
+
+		private Object session;
+		private String path;
+		private Component comp;
+		
+		public void run()
+		{
+			session = createVFSSession(path, comp);
+		}
+		
+		public Object get() { return session; }
 	} //}}}
 
 	//}}}

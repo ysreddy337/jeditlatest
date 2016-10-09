@@ -28,6 +28,8 @@ import org.gjt.sp.jedit.buffer.BufferAdapter;
 import org.gjt.sp.jedit.buffer.JEditBuffer;
 import org.gjt.sp.jedit.textarea.TextArea;
 
+/** Buffer Listener for Elastic Tabstops.  
+  */
 public class ElasticTabStopBufferListener extends BufferAdapter
 {
 	TextArea textArea;

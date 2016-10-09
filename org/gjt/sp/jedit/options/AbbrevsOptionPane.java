@@ -41,7 +41,7 @@ import org.gjt.sp.util.StandardUtilities;
 /**
  * Abbrev editor.
  * @author Slava Pestov
- * @version $Id: AbbrevsOptionPane.java 14126 2008-12-01 10:09:52Z kpouer $
+ * @version $Id: AbbrevsOptionPane.java 20328 2011-11-13 05:59:59Z ezust $
  */
 public class AbbrevsOptionPane extends AbstractOptionPane
 {

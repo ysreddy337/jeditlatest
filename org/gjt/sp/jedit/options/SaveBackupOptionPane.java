@@ -35,7 +35,7 @@ import org.gjt.sp.jedit.browser.VFSBrowser;
  * The Save and Backup option panel.
  *
  * @author Slava Pestov
- * @author $Id: SaveBackupOptionPane.java 20350 2011-11-15 08:24:51Z ezust $
+ * @author $Id: SaveBackupOptionPane.java 21743 2012-05-31 20:23:35Z ezust $
  */
 public class SaveBackupOptionPane extends AbstractOptionPane
 {
@@ -49,12 +49,24 @@ public class SaveBackupOptionPane extends AbstractOptionPane
 	@Override
 	protected void _init()
 	{
+		
+		/* Save-As Uses FSB */
+		
+		saveAsUsesFSB = new JCheckBox(jEdit.getProperty(
+			"options.save-back.saveAsUsesFSB"));
+		saveAsUsesFSB.setSelected(jEdit.getBooleanProperty(
+			"saveAsUsesFSB"));
+		saveAsUsesFSB.setToolTipText(jEdit.getProperty(
+			"options.save-back.saveAsUsesFSB.tooltip"));
+		addComponent(saveAsUsesFSB);
+		
 		/* Two-stage save */
 		twoStageSave = new JCheckBox(jEdit.getProperty(
 			"options.save-back.twoStageSave"));
 		twoStageSave.setSelected(jEdit.getBooleanProperty(
 			"twoStageSave"));
 		twoStageSave.setToolTipText(jEdit.getProperty(
+			
 			"options.save-back.twoStageSave.tooltip"));
 		addComponent(twoStageSave);
 
@@ -123,8 +135,6 @@ public class SaveBackupOptionPane extends AbstractOptionPane
 		/* Backup on every save */
 		backupEverySave = new JCheckBox(jEdit.getProperty(
 			"options.save-back.backupEverySave"));
-		backupEverySave.setToolTipText(jEdit.getProperty(
-			"options.save-back.backupEverySave.tooltip"));
 		backupEverySave.setSelected(jEdit.getBooleanProperty("backupEverySave"));
 		addComponent(backupEverySave);
 	} //}}}
@@ -133,6 +143,7 @@ public class SaveBackupOptionPane extends AbstractOptionPane
 	@Override
 	protected void _save()
 	{
+		jEdit.setBooleanProperty("saveAsUsesFSB", saveAsUsesFSB.isSelected());
 		jEdit.setBooleanProperty("twoStageSave",twoStageSave.isSelected());
 		jEdit.setBooleanProperty("confirmSaveAll",confirmSaveAll.isSelected());
 		jEdit.setProperty("autosave", this.autosave.getText());
@@ -162,6 +173,7 @@ public class SaveBackupOptionPane extends AbstractOptionPane
 	} //}}}
 
 	//{{{ Private members
+	private JCheckBox saveAsUsesFSB;
 	private JCheckBox twoStageSave;
 	private JCheckBox confirmSaveAll;
 	private JTextField autosave;

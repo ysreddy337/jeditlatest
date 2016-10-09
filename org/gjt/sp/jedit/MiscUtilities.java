@@ -1,11 +1,12 @@
 /*
- * MiscUtilities.java - Various miscallaneous utility functions
- * :tabSize=8:indentSize=8:noTabs=false:
+ * MiscUtilities.java - Various miscellaneous utility functions
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1999, 2005 Slava Pestov
  * Portions copyright (C) 2000 Richard S. Hall
  * Portions copyright (C) 2001 Dirk Moebius
+ * Portions copyright (c) 2005-2012 by the jEdit All-Volunteer Development Team (tm)
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -26,6 +27,8 @@ package org.gjt.sp.jedit;
 
 //{{{ Imports
 import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.MalformedInputException;
@@ -37,7 +40,9 @@ import org.gjt.sp.jedit.io.*;
 import org.gjt.sp.util.Log;
 import org.gjt.sp.util.IOUtilities;
 
+import org.gjt.sp.jedit.jEdit;
 import org.gjt.sp.jedit.buffer.JEditBuffer;
+import org.gjt.sp.util.StringList;
 //}}}
 
 /**
@@ -54,7 +59,7 @@ import org.gjt.sp.jedit.buffer.JEditBuffer;
  *
  * @author Slava Pestov
  * @author John Gellene (API documentation)
- * @version $Id: MiscUtilities.java 20855 2012-01-19 07:48:56Z kpouer $
+ * @version $Id: MiscUtilities.java 22457 2012-11-11 17:16:21Z ezust $
  */
 public class MiscUtilities
 {
@@ -122,7 +127,7 @@ public class MiscUtilities
 	static final Pattern varPattern = Pattern.compile(varPatternString);
 	static final Pattern varPattern2 = Pattern.compile(varPatternString2);
 	static final Pattern winPattern = Pattern.compile(winPatternString);
-	
+
 	/** Accepts a string from the user which may contain variables of various syntaxes.
 	 *  The function supports the following expansion syntaxes:
 	 *     $varname
@@ -131,19 +136,19 @@ public class MiscUtilities
 	 *     And expand each of these by looking at the system environment variables for possible
 	 *     expansions.
 	 *     @return a string which is either the unchanged input string, or one with expanded variables.
-	 *     @since 4.3pre7
+	 *     @since jEdit 4.3
 	 *     @see #abbreviate
 	 *     @author ezust
 	 */
 	public static String expandVariables(String arg)
 	{
-		if (arg.startsWith("~/") || arg.startsWith("~\\")) 
-			return System.getProperty("user.home") + arg.substring(1);			
+		if (arg.startsWith("~/") || arg.startsWith("~\\"))
+			return System.getProperty("user.home") + arg.substring(1);
 		Pattern p = varPattern;
 		Matcher m = p.matcher(arg);
 		if (!m.find())
 		{
-			if (OperatingSystem.isWindows()) 
+			if (OperatingSystem.isWindows())
 				p = winPattern;
 			else p = varPattern2;
 			m = p.matcher(arg);
@@ -169,6 +174,7 @@ public class MiscUtilities
 
 	//{{{ abbreviate() method
 	/** @return an abbreviated path, replacing values with variables, if a prefix exists.
+		uses platform convention (%varname% on windows, $varname on other platforms)
 	 *  @see #expandVariables
 	 *  @since jEdit 4.3pre16
 	 */
@@ -191,12 +197,9 @@ public class MiscUtilities
 		if(isURL(path))
 			return path;
 
-		// 2 aug 2003: OS/2 Java has a broken getCanonicalPath()
-		if(OperatingSystem.isOS2())
-			return path;
 		// 18 nov 2003: calling this on a drive letter on Windows causes
 		// drive access
-		if(OperatingSystem.isDOSDerived())
+		if(OperatingSystem.isWindows())
 		{
 			if(path.length() == 2 || path.length() == 3)
 			{
@@ -227,7 +230,7 @@ public class MiscUtilities
 			return true;
 		else if ("-".equals(path))
 			return true;
-		else if(OperatingSystem.isDOSDerived())
+		else if(OperatingSystem.isWindows())
 		{
 			if(path.length() == 2 && path.charAt(1) == ':')
 				return true;
@@ -271,7 +274,7 @@ public class MiscUtilities
 
 		// have to handle this case specially on windows.
 		// insert \ between, eg A: and myfile.txt.
-		if(OperatingSystem.isDOSDerived())
+		if(OperatingSystem.isWindows())
 		{
 			if(path.length() == 2 && path.charAt(1) == ':')
 				return path;
@@ -306,7 +309,7 @@ public class MiscUtilities
 		if(path.length() == 0)
 			return parent;
 
-		if(OperatingSystem.isDOSDerived()
+		if(OperatingSystem.isWindows()
 			&& !isURL(parent)
 		&& path.charAt(0) == '\\')
 			parent = parent.substring(0,2);
@@ -397,9 +400,15 @@ public class MiscUtilities
 
 	//{{{ getFileExtension() method
 	/**
-	 * Returns the extension of the specified filename, or an empty
-	 * string if there is none.
+	 * Returns the extension of the specified filename, starting with the last dot.
 	 * @param path The path
+	 * @return the last dot (.) and the text that follows, or an empty
+	 * string if no dots are found.
+	 * i.e. if your filename is
+	 *    IP-192.168.1.1-data.tar.gz
+	 * it will return
+	 *    .gz
+	 * @see #getCompleteBaseName(String)
 	 */
 	public static String getFileExtension(String path)
 	{
@@ -423,14 +432,39 @@ public class MiscUtilities
 		return VFSManager.getVFSForPath(path).getFileName(path);
 	} //}}}
 
-	//{{{ getFileNameNoExtension() method
+	//{{{ getCompleteBaseName() method
 	/**
-	 * Returns the last component of the specified path name without the
-	 * trailing extension (if there is one).
-	 * @param path The path name
-	 * @since jEdit 4.0pre8
+	 * @return the complete basename of a fileName (before the last period).
+	 * i.e. if your filename is
+	 *    /net/log/IP-192.168.1.1-data.tar.gz
+	 * it will return
+	 *    IP-192.168.1.1-data.tar
+	 * @param path the path name
+	 * @see #getBaseName(String) getBaseName
+	 * @see #getFileExtension(String) getFileExtension
+	 * @since jEdit 5.0
 	 */
-	public static String getFileNameNoExtension(String path)
+	public static String getCompleteBaseName(String path)
+	{
+		String name = getFileName(path);
+		int index = name.lastIndexOf('.');
+		if (index == -1)
+			return name;
+		return name.substring(0, index);
+	} //}}}
+
+	//{{{ getBaseName() method
+	/**
+	 * @return the base name of a fileName (before the first period).
+	 * i.e. If your filename is
+	 *     /net/log/IP-192.168.1.1-data.tar.gz
+	 * it will return
+	 *     IP-192
+	 * @param path The path name
+	 * @since jEdit 5.0
+	 * @see #getCompleteBaseName(String)
+	*/
+	public static String getBaseName(String path)
 	{
 		String name = getFileName(path);
 		int index = name.indexOf('.');
@@ -438,6 +472,16 @@ public class MiscUtilities
 			return name;
 		else
 			return name.substring(0,index);
+	}
+	/**
+	  @return the same thing as getBaseName()
+	  @deprecated use getBaseName() instead.
+	  @since jEdit 4.0
+	*/
+	@Deprecated
+	public static String getFileNameNoExtension(String path)
+	{
+		return getBaseName(path);
 	} //}}}
 
 	//{{{ getParentOfPath() method
@@ -496,7 +540,254 @@ public class MiscUtilities
 		}
 	} //}}}
 
+	//{{{ getNthBackupFile method
+	/**
+	 * Gets the file to store the Nth backup of the given file.
+	 * @param name The last part of the filename of the file being
+	 *             backed up.
+	 * @param backup The number of the current backup.
+	 * @param backups Total number of backup copies.
+	 * @since 5.0pre1
+	 */
+	public static File getNthBackupFile(String name, int backup,
+			int backups, String backupPrefix,
+			String backupSuffix, String backupDirectory)
+	{
+		File backupFile;
+		if(backupPrefix == null)
+			backupPrefix = "";
+		if(backupSuffix == null)
+			backupSuffix = "";
+		if(backups <= 1)
+		{
+			backupFile = new File(backupDirectory,
+				backupPrefix + name + backupSuffix);
+		}
+		else
+		{
+			backupFile = new File(backupDirectory,
+				backupPrefix + name + backupSuffix
+				+ backup + backupSuffix);
+		}
+		return backupFile;
+	} //}}}
+
+	//{{{ openInDesktop() method
+	/** Opens a file using the desktop file associations.
+		<p>
+		Uses native desktop commands for each platform, which ask the user to choose an
+		association for files that do not already have one, using the desktop's
+		dialog, in contrast to Desktop.open() which just throws an IOException
+		for unknown types. 
+		
+		@param path path or URL (supported on Linux, anyway) of thing to open  
+		@author Alan Ezust
+		@since jEdit 5.0
+	*/
+	public static void openInDesktop(String path) 
+	{
+		StringList sl = new StringList();
+		if (OperatingSystem.isWindows())
+		{
+			sl.add("rundll32");
+			sl.add("SHELL32.DLL,ShellExec_RunDLL");
+		}
+		else if (OperatingSystem.isMacOS())
+			sl.add("open");
+		else if (OperatingSystem.isX11())
+			sl.add("xdg-open");
+		try 
+		{		
+			if (sl.isEmpty()) // I don't know what platform it is
+				java.awt.Desktop.getDesktop().open(new File(path));
+			else 
+			{
+				sl.add(path);
+				Runtime.getRuntime().exec(sl.toArray());
+			}
+		}
+		catch (IOException ioe) 
+		{
+			Log.log(Log.ERROR, MiscUtilities.class, "openInDesktop failed: " + path, ioe);	
+		}
+	}// }}}
+
+	//{{{ prepareBackupDirectory method
+	/**
+	 * Prepares the directory to backup the specified file.
+	 * jedit property is used to determine the directory.
+	 * If there is no dedicated backup directory specified by props,
+	 * then the current directory is used, but only for local files.
+	 * The directory is created if not exists.
+	 * @return Backup directory. <code>null</code> is returned for
+	 * non-local files if no backup directory is specified in properties.
+	 * @since 5.0pre1
+	 */
+	public static File prepareBackupDirectory(String path)
+	{
+		String backupDirectory = jEdit.getProperty("backup.directory");
+		File dir;
+		boolean isLocal = VFSManager.getVFSForPath(path) instanceof FileVFS;
+		File file;
+		if (isLocal)
+			file = new File(path);
+		else
+			file = new File(replaceNonPathChars(path, "_"));
+
+		// Check for backup.directory, and create that
+		// directory if it doesn't exist
+		if(backupDirectory == null || backupDirectory.length() == 0)
+		{
+			if (!isLocal)
+				return null;
+			else {
+				backupDirectory = file.getParent();
+				dir = new File(backupDirectory);
+			}
+		}
+		else
+		{
+			backupDirectory = MiscUtilities.constructPath(
+				System.getProperty("user.home"), backupDirectory);
+
+			// Perhaps here we would want to guard with
+			// a property for parallel backups or not.
+			backupDirectory = MiscUtilities.concatPath(
+				backupDirectory,file.getParent());
+
+			dir = new File(backupDirectory);
+
+			if (!dir.exists())
+				dir.mkdirs();
+		}
+
+		return dir;
+	} //}}}
+
+	//{{{ prepareBackupFile methods
+	/**
+	 * Prepares the filename for performing backup of the given file.
+	 * In case of multiple backups does necessary backup renumbering.
+	 * Checks whether the last backup was not earlier than
+	 * <code>backup.minTime</code> (property) ms ago.
+	 * Uses jedit properties to determine backup parameters,
+	 * like prefix, suffix.
+	 * @param file The file to back up.
+	 * @param backupDir The directory, usually obtained from
+	 *                  <code>prepareBackupDirectory</code>.
+	 * @return File suitable for backup of <code>file</code>,
+	           or <code>null</code> if the last backup was
+	           less than <code>backup.minTime</code> ms ago.
+	 * @since 5.0pre1
+	 */
+	public static File prepareBackupFile(String path, File backupDir)
+	{
+		// read properties
+		int backups = jEdit.getIntegerProperty("backups",1);
+		String backupPrefix = jEdit.getProperty("backup.prefix");
+		String backupSuffix = jEdit.getProperty("backup.suffix");
+		int backupTimeDistance = jEdit.getIntegerProperty("backup.minTime",0);
+
+		return prepareBackupFile(path, backups, backupPrefix,
+				backupSuffix, backupDir.getPath(),
+				backupTimeDistance);
+	}
+
+	/**
+	 * Prepares the filename for performing backup of the given file.
+	 * In case of multiple backups does necessary backup renumbering.
+	 * Checks whether the last backup was not earlier than
+	 * <code>backupTimeDistance</code> ms ago.
+	 * @param file The file to back up.
+	 * @param backups The number of backups. Must be >= 1. If > 1, backup
+	 * files will be numbered.
+	 * @param backupDirectory The directory determined externally or
+	 * obtained from <code>prepareBackupDirectory</code>.
+	 * @return File suitable for backup of <code>file</code>,
+	           or <code>null</code> if the last backup was
+	           less than <code>backupTimeDistance</code> ms ago.
+	 * @since 5.0pre1
+	 */
+	public static File prepareBackupFile(String path, int backups,
+		 String backupPrefix, String backupSuffix,
+		 String backupDirectory, int backupTimeDistance)
+	{
+		File file;
+		boolean isLocal = VFSManager.getVFSForPath(path) instanceof FileVFS;
+		if (isLocal)
+			file = new File(path);
+		else
+			file = new File(replaceNonPathChars(path, "_"));
+
+		String name = file.getName();
+		File backupFile = getNthBackupFile(name, 1, backups,
+				backupPrefix, backupSuffix,
+				backupDirectory);
+		if (backupFile.equals(file))
+		{
+			Log.log(Log.WARNING, MiscUtilities.class,
+				jEdit.getProperty("ioerror.backup-same-name")
+				+ " " + jEdit.getProperty("ioerror.backup-failed"));
+			return null;
+		}
+
+		long modTime = backupFile.lastModified();
+		/* if backup file was created less than
+		* 'backupTimeDistance' ago, we do not
+		* create the backup */
+		if(System.currentTimeMillis() - modTime
+			< backupTimeDistance)
+		{
+			Log.log(Log.DEBUG,MiscUtilities.class,
+				"Backup not done because of backup.minTime");
+			return null;
+		}
+
+		File lastBackup = getNthBackupFile(name, backups, backups,
+				backupPrefix, backupSuffix,
+				backupDirectory);
+		// Under unfortunate circumstances the calculated backup
+		// file name may be equal to the source file name. Be careful
+		// not to delete the original file.
+		if (!lastBackup.equals(file))
+			lastBackup.delete();
+
+		if(backups > 1)
+		{
+			for(int i = backups - 1; i > 0; i--)
+			{
+				File backup1 = getNthBackupFile(name, i,
+					backups, backupPrefix,
+					backupSuffix, backupDirectory);
+				File backup2 = getNthBackupFile(name, i+1,
+					backups, backupPrefix,
+					backupSuffix, backupDirectory);
+
+				backup1.renameTo(backup2);
+			}
+
+		}
+		return backupFile;
+	} //}}}
+
 	//{{{ saveBackup() methods
+	/**
+	 * Saves a backup (optionally numbered) of a file. Reads
+	 * jedit properties to determine backup parameters, like
+	 * prefix, suffix, directory.
+	 * <p>This version calls
+	 * <code>prepareBackupDirectory</code>.
+	 * @param file A local file
+	 * @since jEdit 5.0pre1
+	 */
+	public static void saveBackup(File file)
+	{
+		File backupDir = prepareBackupDirectory(file.toString());
+		File backupFile = prepareBackupFile(file.toString(), backupDir);
+		if (backupFile != null)
+			saveBackup(file, backupFile);
+	}
+
 	/**
 	 * Saves a backup (optionally numbered) of a file.
 	 * @param file A local file
@@ -516,7 +807,8 @@ public class MiscUtilities
 	}
 
 	/**
-	 * Saves a backup (optionally numbered) of a file.
+	 * Saves a backup (optionally numbered) of a file. Requires
+	 * specifying the backup directory and generates the backup filename.
 	 * @param file A local file
 	 * @param backups The number of backups. Must be >= 1. If > 1, backup
 	 * files will be numbered.
@@ -533,77 +825,32 @@ public class MiscUtilities
 			       String backupPrefix, String backupSuffix,
 			       String backupDirectory, int backupTimeDistance)
 	{
-		if(backupPrefix == null)
-			backupPrefix = "";
-		if(backupSuffix == null)
-			backupSuffix = "";
+		File backupFile = prepareBackupFile(file.toString(), backups,
+				backupPrefix, backupSuffix,
+				backupDirectory, backupTimeDistance);
+		if (backupFile == null)
+			return;
 
-		String name = file.getName();
+		saveBackup(file, backupFile);
+	}
 
-		// If backups is 1, create ~ file
-		if(backups == 1)
-		{
-			File backupFile = new File(backupDirectory,
-				backupPrefix + name + backupSuffix);
-			long modTime = backupFile.lastModified();
-			/* if backup file was created less than
-			 * 'backupTimeDistance' ago, we do not
-			 * create the backup */
-			if(System.currentTimeMillis() - modTime
-			   >= backupTimeDistance)
-			{
-				Log.log(Log.DEBUG,MiscUtilities.class,
-					"Saving backup of file \"" +
-					file.getAbsolutePath() + "\" to \"" +
-					backupFile.getAbsolutePath() + '"');
-				backupFile.delete();
-				if (!file.renameTo(backupFile))
-					IOUtilities.moveFile(file, backupFile);
-			}
-		}
-		// If backups > 1, move old ~n~ files, create ~1~ file
-		else
-		{
-			/* delete a backup created using above method */
-			new File(backupDirectory,
-				backupPrefix + name + backupSuffix
-				+ backups + backupSuffix).delete();
-
-			File firstBackup = new File(backupDirectory,
-				backupPrefix + name + backupSuffix
-				+ '1' + backupSuffix);
-			long modTime = firstBackup.lastModified();
-			/* if backup file was created less than
-			 * 'backupTimeDistance' ago, we do not
-			 * create the backup */
-			if(System.currentTimeMillis() - modTime
-			   >= backupTimeDistance)
-			{
-				for(int i = backups - 1; i > 0; i--)
-				{
-					File backup = new File(backupDirectory,
-						backupPrefix + name
-						+ backupSuffix + i
-						+ backupSuffix);
-
-					backup.renameTo(new File(backupDirectory,
-						backupPrefix + name
-						+ backupSuffix + (i + 1)
-						+ backupSuffix));
-				}
-
-				File backupFile = new File(backupDirectory,
-					backupPrefix + name + backupSuffix
-					+ '1' + backupSuffix);
-				Log.log(Log.DEBUG,MiscUtilities.class,
-					"Saving backup of file \"" +
-					file.getAbsolutePath() + "\" to \"" +
-					backupFile.getAbsolutePath() + '"');
-				if (!file.renameTo(backupFile))
-					IOUtilities.moveFile(file, backupFile);
-			}
-		}
-	} //}}}
+	/**
+	 * Saves a backup of a local file. Requires
+	 * specifying source and destination files.
+	 * @param file A local file
+	 * @param backupFile A local backup file.
+	 * @since jEdit 5.0pre1
+	 */
+	public static void saveBackup(File file, File backupFile)
+	{
+		Log.log(Log.DEBUG,MiscUtilities.class,
+			"Saving backup of file \"" +
+			file.getAbsolutePath() + "\" to \"" +
+			backupFile.getAbsolutePath() + '"');
+		if (!file.renameTo(backupFile))
+			IOUtilities.moveFile(file, backupFile);
+	}
+	//}}}
 
 	//{{{ isBinary() methods
 	/**
@@ -916,12 +1163,11 @@ loop:		for(;;)
 		int minor = Integer.parseInt(build.substring(3,5));
 		// Then the pre-release status
 		int beta = Integer.parseInt(build.substring(6,8));
-		// Finally the bug fix release
-		int bugfix = Integer.parseInt(build.substring(9,11));
+		// Finally the micro version number
+		int micro = Integer.parseInt(build.substring(9,11));
 
 		return major + "." + minor
-			+ (beta != 99 ? "pre" + beta :
-			(bugfix != 0 ? "." + bugfix : ""));
+			+ (beta != 99 ? "pre" + beta : "." + micro);
 	} //}}}
 
 	//{{{ isToolsJarAvailable() method
@@ -1093,7 +1339,7 @@ loop:		for(;;)
 	//{{{ getEncodings() methods
 	/**
 	 * Returns a list of supported character encodings.
-	 * @since jEdit 4.3pre5
+	 * @since jEdit 4.3
 	 * @param getSelected Whether to return just the selected encodings or all.
 	 */
 	public static String[] getEncodings(boolean getSelected)
@@ -1146,7 +1392,7 @@ loop:		for(;;)
 	{
 		if(path.startsWith("/"))
 			return 0;
-		else if(OperatingSystem.isDOSDerived()
+		else if(OperatingSystem.isWindows()
 			&& path.length() >= 3
 			&& path.charAt(1) == ':'
 			&& (path.charAt(2) == '/'
@@ -1175,6 +1421,29 @@ loop:		for(;;)
 			}
 		}
 		return false;
+	} //}}}
+
+	//{{{ replaceNonPathChars
+	/**
+	 * Replaces the characters which are usually invalid as part of pathname.
+	 * Used by backup routines to convert remote filenames to local paths.
+	 * @param replaceWith The string to replace illegal chars with,
+	 * for example <code>_</code>.
+	 */
+	private static String replaceNonPathChars(String path, String replaceWith)
+	{
+		if (path == null)
+			return null;
+		String sForeignChars = ":*?\"<>|";
+		// Construct a regex from sForeignChars
+		StringBuilder sbForeignCharsEsc = new StringBuilder(20);
+		for (int i = 0; i < sForeignChars.length(); i++)
+		{
+			sbForeignCharsEsc.append("\\");
+			sbForeignCharsEsc.append(sForeignChars.charAt(i));
+		}
+
+		return path.replaceAll("[" + sbForeignCharsEsc + "]", replaceWith);
 	} //}}}
 
 	//}}}

@@ -19,11 +19,11 @@
 
 package org.gjt.sp.jedit.gui;
 
-/**
- * A container for dockable windows. This class should never be used
- * directly.
+/** A container for dockable windows.
+ *
+ * This class should never be used directly, and is not public.
  * @author Slava Pestov
- * @version $Id: DockableWindowContainer.java 13259 2008-08-10 20:54:46Z shlomy $
+ * @version $Id: DockableWindowContainer.java 21502 2012-03-29 17:19:44Z ezust $
  * @since jEdit 2.6pre3
  */
 interface DockableWindowContainer

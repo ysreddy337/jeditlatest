@@ -32,7 +32,7 @@ import org.gjt.sp.jedit.buffer.FoldHandlerProvider;
 import org.gjt.sp.jedit.buffer.FoldHandler;
 
 /**
- * A generic way for plugins to provide various API extensions.<p>
+ * A generic way for plugins (and core) to provide various API extensions.<p>
  *
  * Services are loaded from files named <code>services.xml</code> inside the
  * plugin JAR. A service definition file has the following form:
@@ -53,8 +53,9 @@ import org.gjt.sp.jedit.buffer.FoldHandler;
  * to the set of services offered by the plugin.
  * </li>
  * <li>
- * A <code>SERVICE</code> contains the data for a particular service
- * activation.
+ * A <code>SERVICE</code> contains the factory method for this
+ * service singleton. The ServiceManager manages named singletons
+ * created from these factory methods.
  * It has two attributes, both required: <code>NAME</code> and
  * <code>CLASS</code>. The <code>CLASS</code> attribute must be the name of
  * a known sevice type; see below.
@@ -66,26 +67,34 @@ import org.gjt.sp.jedit.buffer.FoldHandler;
  * </li>
  * </ul>
  *
- * The jEdit core defines the following service types:
+ * To see all of the services offered by jEdit core, see
+ * jEdit's <tt>services.xml</tt> file.
+ * Some core services are listed below:
  * <ul>
  * <li>{@link org.gjt.sp.jedit.buffer.FoldHandler}</li>
+ * <li>{@link org.gjt.sp.jedit.textarea.FoldPainter}</li>
  * <li>{@link org.gjt.sp.jedit.io.VFS}</li>
  * <li>{@link org.gjt.sp.jedit.io.Encoding}</li>
  * <li>{@link org.gjt.sp.jedit.io.EncodingDetector}</li>
+ * <li>{@link org.gjt.sp.jedit.gui.statusbar.StatusWidgetFactory}</li>
+ * <li>{@link org.gjt.sp.jedit.gui.DockingFrameworkProvider}</li>
+ * <li>{@link org.gjt.sp.jedit.gui.tray.JEditTrayIcon}</li>
  * </ul>
  *
- * Plugins may provide more.<p>
+ * Plugins may define/provide more, so the only way to see a
+ * complete list of service types currently in use is by calling
+ * {@link #getServiceTypes()}.
+ * <br />
+ * To use a service from a plugin, add a piece of code somewhere that calls
+ * {@link #getServiceNames(String)} and  {@link #getService(String,String)}.
  *
- * To have your plugin accept services, no extra steps are needed other than
- * a piece of code somewhere that calls {@link #getServiceNames(String)} and
- * {@link #getService(String,String)}.
  *
  * @see BeanShell
  * @see PluginJAR
  *
  * @since jEdit 4.2pre1
  * @author Slava Pestov
- * @version $Id: ServiceManager.java 20108 2011-10-18 12:16:38Z evanpw $
+ * @version $Id: ServiceManager.java 21608 2012-04-25 22:20:35Z ezust $
  */
 public class ServiceManager
 {
@@ -329,9 +338,12 @@ public class ServiceManager
 
 			return instance;
 		}
+
+		@Override
 		public int hashCode()
 		{
-			return name.hashCode();
+			int result = 31 * clazz.hashCode() + name.hashCode();
+			return result;
 		}
 
 		public boolean equals(Object o)
@@ -367,6 +379,7 @@ public class ServiceManager
 		 * @return the FoldHandler or null if it doesn't exist
 		 * @since jEdit 4.3pre10
 		 */
+		@Override
 		public FoldHandler getFoldHandler(String name)
 		{
 			FoldHandler handler = (FoldHandler) getService(SERVICE,name);
@@ -379,6 +392,7 @@ public class ServiceManager
 		 *
 		 * @since jEdit 4.3pre10
 		 */
+		@Override
 		public String[] getFoldModes()
 		{
 			String[] handlers = getServiceNames(SERVICE);

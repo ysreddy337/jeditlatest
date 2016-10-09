@@ -21,17 +21,22 @@
  * along with the jEdit program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
- * $Id: Run_Script.bsh 16858 2010-01-07 01:45:03Z ezust $
+ * $Id: Run_Script.bsh 21353 2012-03-14 09:46:51Z jojaba_67 $
  */
 
+// Localization
+final static String SpecifyParametersForRunningLabel = jEdit.getProperty("macro.rs.RunScript.SpecifyParametersForRunning.label", "Specify parameters for running script under");
+final static String ScriptExecutionCancelledMessage = jEdit.getProperty("macro.rs.RunScript.ScriptExecutionCancelled.message", "Script execution was cancelled.");
+final static String FileNotScriptError = jEdit.getProperty("macro.rs.RunScript.FileNotScript.error", "The current file does not appear to be a script.");
 
+// Process
 void execScript(interpreter, command)
 {
 	params = Macros.input(view,
-		"Specify parameters for running script under " + interpreter);
+		SpecifyParametersForRunningLabel + " " + interpreter);
 	if(params == null)
 	{
-		Macros.message(view, "Script execution was cancelled.");
+		Macros.message(view, ScriptExecutionCancelledMessage);
 		return;
 	}
 	runInSystemShell(view, command + params);
@@ -102,7 +107,7 @@ void runScript()
 	}
 	else {
 		Macros.error(view,
-			"The current file does not appear to be a script.");
+			String FileNotScriptError);
 	}
 }
 

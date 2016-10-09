@@ -32,14 +32,14 @@ import org.gjt.sp.util.Log;
 /**
  * URL VFS.
  * @author Slava Pestov
- * @version $Id: UrlVFS.java 19908 2011-09-02 23:08:54Z Vampire0 $
+ * @version $Id: UrlVFS.java 21627 2012-05-04 16:58:22Z jarekczek $
  */
 public class UrlVFS extends VFS
 {
 	//{{{ UrlVFS constructor
 	public UrlVFS()
 	{
-		super("url", READ_CAP);
+		super("url", READ_CAP | NON_AWT_SESSION_CAP);
 	} //}}}
 
 	//{{{ constructPath() method

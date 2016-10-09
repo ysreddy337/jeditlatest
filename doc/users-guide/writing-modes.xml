@@ -94,10 +94,12 @@
         <literal>VALUE</literal> attribute with the property's value.</para>
         <para>All buffer-local properties listed in <xref
         linkend="buffer-local" /> may be given values in edit modes.</para>
-	<para><literal>contextInsensitive</literal> - If true the property
-	indicate that a line can always be highlighted without taking care of
-	the previous line. If activated the syntax will be much faster.
-	</para>
+
+        <para><literal>contextInsensitive</literal> - If true, the property
+        indicates that a line can always be highlighted without taking care of
+        the previous line. If activated, the syntax parsing will be much faster.
+        </para>
+
         <para>The following mode properties specify commenting strings:</para>
         <itemizedlist>
             <listitem>
@@ -192,6 +194,29 @@
              the new line. To get this behavior, add the newline character to
              <literal>electricKeys</literal> in the xml-escaped form &amp;#xA;
              </para></listitem>
+
+             <listitem><para><literal>ignoreWhitespace</literal>:
+             Ignore whitespace lines.
+             This property is on (<literal>true</literal>) by default.
+             Python language sets this to
+             <literal>false</literal> because of the special treatment
+             of whitespaces. Note this example:
+             <programlisting>def fun1:
+    a = 1
+    b = 2
+    
+def fun2:
+             </programlisting>
+             Pressing <keycap>C+i</keycap>
+             (<guimenuitem>Indent Lines</guimenuitem> command) on
+             the <literal>fun2</literal> line would usually indent this
+             line and make it even with the <literal>b = 2</literal> line.
+             But with switched off <literal>ignoreWhitespace</literal> setting
+             the line will stay the way it was indented manually.
+             <literal>ignoreWhitespace=false</literal> setting prevents
+             any forward indentation after a whitespace line.
+             </para></listitem>
+
         </itemizedlist>
         <para>Here is the complete <literal>&lt;PROPS&gt;</literal> tag for Java
         mode:</para>

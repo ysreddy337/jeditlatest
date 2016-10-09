@@ -39,10 +39,10 @@ import org.gjt.sp.util.EnhancedTreeCellRenderer;
 import org.gjt.sp.util.Log;
 //}}}
 
-/**
- * An abstract options dialog box.
+/** An abstract options dialog box.
  * @author Slava Pestov
- * @version $Id: OptionsDialog.java 19788 2011-08-11 00:57:19Z Vampire0 $
+ * @version $Id: OptionsDialog.java 21586 2012-04-17 16:36:42Z ezust $
+ * @todo refactor to use OptionGroupPane
  */
 public abstract class OptionsDialog extends EnhancedDialog
 	implements ActionListener, TreeSelectionListener
@@ -92,6 +92,7 @@ public abstract class OptionsDialog extends EnhancedDialog
 	} //}}}
 
 	//{{{ ok() method
+	@Override
 	public void ok()
 	{
 		if(currentPane != null)
@@ -100,6 +101,7 @@ public abstract class OptionsDialog extends EnhancedDialog
 	} //}}}
 
 	//{{{ cancel() method
+	@Override
 	public void cancel()
 	{
 		if(currentPane != null)
@@ -126,6 +128,7 @@ public abstract class OptionsDialog extends EnhancedDialog
 	} //}}}
 
 	//{{{ dispose() method
+	@Override
 	public void dispose()
 	{
 		GUIUtilities.saveGeometry(this,name);
@@ -134,6 +137,7 @@ public abstract class OptionsDialog extends EnhancedDialog
 	} //}}}
 
 	//{{{ actionPerformed() method
+	@Override
 	public void actionPerformed(ActionEvent evt)
 	{
 		Object source = evt.getSource();
@@ -153,6 +157,7 @@ public abstract class OptionsDialog extends EnhancedDialog
 	} //}}}
 
 	//{{{ valueChanged() method
+	@Override
 	public void valueChanged(TreeSelectionEvent evt)
 	{
 		TreePath path = evt.getPath();
@@ -249,17 +254,13 @@ public abstract class OptionsDialog extends EnhancedDialog
 		}
 		catch(Throwable t)
 		{
-			Log.log(Log.ERROR,this,"Error initializing options:");
-			Log.log(Log.ERROR,this,t);
+			Log.log(Log.ERROR,this,"Error initializing options:", t);
 		}
 
 		currentPane = optionPane;
 		stage.setViewportView(currentPane.getComponent());
 		stage.revalidate();
 		stage.repaint();
-
-		if(!isShowing())
-			addNotify();
 
 		updateSize();
 
@@ -317,7 +318,6 @@ public abstract class OptionsDialog extends EnhancedDialog
 						       ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 		scroller.setMinimumSize(new Dimension(100, 0));
 		splitter = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
-					  jEdit.getBooleanProperty("appearance.continuousLayout"),
 					  scroller,
 					  stage);
 		content.add(splitter, BorderLayout.CENTER);
@@ -462,8 +462,7 @@ public abstract class OptionsDialog extends EnhancedDialog
 			}
 			catch(Throwable t)
 			{
-				Log.log(Log.ERROR,this,"Error saving options:");
-				Log.log(Log.ERROR,this,t);
+				Log.log(Log.ERROR,this,"Error saving options:", t);
 			}
 		}
 		else if(obj instanceof String)
@@ -566,16 +565,19 @@ public abstract class OptionsDialog extends EnhancedDialog
 			this.root = root;
 		}
 
+		@Override
 		public void addTreeModelListener(TreeModelListener l)
 		{
 			listenerList.add(TreeModelListener.class, l);
 		}
 
+		@Override
 		public void removeTreeModelListener(TreeModelListener l)
 		{
 			listenerList.remove(TreeModelListener.class, l);
 		}
 
+		@Override
 		public Object getChild(Object parent, int index)
 		{
 			if (parent instanceof OptionGroup)
@@ -588,6 +590,7 @@ public abstract class OptionsDialog extends EnhancedDialog
 			}
 		}
 
+		@Override
 		public int getChildCount(Object parent)
 		{
 			if (parent instanceof OptionGroup)
@@ -600,6 +603,7 @@ public abstract class OptionsDialog extends EnhancedDialog
 			}
 		}
 
+		@Override
 		public int getIndexOfChild(Object parent, Object child)
 		{
 			if (parent instanceof OptionGroup)
@@ -613,16 +617,19 @@ public abstract class OptionsDialog extends EnhancedDialog
 			}
 		}
 
+		@Override
 		public Object getRoot()
 		{
 			return root;
 		}
 
+		@Override
 		public boolean isLeaf(Object node)
 		{
 			return !(node instanceof OptionGroup);
 		}
 
+		@Override
 		public void valueForPathChanged(TreePath path, Object newValue)
 		{
 			// this model may not be changed by the TableCellEditor

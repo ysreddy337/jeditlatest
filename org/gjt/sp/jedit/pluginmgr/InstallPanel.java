@@ -61,7 +61,7 @@ import java.util.List;
 //}}}
 
 /**
- * @version $Id: InstallPanel.java 19765 2011-08-08 12:41:01Z kpouer $
+ * @version $Id: InstallPanel.java 21767 2012-06-05 13:09:28Z kpouer $
  */
 class InstallPanel extends JPanel implements EBComponent
 {
@@ -88,8 +88,7 @@ class InstallPanel extends JPanel implements EBComponent
 
 		setBorder(new EmptyBorder(12,12,12,12));
 
-		final JSplitPane split = new JSplitPane(
-			JSplitPane.VERTICAL_SPLIT, jEdit.getBooleanProperty("appearance.continuousLayout"));
+		final JSplitPane split = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
 		split.setResizeWeight(0.75);
 		/* Setup the table */
 		table = new JTable(pluginModel = new PluginTableModel());
@@ -812,7 +811,7 @@ class InstallPanel extends JPanel implements EBComponent
 	/**
 	 * @TODO refactor to use the PluginDetailPanel?
 	 */
-	private class PluginInfoBox extends JTextPane implements ListSelectionListener
+	private class PluginInfoBox extends JEditorPane implements ListSelectionListener
 	{
 		private final String[] params;
 		PluginInfoBox()
@@ -820,10 +819,8 @@ class InstallPanel extends JPanel implements EBComponent
 			setBackground(jEdit.getColorProperty("view.bgColor"));
 			setForeground(jEdit.getColorProperty("view.fgColor"));
 			putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, true);
+			setContentType("text/html");
 			setEditable(false);
-			setEditorKit(new HTMLEditorKit());
-//			setLineWrap(true);
-//			setWrapStyleWord(true);
 			params = new String[3];
 			table.getSelectionModel().addListSelectionListener(this);
 		}
@@ -842,7 +839,6 @@ class InstallPanel extends JPanel implements EBComponent
 				params[2] = entry.description;
 				text = jEdit.getProperty("install-plugins.info", params);
 				text = text.replace("\n", "<br>");
-				text = "<html>" + text + "</html>";
 			}
 			setText(text);
 			setCaretPosition(0);

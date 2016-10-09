@@ -28,7 +28,6 @@ import java.awt.AWTEvent;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-import java.awt.Point;
 import java.awt.event.MouseEvent;
 import javax.swing.JMenuItem;
 
@@ -50,7 +49,7 @@ import org.gjt.sp.jedit.msg.PositionChanging;
  *
  * @author Slava Pestov
  * @author John Gellene (API documentation)
- * @version $Id: JEditTextArea.java 21374 2012-03-14 23:52:09Z ezust $
+ * @version $Id: JEditTextArea.java 21772 2012-06-08 19:43:00Z jarekczek $
  */
 public class JEditTextArea extends TextArea
 {
@@ -64,6 +63,7 @@ public class JEditTextArea extends TextArea
 		super(jEdit.getPropertyManager(), view);
 		enableEvents(AWTEvent.FOCUS_EVENT_MASK | AWTEvent.KEY_EVENT_MASK);
 		this.view = view;
+		setRightClickPopupEnabled(true);
 		painter.setLineExtraSpacing(jEdit.getIntegerProperty("options.textarea.lineSpacing", 0));
 		EditBus.addToBus(this);
 	} //}}}
@@ -456,6 +456,8 @@ public class JEditTextArea extends TextArea
 	public void createPopupMenu(MouseEvent evt)
 	{
 		popup = GUIUtilities.loadPopupMenu("view.context", this, evt);
+		if (!jEdit.getBooleanProperty("options.context.includeOptionsLink"))
+			return;
 		JMenuItem customize = new JMenuItem(jEdit.getProperty(
 			"view.context.customize"));
 		customize.addActionListener(new ActionListener()
@@ -467,27 +469,6 @@ public class JEditTextArea extends TextArea
 		});
 		popup.addSeparator();
 		popup.add(customize);
-	} //}}}
-
-	//{{{ showPopupMenu() method
-	/**
-	 * Shows the popup menu below the current caret position.
-	 * @since 4.3pre10
-	 */
-	@Override
-	public void showPopupMenu()
-	{
-		if (!popup.isVisible() && hasFocus())
-		{
-			Point caretPos = offsetToXY(getCaretPosition());
-			if (caretPos != null)
-			{
-				// Open the context menu below the caret
-				int lineHeight = getPainter().getLineHeight();
-				GUIUtilities.showPopupMenu(popup,
-					painter,caretPos.x,caretPos.y + lineHeight,true);
-			}
-		}
 	} //}}}
 
 	//{{{ handlePropertiesChanged() method

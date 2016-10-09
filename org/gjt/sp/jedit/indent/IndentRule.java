@@ -25,9 +25,9 @@ package org.gjt.sp.jedit.indent;
 import java.util.List;
 import org.gjt.sp.jedit.buffer.JEditBuffer;
 
-/**
+/** Abstract Indentation Rule 
  * @author Slava Pestov
- * @version $Id: IndentRule.java 12504 2008-04-22 23:12:43Z ezust $
+ * @version $Id: IndentRule.java 21723 2012-05-27 14:34:13Z k_satoda $
  */
 public interface IndentRule
 {

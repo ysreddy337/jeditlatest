@@ -25,12 +25,14 @@ package org.gjt.sp.jedit.options;
 //{{{ Imports
 import javax.swing.*;
 import org.gjt.sp.jedit.*;
+
+
 //}}}
 
 //{{{ BrowserOptionPane class
 /**
  * @author Slava Pestov
- * @version $Id: BrowserOptionPane.java 12504 2008-04-22 23:12:43Z ezust $
+ * @version $Id: BrowserOptionPane.java 20328 2011-11-13 05:59:59Z ezust $
  */
 public class BrowserOptionPane extends AbstractOptionPane
 {

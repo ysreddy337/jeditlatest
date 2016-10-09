@@ -50,7 +50,7 @@ import org.gjt.sp.util.Log;
  * @see TextArea
  *
  * @author Mike Dillon and Slava Pestov
- * @version $Id: Gutter.java 20408 2011-11-22 19:45:48Z ezust $
+ * @version $Id: Gutter.java 21683 2012-05-19 09:33:20Z jarekczek $
  */
 public class Gutter extends JComponent implements SwingConstants
 {
@@ -125,13 +125,15 @@ public class Gutter extends JComponent implements SwingConstants
 			public void contentInserted(JEditBuffer buffer, int startLine,
 					int offset, int numLines, int length)
 			{
-				updateLineNumberWidth();
+				if (numLines != 0)
+					updateLineNumberWidth();
 			}
 
 			public void contentRemoved(JEditBuffer buffer, int startLine,
 					int offset, int numLines, int length) 
 			{
-				updateLineNumberWidth();
+				if (numLines != 0)
+					updateLineNumberWidth();
 			}
 		};
 

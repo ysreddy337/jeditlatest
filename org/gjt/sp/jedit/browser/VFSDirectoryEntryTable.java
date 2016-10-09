@@ -49,7 +49,7 @@ import org.gjt.sp.util.ThreadUtilities;
 
 /**
  * @author Slava Pestov
- * @version $Id: VFSDirectoryEntryTable.java 21747 2012-06-01 13:55:48Z jarekczek $
+ * @version $Id: VFSDirectoryEntryTable.java 21706 2012-05-23 16:58:56Z ezust $
  * @since jEdit 4.2pre1
  */
 public class VFSDirectoryEntryTable extends JTable
@@ -601,7 +601,7 @@ public class VFSDirectoryEntryTable extends JTable
 				return;
 			Entry node = (Entry) getModel().getValueAt(ind, 0);
 			boolean isDir = node.dirEntry.getType() == VFSFile.DIRECTORY;
-			EditBus.send(new VFSPathSelected(jEdit.getActiveView(),
+			EditBus.send(new VFSPathSelected(browserView.getBrowser().getView(),
 							 node.dirEntry.getPath(), isDir));
 		}
 

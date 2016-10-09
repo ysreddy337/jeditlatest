@@ -35,6 +35,7 @@ import javax.swing.JOptionPane;
 
 import org.gjt.sp.jedit.Buffer;
 import org.gjt.sp.jedit.GUIUtilities;
+import org.gjt.sp.jedit.buffer.JEditBuffer;
 import org.gjt.sp.jedit.jEdit;
 import org.gjt.sp.jedit.MiscUtilities;
 import org.gjt.sp.jedit.View;
@@ -45,19 +46,21 @@ import org.gjt.sp.jedit.io.EncodingServer;
  * Menu provider for actions to reload the current buffer with a
  * specific encoding.
  *
- * @version $Id: ReloadWithEncodingProvider.java 16805 2010-01-01 19:33:37Z daleanson $
+ * @version $Id: ReloadWithEncodingProvider.java 20367 2011-11-17 22:29:08Z kpouer $
  */
 public class ReloadWithEncodingProvider implements ActionListener, DynamicMenuProvider
 {	
 	private View view;
 
 	//{{{ updateEveryTime() method
+	@Override
 	public boolean updateEveryTime()
 	{
 		return false;
 	} //}}}
 
 	//{{{ update() method
+	@Override
 	public void update(JMenu menu)
 	{
 		view = GUIUtilities.getView(menu);
@@ -89,7 +92,7 @@ public class ReloadWithEncodingProvider implements ActionListener, DynamicMenuPr
 			JMenuItem mi = new JMenuItem(encodings[i]);
 			mi.setActionCommand("encoding@" + encodings[i]);
 			mi.addActionListener(this);
-			if ((menu.getMenuComponentCount() >= maxItems) && (i < encodings.length))
+			if (menu.getMenuComponentCount() >= maxItems && i < encodings.length)
 			{
 				JMenu newMenu = new JMenu(jEdit.getProperty("common.more"));
 				menu.add(newMenu);
@@ -109,6 +112,7 @@ public class ReloadWithEncodingProvider implements ActionListener, DynamicMenuPr
 	} //}}}
 
 	//{{{ actionPerformed() method
+	@Override
 	public void actionPerformed(ActionEvent ae)
 	{
 		JMenuItem mi = (JMenuItem) ae.getSource();
@@ -120,7 +124,7 @@ public class ReloadWithEncodingProvider implements ActionListener, DynamicMenuPr
 		{
 			encoding = action.substring(9);
 		}
-		else if (action.equals("other-encoding"))
+		else if ("other-encoding".equals(action))
 		{
 			encoding = JOptionPane.showInputDialog(view,
 				jEdit.getProperty("encoding-prompt.message"),
@@ -144,11 +148,11 @@ public class ReloadWithEncodingProvider implements ActionListener, DynamicMenuPr
 		if (encoding != null)
 		{
 			props = new Hashtable();
-			props.put(Buffer.ENCODING, encoding);
+			props.put(JEditBuffer.ENCODING, encoding);
 			// Disable auto-detect because user explicitly
 			// specify an encoding.
 			props.put(Buffer.ENCODING_AUTODETECT, false);
-			view.getBuffer().setStringProperty(Buffer.ENCODING, encoding);
+			view.getBuffer().setStringProperty(JEditBuffer.ENCODING, encoding);
 		}
 
 		String path = view.getBuffer().getPath();

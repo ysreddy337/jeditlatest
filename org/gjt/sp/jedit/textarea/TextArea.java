@@ -69,7 +69,7 @@ import org.gjt.sp.util.ThreadUtilities;
  *
  * @author Slava Pestov
  * @author kpouer (rafactoring into standalone text area)
- * @version $Id: TextArea.java 21295 2012-03-09 20:50:46Z ezust $
+ * @version $Id: TextArea.java 22366 2012-10-13 22:21:34Z ezust $
  */
 public abstract class TextArea extends JComponent
 {
@@ -145,8 +145,6 @@ public abstract class TextArea extends JComponent
 		// when setting the initial caret position for a buffer
 		// (eg, from the recent file list)
 		focusedComponent = this;
-
-		popupEnabled = true;
 	} //}}}
 
 	//{{{ getFoldPainter() method
@@ -389,6 +387,7 @@ public abstract class TextArea extends JComponent
 		{
 			bufferChanging = true;
 
+			boolean inCompoundEdit = false;
 			if(this.buffer != null)
 			{
 				// dubious?
@@ -398,13 +397,17 @@ public abstract class TextArea extends JComponent
 					selectNone();
 				caretLine = caret = caretScreenLine = 0;
 				match = null;
-			}
-			boolean inCompoundEdit = false;
-			if (this.buffer != null)
+
+				// is the current buffer performing a compoundEdit?
 				inCompoundEdit = this.buffer.insideCompoundEdit();
-			if (inCompoundEdit)
-				this.buffer.endCompoundEdit();
+				if (inCompoundEdit)
+					this.buffer.endCompoundEdit();
+			}
+
+			// set new buffer
 			this.buffer = buffer;
+			// old buffer did perform a compoundEdit,
+			// so open a compoundEdit for new buffer
 			if (inCompoundEdit)
 				this.buffer.beginCompoundEdit();
 
@@ -513,8 +516,7 @@ public abstract class TextArea extends JComponent
 	 */
 	public final int getFirstLine()
 	{
-		return displayManager.firstLine.scrollLine
-			+ displayManager.firstLine.skew;
+		return displayManager.firstLine.getScrollLine() + displayManager.firstLine.getSkew();
 	} //}}}
 
 	//{{{ setFirstLine() method
@@ -534,13 +536,13 @@ public abstract class TextArea extends JComponent
 			firstLine = 0;
 		//}}}
 
+		int oldFirstLine = getFirstLine();
 		if(Debug.SCROLL_DEBUG)
 		{
 			Log.log(Log.DEBUG,this,"setFirstLine() from "
-				+ getFirstLine() + " to " + firstLine);
+				+ oldFirstLine + " to " + firstLine);
 		}
 
-		int oldFirstLine = getFirstLine();
 		if(firstLine == oldFirstLine)
 			return;
 
@@ -558,7 +560,7 @@ public abstract class TextArea extends JComponent
 	 */
 	public final int getFirstPhysicalLine()
 	{
-		return displayManager.firstLine.physicalLine;
+		return displayManager.firstLine.getPhysicalLine();
 	} //}}}
 
 	//{{{ setFirstPhysicalLine() methods
@@ -586,7 +588,7 @@ public abstract class TextArea extends JComponent
 				+ physFirstLine + ',' + skew + ')');
 		}
 
-		int amount = physFirstLine - displayManager.firstLine.physicalLine;
+		int amount = physFirstLine - displayManager.firstLine.getPhysicalLine();
 
 		displayManager.setFirstPhysicalLine(amount,skew);
 
@@ -824,8 +826,7 @@ public abstract class TextArea extends JComponent
 					Log.log(Log.DEBUG,this,"neither");
 					Log.log(Log.DEBUG,this,"Last physical line is " + getLastPhysicalLine());
 				}
-				setFirstPhysicalLine(line,subregion
-					- (visibleLines >> 1));
+				setFirstPhysicalLine(line,subregion - (visibleLines >> 1));
 				if(Debug.SCROLL_TO_DEBUG)
 				{
 					Log.log(Log.DEBUG,this,"Last physical line is " + getLastPhysicalLine());
@@ -1374,6 +1375,7 @@ public abstract class TextArea extends JComponent
 		buffer.getText(begin, end - begin, segment);
 	}//}}}
 
+	//{{{ getVisibleLineSegment() method
 	/**
 	 * Returns the visible part of the given line in a CharSequence.
 	 * The buffer data are not copied. so this should be used in EDT
@@ -1391,7 +1393,7 @@ public abstract class TextArea extends JComponent
 		int begin = xyToOffset(offset + point.x, point.y);
 		int end = xyToOffset(getPainter().getWidth(), point.y);
 		return buffer.getSegment(begin, end - begin);
-	}
+	} //}}}
 
 	//{{{ setText() method
 	/**
@@ -1411,8 +1413,6 @@ public abstract class TextArea extends JComponent
 			buffer.endCompoundEdit();
 		}
 	} //}}}
-
-	//}}}
 
 	//{{{ Selection
 
@@ -2102,6 +2102,7 @@ forward_scan:	do
 	 * method can be passed as a parameter to such methods as
 	 * {@link JEditBuffer#getLineText(int)}.
 	 *
+	 * @return Non-null, non-zero sized array of line indexes.
 	 * @since jEdit 3.2pre1
 	 */
 	public int[] getSelectedLines()
@@ -3398,12 +3399,18 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 			delete();
 			break;
 		default:
-			boolean indent = buffer.isElectricKey(ch, caretLine);
 			String str = String.valueOf(ch);
 			if(getSelectionCount() == 0)
 			{
 				if(!doWordWrap(ch == ' '))
+				{
+					boolean indent = buffer.isElectricKey(ch, caretLine) &&
+						"full".equals(buffer.getStringProperty("autoIndent")) &&
+						/* if the line is not manually indented */
+						(buffer.getCurrentIndentForLine(caretLine, null) ==
+							buffer.getIdealIndentForLine(caretLine));
 					insert(str,indent);
+				}
 			}
 			else
 				replaceSelection(str);
@@ -4455,7 +4462,8 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 			getToolkit().beep();
 		else
 		{
-			if (buffer.isElectricKey('\n', caretLine))
+			String autoIndent = buffer.getStringProperty("autoIndent");
+			if ("full".equals(autoIndent) && buffer.isElectricKey('\n', caretLine))
 			{
 				buffer.indentLine(caretLine, true);
 			}
@@ -4464,7 +4472,11 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 			{
 				buffer.beginCompoundEdit();
 				setSelectedText("\n");
-				buffer.indentLine(caretLine,true);
+				
+				if ("full".equals(autoIndent))
+					buffer.indentLine(caretLine, true);
+				else if ("simple".equals(autoIndent))
+					buffer.simpleIndentLine(caretLine);
 			}
 			finally
 			{
@@ -4482,7 +4494,8 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 			return;
 		}
 
-		if(getSelectionCount() == 0)
+		boolean indent = "full".equals(buffer.getStringProperty("autoIndent"));
+		if(indent && getSelectionCount() == 0)
 		{
 			// if caret is inside leading whitespace, indent.
 			CharSequence text = buffer.getLineSegment(caretLine);
@@ -4801,17 +4814,20 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 		char[] foo = new char[_tabSize];
 		for(int i = 0; i < foo.length; i++)
 			foo[i] = ' ';
-
 		tabSize = painter.getStringWidth(new String(foo));
 
+		// Calculate an average to use a reasonable value for
+		// propotional fonts.
+		String charWidthSample = " 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 		charWidth = (int)Math.round(
-			painter.getFont().getStringBounds(foo,0,1,
-			painter.getFontRenderContext()).getWidth());
+			painter.getFont().getStringBounds(charWidthSample,
+				painter.getFontRenderContext()).getWidth() / charWidthSample.length());
 
 		String oldWrap = wrap;
 		wrap = buffer.getStringProperty("wrap");
 		hardWrap = "hard".equals(wrap);
-		softWrap = "soft".equals(wrap);
+		String largeFileMode = buffer.getStringProperty("largefilemode");
+		softWrap = "soft".equals(wrap) && !"limited".equals(largeFileMode) && !"nohighlight".equals(largeFileMode);
 		boolean oldWrapToWidth = wrapToWidth;
 		int oldWrapMargin = wrapMargin;
 		setMaxLineLength(buffer.getIntegerProperty("maxLineLen",0));
@@ -4907,7 +4923,7 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 	/**
 	 * Returns true if the caret is visible, false otherwise.
 	 */
-	final boolean isCaretVisible()
+	public final boolean isCaretVisible()
 	{
 		return blink && hasFocus();
 	} //}}}
@@ -5602,13 +5618,17 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 		else
 			return false;
 
+		String indent = buffer.getStringProperty("autoIndent");
 		try
 		{
 			buffer.beginCompoundEdit();
 			buffer.insert(start + insertNewLineAt,"\n");
 			// caretLine would have been incremented
 			// since insertNewLineAt <= caretPos
-			buffer.indentLine(caretLine,true);
+			if ("full".equals(indent))
+				buffer.indentLine(caretLine,true);
+			else if ("simple".equals(indent))
+				buffer.simpleIndentLine(caretLine);
 		}
 		finally
 		{
@@ -5933,18 +5953,8 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 		}
 		else
 		{
-			// stupidity
-			char[] foo = new char[maxLineLen];
-			for(int i = 0; i < foo.length; i++)
-			{
-				foo[i] = ' ';
-			}
-			int maxRenderedLineLen = (int)painter.getFont().getStringBounds(
-				foo,0,foo.length,
-				painter.getFontRenderContext())
-				.getWidth();
-
-			if (softWrap && painter.getWidth() < maxRenderedLineLen)
+			int estimate = charWidth * maxLineLen;
+			if (softWrap && painter.getWidth() < estimate)
 			{
 				wrapToWidth = true;
 				wrapMargin = painter.getWidth() - charWidth * 3;
@@ -5952,7 +5962,7 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 			else
 			{
 				wrapToWidth = false;
-				wrapMargin = maxRenderedLineLen;
+				wrapMargin = estimate;
 			}
 		}
 	} //}}}
@@ -6198,12 +6208,13 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 	//{{{ createPopupMenu() method
 	/**
 	 * Creates the popup menu.
+	 * If you want a popup menu, don't forget in your class to
+	 * call {@link #setRightClickPopupEnabled(boolean)} to enable the
+	 * popup menu
 	 * @since 4.3pre15
 	 */
 	public void createPopupMenu(MouseEvent evt)
 	{
-		if (popup == null)
-			popup = new JPopupMenu();
 	} //}}}
 
 	//{{{ showPopupMenu() method
@@ -6240,7 +6251,7 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 	 *
 	 * @since jEdit 4.1pre1
 	 */
-	private static void showPopupMenu(JPopupMenu popup, Component comp,
+	public static void showPopupMenu(JPopupMenu popup, Component comp,
 		int x, int y, boolean point)
 	{
 		int offsetX = 0;

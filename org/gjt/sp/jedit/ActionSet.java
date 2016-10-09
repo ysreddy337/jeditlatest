@@ -27,6 +27,7 @@ import java.net.URL;
 import java.util.*;
 
 import org.gjt.sp.jedit.input.AbstractInputHandler;
+import org.jedit.keymap.Keymap;
 import org.gjt.sp.util.Log;
 //}}}
 
@@ -138,7 +139,7 @@ import org.gjt.sp.util.Log;
  *
  * @author Slava Pestov
  * @author John Gellene (API documentation)
- * @version $Id: ActionSet.java 16333 2009-10-14 09:30:00Z kpouer $
+ * @version $Id: ActionSet.java 20759 2012-01-12 11:06:22Z kpouer $
  * @since jEdit 4.0pre1
  */
 public class ActionSet extends JEditActionSet<EditAction> implements Comparable
@@ -289,7 +290,8 @@ public class ActionSet extends JEditActionSet<EditAction> implements Comparable
 	//{{{ getProperty() method
 	protected String getProperty(String name)
 	{
-		return jEdit.getProperty(name);
+		Keymap keymap = jEdit.getKeymapManager().getKeymap();
+		return keymap.getShortcut(name);
 	} //}}}
 	
 	//{{{ getInputHandler() method

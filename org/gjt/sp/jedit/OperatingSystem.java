@@ -37,7 +37,7 @@ import org.gjt.sp.util.Log;
 /**
  * Operating system detection routines.
  * @author Slava Pestov
- * @version $Id: OperatingSystem.java 18919 2010-11-04 10:52:55Z kpouer $
+ * @version $Id: OperatingSystem.java 20631 2011-12-12 23:35:36Z kpouer $
  * @since jEdit 4.0pre4
  */
 public class OperatingSystem
@@ -152,16 +152,18 @@ public class OperatingSystem
 
 	//{{{ isDOSDerived() method
 	/**
-	 * Returns if we're running Windows 95/98/ME/NT/2000/XP, or OS/2.
+	 * Returns if we're running Windows 95/98/ME/NT/2000/XP/Vista/Win7.
+	 * @deprecated use {@link #isWindows()}
 	 */
+	@Deprecated
 	public static boolean isDOSDerived()
 	{
-		return isWindows() || isOS2();
+		return isWindows();
 	} //}}}
 
 	//{{{ isWindows() method
 	/**
-	 * Returns if we're running Windows 95/98/ME/NT/2000/XP.
+	 * Returns if we're running Windows 95/98/ME/NT/2000/XP/Vista/Win7.
 	 */
 	public static boolean isWindows()
 	{
@@ -179,20 +181,11 @@ public class OperatingSystem
 
 	//{{{ isWindowsNT() method
 	/**
-	 * Returns if we're running Windows NT/2000/XP.
+	 * Returns if we're running Windows NT/2000/XP/Vista/Win7.
 	 */
 	public static boolean isWindowsNT()
 	{
 		return os == WINDOWS_NT;
-	} //}}}
-
-	//{{{ isOS2() method
-	/**
-	 * Returns if we're running OS/2.
-	 */
-	public static boolean isOS2()
-	{
-		return os == OS2;
 	} //}}}
 
 	//{{{ isUnix() method
@@ -264,34 +257,46 @@ public class OperatingSystem
 
 	//{{{ hasJava16() method
 	/**
-	 * Returns if Java 2 version 1.6 is in use.
+	 * Returns true always 
 	 * @since jEdit 4.3pre17
+	 * @deprecated obsolete, since we depend on Java 1.6 now
 	 */
+	@Deprecated
 	public static boolean hasJava16()
 	{
-		return java16;
+		return true;
 	} //}}}
 
+	//{{{ hasJava17() method
+	/**
+	 * Returns if Java 2 version 1.7 is in use.
+	 * @since jEdit 5.0pre1
+	 */
+	public static boolean hasJava17()
+	{
+		return java17;
+	} //}}}
+
+	
 	//{{{ isCaseInsensitiveFS() method
 	/**
 	 * @since jEdit 4.3pre2
 	 */
 	public static boolean isCaseInsensitiveFS()
 	{
-		return isDOSDerived() || isMacOS();
+		return isWindows() || isMacOS();
 	} //}}}
 	
 	//{{{ Private members
 	private static final int UNIX = 0x31337;
 	private static final int WINDOWS_9x = 0x640;
 	private static final int WINDOWS_NT = 0x666;
-	private static final int OS2 = 0xDEAD;
 	private static final int MAC_OS_X = 0xABC;
 	private static final int VMS = 0xDEAD2;
 	private static final int UNKNOWN = 0xBAD;
 
 	private static int os;
-	private static boolean java16;
+	private static boolean java17;
 	private static int hasScreenMenuBar = -1;
 
 	//{{{ Class initializer
@@ -313,10 +318,6 @@ public class OperatingSystem
 			{
 				os = WINDOWS_NT;
 			}
-			else if(osName.contains("OS/2"))
-			{
-				os = OS2;
-			}
 			else if(osName.contains("VMS"))
 			{
 				os = VMS;
@@ -336,11 +337,11 @@ public class OperatingSystem
 		// for debugging, make jEdit think its using a different
 		// version of Java than it really is.
 		String javaVersion = System.getProperty("jedit.force.java.version");
-		if(javaVersion == null || javaVersion.length() == 0)
+		if(javaVersion == null || javaVersion.isEmpty())
 			javaVersion = System.getProperty("java.version");
-		if(javaVersion == null || javaVersion.length() == 0)
+		if(javaVersion == null || javaVersion.isEmpty())
 			javaVersion = System.getProperty("java.runtime.version");
-		java16 = javaVersion.compareTo("1.6") >= 0;
+		java17 = javaVersion.compareTo("1.7") >= 0;
 	} //}}}
 
 	//}}}

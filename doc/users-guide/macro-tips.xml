@@ -1,25 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <chapter id="macro-tips">
     <title>Macro Tips and Techniques</title>
-
-    <!-- jEdit 4.0 Macro Guide, (C) 2001, 2002 John Gellene       -->
-
-    <!-- Wed Jun 20 16:56:26 EDT 2001 @914 /Internet Time/        -->
-
-    <!--                                                          -->
-
-    <!-- jEdit buffer-local properties:                           -->
-
+    <!-- jEdit buffer-local properties:                             -->
     <!-- :indentSize=1:noTabs=yes:maxLineLen=0:wrap=soft:tabSize=2: -->
-
-    <!-- :xml.root=users-guide.xml:                               -->
-
-    <!--                                                          -->
-
-    <!-- This file covers the chapter "Macro tips and techniques" -->
-
-    <!-- $Id: macro-tips.xml 16181 2009-09-08 19:26:57Z ezust $
- -->
+    <!-- :xml.root=users-guide.xml:                                 -->
 
     <section id="macro-tips-input">
         <title>Getting Input for a Macro</title>
@@ -889,8 +873,9 @@ new Thread(r).start();</programlisting>
             activity log:</para>
 
             <informalexample>
-                <programlisting>Log.log(Log.DEBUG, BeanShell.class,
-    "counter = " + counter);</programlisting>
+            <programlisting>
+Log.log(Log.DEBUG, BeanShell.class, "counter = " + counter);
+            </programlisting>
             </informalexample>
 
             <para>The corresponding activity log entry might read as

@@ -99,9 +99,20 @@
 	</CODE>
 </ACTION>
 
+
 <ACTION NAME="close-all">
 	<CODE>
 		jEdit.closeAllBuffers(view);
+	</CODE>
+</ACTION>
+
+<ACTION NAME="closeall-bufferset">
+	<CODE>
+		org.gjt.sp.jedit.bufferset.BufferSet bufferSet = editPane.getBufferSet();
+		Buffer[] buffers = bufferSet.getAllBuffers();
+		for (Buffer buff: buffers) {
+			jEdit.closeBuffer(editPane,buff);
+		}
 	</CODE>
 </ACTION>
 
@@ -383,22 +394,36 @@
 	</CODE>
 </ACTION>
 
-<ACTION NAME="global-options">
+<ACTION NAME="combined-options">
 	<CODE>
-		new GlobalOptions(view);
+		return org.jedit.options.CombinedOptions.combinedOptions(view);
 	</CODE>
 </ACTION>
+
+
+<ACTION NAME="global-options">
+	<CODE>
+		new org.jedit.options.CombinedOptions(view, 0);
+	</CODE>
+</ACTION>
+
 <ACTION NAME="global-bufferset">
 	<CODE>
 		bufferSetManager = jEdit.getBufferSetManager();
 		bufferSetManager.setScope(BufferSet.Scope.global);
 	</CODE>
+	<IS_SELECTED>
+		return (jEdit.getBufferSetManager().getScope().equals(BufferSet.Scope.global));
+	</IS_SELECTED>
 </ACTION>
 <ACTION NAME="view-bufferset">
 	<CODE>
 		bufferSetManager = jEdit.getBufferSetManager();
 		bufferSetManager.setScope(BufferSet.Scope.view);
 	</CODE>
+	<IS_SELECTED>
+		return (jEdit.getBufferSetManager().getScope().equals(BufferSet.Scope.view));
+	</IS_SELECTED>	
 </ACTION>
 
 <ACTION NAME="bufferset-toggle-exclusive">
@@ -416,6 +441,10 @@
 		bufferSetManager = jEdit.getBufferSetManager();
 		bufferSetManager.setScope(BufferSet.Scope.editpane);
 	</CODE>
+	<IS_SELECTED>
+		return (jEdit.getBufferSetManager().getScope().equals(BufferSet.Scope.editpane));
+	</IS_SELECTED>	
+	
 </ACTION>
 
 <ACTION NAME="goto-line">
@@ -768,6 +797,7 @@
 
 <ACTION NAME="paste">
 	<CODE>
+		EditBus.send(new PositionChanging(editPane));
 		Registers.paste(textArea,'$',false);
 	</CODE>
 </ACTION>
@@ -832,7 +862,7 @@
 
 <ACTION NAME="plugin-options">
 	<CODE>
-		new PluginOptions(view);
+		new org.jedit.options.CombinedOptions(view, 1);
 	</CODE>
 </ACTION>
 
@@ -1078,7 +1108,6 @@
 		buffer.saveAs(view,true);
 	</CODE>
 </ACTION>
-
 <ACTION NAME="save-a-copy-as">
 	<CODE>
 		buffer.saveAs(view,false);

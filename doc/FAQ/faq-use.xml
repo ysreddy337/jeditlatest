@@ -565,87 +565,11 @@
                 </question>
 
                 <answer>
-                    <para>jEdit has it set up as a 2-key shortcut. In order to
-                    make Ctrl-E a one-key shortcut again, you first have to
-                    redefine all of the Ctrl-E prefix shortcuts to mean
-                    something else.</para>
-
-                    <para><literal>jedit_keys.props</literal> shows you all of
-                    the current keyboard bindings. As you can see, Ctrl-e is
-                    used for many things in jEdit. If you want to redefine it to
-                    be a single-key shortcut, first thing you need to do is
-                    decide on another Ctrl-key to use as a prefix, to redefine
-                    jEdit's fold features. I recommend using Ctrl-Q as the
-                    prefix, and if you want to use Ctrl-Q to quit, you have to
-                    hit Ctrl-Q twice. Cut and paste the below shortcuts into
-                    your own properties file.</para>
-
-                    <programlisting>
-# emacs end of line
-end.shortcut2=C+e
-# Ctrl-Q twice to quit
-exit.shortcut=C+q C+q
-# C+q is our new C+e prefix
-#{{{ C+q C+X
-
-# Unused: f, h, q, y
-copy-append.shortcut=C+q C+a
-search-in-open-buffers.shortcut=C+q C+b
-range-comment.shortcut=C+q C+c
-search-in-directory.shortcut=C+q C+d
-replace-and-find-next.shortcut=C+q C+g
-ignore-case.shortcut=C+q C+i
-scroll-to-current-line.shortcut=C+q C+j
-line-comment.shortcut=C+q C+k
-select-line-range.shortcut=C+q C+l
-add-marker.shortcut=C+q C+m
-center-caret.shortcut=C+q C+n
-open-path.shortcut=C+q C+o
-vertical-paste.shortcut=C+q C+p
-replace-in-selection.shortcut=C+q C+r
-save-all.shortcut=C+q C+s
-toggle-line-numbers.shortcut=C+q C+t
-cut-append.shortcut=C+q C+u
-paste-previous.shortcut=C+q C+v
-close-all.shortcut=C+q C+w
-regexp.shortcut=C+q C+x
-paste-deleted.shortcut=C+q C+y
-redo.shortcut=C+q C+z
-#}}}
-
-#{{{ C+q C+non-alpha
-left-docking-area.shortcut=C+q C+LEFT
-top-docking-area.shortcut=C+q C+UP
-right-docking-area.shortcut=C+q C+RIGHT
-bottom-docking-area.shortcut=C+q C+DOWN
-
-prev-marker.shortcut=C+q C+COMMA
-next-marker.shortcut=C+q C+PERIOD
-prev-bracket.shortcut=C+q C+OPEN_BRACKET
-next-bracket.shortcut=C+q C+CLOSE_BRACKET
-close-docking-area.shortcut=C+q C+BACK_QUOTE
-#}}}
-
-#{{{ C+q X
-# Unused: b e g h j k m o q t y z
-add-explicit-fold.shortcut=C+q a
-collapse-all-folds.shortcut=C+q c
-delete-paragraph.shortcut=C+q d
-format-paragraph.shortcut=C+q f
-find-previous.shortcut=C+q g
-invert-selection.shortcut=C+q i
-select-line.shortcut=C+q l
-narrow-to-fold.shortcut=C+q n n
-narrow-to-selection.shortcut=C+q n s
-select-paragraph.shortcut=C+q p
-remove-trailing-ws.shortcut=C+q r
-select-fold.shortcut=C+q s
-insert-literal.shortcut=C+q v
-select-word.shortcut=C+q w
-parent-fold.shortcut=C+q u
-expand-all-folds.shortcut=C+q x
-#}}}
-</programlisting>
+                    <para>Start with a keymap that does not contain any
+                    multiple-key shortcuts beginning with Ctrl-E, such as the
+                    "Emacs" Keymap which binds Ctrl-E
+                    to "smart end", and customize it by setting your own shortcuts to make it more like your flavor of emacs.
+                    </para>
                 </answer>
             </qandaentry>
 
@@ -655,7 +579,7 @@ expand-all-folds.shortcut=C+q x
                 </question>
 
                 <answer>
-                    <para>Check out <literal>macros/Emacs_Ctrl_K.bsh</literal>.
+                    <para>Check out <literal>macros/Editing/Emacs_Ctrl_K.bsh</literal>.
                     Bind it to Ctrl-k from the shortcuts option pane.</para>
                 </answer>
             </qandaentry>
@@ -681,12 +605,17 @@ expand-all-folds.shortcut=C+q x
             </qandaentry>
             <qandaentry>
                 <question id="antialiased-text-everywhere">
-                    <para>How can I get antialiased text everywhere? </para>
+                    <para>How can I get antialiased text everywhere, even dockables and menus? </para>
                 </question>
                 <answer>
                    <para>For the text area, go to <guimenuitem>Global Options - TextArea - Anti Aliased Smooth Text</guimenuitem>. </para>
                    <para>For the dockables, starting <command>java</command> with command line options <literal>"-Dawt.useSystemAAFontSettings=on" "-Dswing.aatext=true"</literal> will give you antialiased text everywhere else.
-                   You can add these options to the batch file or shell script line that starts jEdit.</para>
+                   You can add these options to the batch file or shell script line that starts jEdit. </para>
+                   <para> On Windows with the .exe launcher, you create a file called <literal>jedit.l4j.ini</literal> in the same directory as the .exe file, 
+                   and place one line for each java argument you want to pass. For example:
+                   <programlisting>-Dawt.useSystemAAFontSettings=on
+-Dswing.aatext=true</programlisting>
+                   </para>
 			    </answer>
             </qandaentry>
             <qandaentry>

@@ -34,7 +34,8 @@ import org.gjt.sp.jedit.OperatingSystem;
 
 //}}}
 
-/**
+/** Class for buttons that implement rollovers
+ *
  * If you wish to have rollovers on your buttons, use this class.
  *
  * Unlike the Swing rollover support, this class works outside of
@@ -43,7 +44,7 @@ import org.gjt.sp.jedit.OperatingSystem;
  *
  * Note: You should not call <code>setBorder()</code> on your buttons,
  * as they probably won't work properly.
- * @version $Id: RolloverButton.java 12504 2008-04-22 23:12:43Z ezust $
+ * @version $Id: RolloverButton.java 21506 2012-03-29 17:58:53Z ezust $
  */
 public class RolloverButton extends JButton
 {

@@ -1,7 +1,7 @@
 /*
  * DisplayTokenHandler.java - converts tokens to chunks
  * :tabSize=8:indentSize=8:noTabs=false:
- * :folding=explicit:collapseFolds=1:
+ * :folding=explicit:collapseFolds=1:encoding=utf-8:
  *
  * Copyright (C) 2003 Slava Pestov
  *
@@ -26,17 +26,16 @@ package org.gjt.sp.jedit.syntax;
 import javax.swing.text.*;
 import java.awt.font.*;
 import java.util.List;
+import java.text.BreakIterator;
+import java.text.CharacterIterator;
 //}}}
 
 /**
  * Creates {@link Chunk} objects that can be painted on screen.
- * @version $Id: DisplayTokenHandler.java 19480 2011-03-22 14:08:05Z kpouer $
+ * @version $Id: DisplayTokenHandler.java 21688 2012-05-19 19:44:16Z k_satoda $
  */
 public class DisplayTokenHandler extends DefaultTokenHandler
 {
-	// don't have chunks longer than 100 characters to avoid slowing things down
-	public static final int MAX_CHUNK_LEN = 100;
-
 	//{{{ init() method
 	/**
 	 * Init some variables that will be used when marking tokens.
@@ -57,13 +56,10 @@ public class DisplayTokenHandler extends DefaultTokenHandler
 		float wrapMargin, int physicalLineOffset)
 	{
 		super.init();
-
-		x = 0.0f;
-
 		this.styles = styles;
 		this.fontRenderContext = fontRenderContext;
 		this.expander = expander;
-		this.physicalLineOffset = physicalLineOffset;
+		this.out = out;
 
 		// SILLY: allow for anti-aliased characters' "fuzz"
 		if(wrapMargin != 0.0f)
@@ -71,16 +67,14 @@ public class DisplayTokenHandler extends DefaultTokenHandler
 		else
 			this.wrapMargin = 0.0f;
 
-		this.out = out;
-
-		seenNonWhitespace = false;
-		endX = endOfWhitespace = 0.0f;
-		end = null;
+		this.physicalLineOffset = physicalLineOffset;
 	} //}}}
 
 	//{{{ getChunkList() method
 	/**
 	 * Returns the list of chunks.
+	 * Each element is a head of linked chunks and represents a
+	 * screen line.
 	 * @since jEdit 4.1pre7
 	 */
 	public List<Chunk> getChunkList()
@@ -105,80 +99,71 @@ public class DisplayTokenHandler extends DefaultTokenHandler
 	{
 		if(id == Token.END)
 		{
-			if(firstToken != null)
-				out.add(merge((Chunk)firstToken,seg));
+			makeScreenLine(seg);
 			return;
 		}
 
-		for(int splitOffset = 0; splitOffset < length; splitOffset += MAX_CHUNK_LEN)
+		// first branch to avoid unnecessary instansiation of
+		// BreakIterator.
+		if(length <= MAX_CHUNK_LEN)
 		{
-			int splitLength = Math.min(length - splitOffset,MAX_CHUNK_LEN);
-			Chunk chunk = createChunk(id,offset + splitOffset,splitLength,context);
-			addToken(chunk,context);
-
-			if(wrapMargin != 0.0f)
-			{
-				initChunk(chunk,seg, physicalLineOffset);
-				x += chunk.width;
-
-				if(Character.isWhitespace(seg.array[
-					seg.offset + chunk.offset]))
-				{
-					if(seenNonWhitespace)
-					{
-						end = lastToken;
-						endX = x;
-					}
-					else
-						endOfWhitespace = x;
-				}
-				else
-				{
-					if(x > wrapMargin
-						&& end != null
-						&& seenNonWhitespace)
-					{
-						Chunk nextLine = new Chunk(endOfWhitespace,
-							end.offset + end.length,
-							getParserRuleSet(context));
-						initChunk(nextLine,seg,  physicalLineOffset);
-
-						nextLine.next = end.next;
-						end.next = null;
-
-						if(firstToken != null)
-							out.add(merge((Chunk)firstToken,seg));
-
-						firstToken = nextLine;
-
-						x = x - endX + endOfWhitespace;
-
-						end = null;
-						endX = x;
-					}
-
-					seenNonWhitespace = true;
-				}
-			}
+			Chunk chunk = createChunk(id, offset, length, context);
+			addToken(chunk, context);
+			return;
 		}
+
+		// split the token but at character breaks not to affect
+		// the result of painting.
+		final BreakIterator charBreaker = BreakIterator.getCharacterInstance();
+		charBreaker.setText(seg);
+		final int tokenBeinIndex = seg.offset + offset;
+		final int tokenEndIndex = tokenBeinIndex + length;
+		int splitOffset = 0;
+		do
+		{
+			final int beginIndex = tokenBeinIndex + splitOffset;
+			int charBreakIndex = charBreaker.preceding(beginIndex + MAX_CHUNK_LEN + 1);
+			// {{{ care for unrealistic case, to be complete ...
+			// There must be a char break at beginning of token.
+			assert charBreakIndex != BreakIterator.DONE;
+			if(charBreakIndex <= beginIndex)
+			{
+				// try splitting after the limit, to
+				// make the chunk shorter anyway.
+				charBreakIndex = charBreaker.following(beginIndex + MAX_CHUNK_LEN);
+				// There must be a char break at end of token.
+				assert charBreakIndex != BreakIterator.DONE;
+				if(charBreakIndex >= tokenEndIndex)
+				{
+					// can't split
+					break;
+				}
+			} //}}}
+			final int splitLength = charBreakIndex - beginIndex;
+			Chunk chunk = createChunk(id, offset + splitOffset,
+					splitLength, context);
+			addToken(chunk, context);
+			splitOffset += splitLength;
+		}
+		while(splitOffset + MAX_CHUNK_LEN < length);
+		Chunk chunk = createChunk(id, offset + splitOffset,
+				length - splitOffset, context);
+		addToken(chunk, context);
 	} //}}}
 
 	//{{{ Private members
+
+	// Don't have chunks longer than a limit to avoid slowing things down.
+	// For example, too long chunks are hardly clipped out at rendering.
+	private static final int MAX_CHUNK_LEN = 100;
 
 	//{{{ Instance variables
 	private SyntaxStyle[] styles;
 	private FontRenderContext fontRenderContext;
 	private TabExpander expander;
-	private float x;
-	private int physicalLineOffset;
-
 	private List<Chunk> out;
 	private float wrapMargin;
-	private float endX;
-	private Token end;
-
-	private boolean seenNonWhitespace;
-	private float endOfWhitespace;
+	private int physicalLineOffset;
 	//}}}
 
 	//{{{ createChunk() method
@@ -191,59 +176,511 @@ public class DisplayTokenHandler extends DefaultTokenHandler
 	} //}}}
 
 	//{{{ initChunk() method
-	protected void initChunk(Chunk chunk, Segment seg, int physicalLineOffset)
+	private void initChunk(Chunk chunk, float x, Segment lineText)
 	{
-		chunk.init(seg,expander,x,fontRenderContext, physicalLineOffset);
+		chunk.init(lineText,expander,x,fontRenderContext, physicalLineOffset);
 	} //}}}
 
-	//{{{ merge() method
-	private Chunk merge(Chunk first, Segment seg)
+	//{{{ initChunks() method
+	private float initChunks(Chunk lineHead, Segment lineText)
 	{
-		if(first == null)
-			return null;
+		float x = 0.0f;
+		for(Chunk chunk = lineHead; chunk != null; chunk = (Chunk)chunk.next)
+		{
+			initChunk(chunk, x, lineText);
+			x += chunk.width;
+		}
+		return x;
+	} //}}}
 
-		Chunk chunk = first;
+	//{{{ mergeAdjucentChunks() method
+	/**
+	 * Merges each adjucent chunks if possible, to reduce the number
+	 * of chunks for rendering performance.
+	 */
+	private void mergeAdjucentChunks(Chunk lineHead, Segment lineText)
+	{
+		Chunk chunk = lineHead;
 		while(chunk.next != null)
 		{
 			Chunk next = (Chunk)chunk.next;
-			if(canMerge(chunk,next,seg))
+			if(canMerge(chunk,next,lineText))
 			{
-				// in case already initialized; un-initialize it
-				chunk.initialized = false;
 				chunk.length += next.length;
-				chunk.width += next.width;
 				chunk.next = next.next;
 			}
 			else
 			{
-				if(!chunk.initialized)
-				{
-					initChunk(chunk,seg, physicalLineOffset);
-					if(wrapMargin == 0.0f)
-						x += chunk.width;
-				}
 				chunk = next;
 			}
 		}
-
-		if(!chunk.initialized)
-			initChunk(chunk,seg, physicalLineOffset);
-
-		return first;
 	} //}}}
 
 	//{{{ canMerge() method
-	private static boolean canMerge(Chunk c1, Chunk c2, Segment seg)
+	private static boolean canMerge(Chunk c1, Chunk c2, Segment lineText)
 	{
-		if(!c1.accessable || !c2.accessable)
+		return c1.style == c2.style
+			&& c1.isAccessible() && !c1.isTab(lineText)
+			&& c2.isAccessible() && !c2.isTab(lineText)
+			&& (c1.length + c2.length) <= MAX_CHUNK_LEN;
+	} //}}}
+
+	//{{{ makeWrappedLine() method
+	private Chunk makeWrappedLine(Chunk lineHead,
+		float virtualIndentWidth, Segment lineText)
+	{
+		if(virtualIndentWidth > 0)
+		{
+			final Chunk virtualIndent = new Chunk(virtualIndentWidth,
+				lineHead.offset, lineHead.rules);
+			initChunk(virtualIndent, 0, lineText);
+			virtualIndent.next = lineHead;
+			return virtualIndent;
+		}
+		else
+		{
+			return lineHead;
+		}
+	} //}}}
+
+	//{{{ recalculateTabWidth() method
+	// Returns true if all chunks are recaluculated and the total
+	// width fits in wrap margin.
+	private boolean recalculateTabWidthInWrapMargin(Chunk lineHead, Segment lineText)
+	{
+		float x = 0.0f;
+		for(Chunk chunk = lineHead; chunk != null; chunk = (Chunk)chunk.next)
+		{
+			if(chunk.isTab(lineText))
+			{
+				initChunk(chunk, x, lineText);
+			}
+			x += chunk.width;
+			if(x > wrapMargin)
+			{
+				return false;
+			}
+		}
+		return true;
+	} //}}}
+
+	//{{{ endOffsetOfWhitespaces() method
+	private static int endOffsetOfWhitespaces(Segment lineText, int origin)
+	{
+		int offset = origin;
+		while((offset < lineText.count)
+			&& Character.isWhitespace(
+				lineText.array[lineText.offset + offset]))
+		{
+			++offset;
+		}
+		return offset;
+	} //}}}
+
+	//{{{ makeScreenLineInWrapMargin() method
+	/**
+	 * Do the main job for soft wrap feature.
+	 */
+	private void makeScreenLineInWrapMargin(Chunk lineHead, Segment lineText)
+	{
+		final int endOfWhitespace = endOffsetOfWhitespaces(lineText, 0);
+		final float virtualIndentWidth = Chunk.offsetToX(lineHead, endOfWhitespace);
+		final LineBreaker lineBreaker = new LineBreaker(lineText, endOfWhitespace);
+		if(lineBreaker.currentBreak() == LineBreaker.DONE)
+		{
+			// There is no line break. Can't wrap.
+			out.add(lineHead);
+			return;
+		}
+		for(;;)
+		{
+			final int offsetInMargin = Chunk.xToOffset(lineHead, wrapMargin, false);
+			assert offsetInMargin != -1;
+			lineBreaker.skipToNearest(endOffsetOfWhitespaces(
+						lineText, offsetInMargin));
+			final int lineBreak = lineBreaker.currentBreak();
+			if(lineBreak == LineBreaker.DONE)
+			{
+				// There is no more line break. Can't wrap.
+				out.add(lineHead);
+				return;
+			}
+			lineBreaker.advance();
+			Chunk linePreEnd = null;
+			Chunk lineEnd = lineHead;
+			float endX = 0.0f;
+			while((lineEnd.offset + lineEnd.length) < lineBreak)
+			{
+				endX += lineEnd.width;
+				linePreEnd = lineEnd;
+				lineEnd = (Chunk)lineEnd.next;
+			}
+			if((lineEnd.offset + lineEnd.length) == lineBreak)
+			{
+				final Token nextHead = lineEnd.next;
+				lineEnd.next = null;
+				out.add(lineHead);
+				if(nextHead == null)
+				{
+					return;
+				}
+				lineHead = (Chunk)nextHead;
+			}
+			else
+			{
+				final Chunk shortened = lineEnd.snippetBeforeLineOffset(lineBreak);
+				initChunk(shortened, endX, lineText);
+				if(linePreEnd != null)
+				{
+					linePreEnd.next = shortened;
+				}
+				else
+				{
+					lineHead = shortened;
+				}
+				out.add(lineHead);
+				Chunk remaining = lineEnd.snippetAfter(shortened.length);
+				// {{{ The remaining chunk may be split again.
+				// To avoid quadratic repeatation of initChunk() which happens when the
+				// wrap margin is too small or the virtual space is too wide, split it
+				// using an assumption that the split at a line break doesn't change
+				// the widths of parts before and after the break.
+				final float remainingRoom = wrapMargin - virtualIndentWidth;
+				float processedWidth = shortened.width;
+				while (lineEnd.width - processedWidth > remainingRoom
+					&& lineBreaker.currentBreak() != LineBreaker.DONE
+					&& lineBreaker.currentBreak() < (remaining.offset + remaining.length))
+				{
+					final int offsetInRoom = lineEnd.xToOffset(processedWidth + remainingRoom, false);
+					assert offsetInRoom != -1;
+					lineBreaker.skipToNearest(endOffsetOfWhitespaces(
+								lineText, offsetInRoom));
+					final int moreBreak = lineBreaker.currentBreak();
+					assert moreBreak != LineBreaker.DONE;
+					if (moreBreak >= (remaining.offset + remaining.length))
+					{
+						// This can happen if remaining ends with whitespaces.
+						break;
+					}
+					lineBreaker.advance();
+					final Chunk moreShortened = remaining.snippetBeforeLineOffset(moreBreak);
+					initChunk(moreShortened, virtualIndentWidth, lineText);
+					out.add(makeWrappedLine(moreShortened, virtualIndentWidth, lineText));
+					remaining = remaining.snippetAfter(moreShortened.length);
+					processedWidth += moreShortened.width;
+				}
+				//}}}
+				initChunk(remaining, virtualIndentWidth, lineText);
+				remaining.next = lineEnd.next;
+				lineHead = remaining;
+			}
+			lineHead = makeWrappedLine(lineHead, virtualIndentWidth, lineText);
+			if(recalculateTabWidthInWrapMargin(lineHead, lineText))
+			{
+				// Fits in the margin. No more need to wrap.
+				out.add(lineHead);
+				return;
+			}
+		}
+	} //}}}
+
+	//{{{ makeScreenLine() method
+	private void makeScreenLine(Segment lineText)
+	{
+		if(firstToken == null)
+		{
+			assert out.isEmpty();
+		}
+		else
+		{
+			Chunk lineHead = (Chunk)firstToken;
+			mergeAdjucentChunks(lineHead, lineText);
+			float endX = initChunks(lineHead, lineText);
+			if(wrapMargin > 0.0f && endX > wrapMargin)
+			{
+				makeScreenLineInWrapMargin(lineHead, lineText);
+			}
+			else
+			{
+				out.add(lineHead);
+			}
+		}
+	} //}}}
+
+	//{{{ class LineBreaker
+	private static class LineBreaker
+	{
+		public static final int DONE = -1;
+
+		public LineBreaker(Segment lineText, int startOffset)
+		{
+			iterator = new LineBreakIterator();
+			iterator.setText(lineText);
+			offsetOrigin = lineText.offset;
+			current = (startOffset < lineText.count)
+					? iterator.following(offsetOrigin
+							+ startOffset)
+					: BreakIterator.DONE;
+			next = (current != BreakIterator.DONE)
+					? iterator.next()
+					: BreakIterator.DONE;
+		}
+
+		public int currentBreak()
+		{
+			return outerOffset(current);
+		}
+
+		public void advance()
+		{
+			current = next;
+			next = iterator.next();
+		}
+
+		public void skipToNearest(int offset)
+		{
+			while(next != BreakIterator.DONE
+				&& ((next - offsetOrigin) <= offset))
+			{
+				advance();
+			}
+		}
+
+		//{{{ Private members
+		private final BreakIterator iterator;
+		private final int offsetOrigin;
+		private int current;
+		private int next;
+
+		private int outerOffset(int iteratorOffset)
+		{
+			return (iteratorOffset != BreakIterator.DONE)
+					? (iteratorOffset - offsetOrigin)
+					: DONE;
+		}
+		//}}}
+	} //}}}
+
+	//{{{ class LineBreakIterator
+	/**
+	 * Custom break iterator to unify jEdit's line breaking rules
+	 * and natural language rules.
+	 */
+	private static class LineBreakIterator extends BreakIterator
+	{
+		public LineBreakIterator()
+		{
+			base = BreakIterator.getLineInstance();
+		}
+
+		private LineBreakIterator(LineBreakIterator other)
+		{
+			base = (BreakIterator)(other.base.clone());
+		}
+
+		@Override
+		public Object clone()
+		{
+			return new LineBreakIterator(this);
+		}
+
+		@Override
+		public int current()
+		{
+			int baseBreak = base.current();
+			if (isAcceptableBreak(baseBreak))
+			{
+				return baseBreak;
+			}
+			// can have reached the end of text during
+			// baseOrNext() or baseOrPrevious() which returned
+			// DONE.
+			// Here, current() should return last() or first()
+			// based on which was the last direction.
+			return (base.next() == DONE) ? last() : first();
+		}
+
+		@Override
+		public int first()
+		{
+			return baseOrNext(base.first());
+		}
+
+		@Override
+		public int following(int offset)
+		{
+			return baseOrNext(base.following(offset));
+		}
+
+		@Override
+		public CharacterIterator getText()
+		{
+			return base.getText();
+		}
+
+		@Override
+		public int last()
+		{
+			return baseOrPrevious(base.last());
+		}
+
+		@Override
+		public int next()
+		{
+			return baseOrNext(base.next());
+		}
+
+		@Override
+		public int next(int n)
+		{
+			while (n > 1)
+			{
+				if (next() == DONE)
+					return DONE;
+				--n;
+			}
+			return next();
+		}
+
+		@Override
+		public int previous()
+		{
+			return baseOrPrevious(base.previous());
+		}
+
+		@Override
+		public void setText(CharacterIterator newText)
+		{
+			base.setText(newText);
+			baseOrNext(base.first());
+		}
+
+		private final BreakIterator base;
+
+		private int baseOrNext(int baseBreak)
+		{
+			while(!isAcceptableBreak(baseBreak))
+				baseBreak = base.next();
+			return baseBreak;
+		}
+
+		private int baseOrPrevious(int baseBreak)
+		{
+			while(!isAcceptableBreak(baseBreak))
+				baseBreak = base.previous();
+			return baseBreak;
+		}
+
+		private boolean isAcceptableBreak(int baseBreak)
+		{
+			if (baseBreak == DONE)
+				return true;
+			CharacterIterator text = getText();
+			if (baseBreak <= text.getBeginIndex() || baseBreak > text.getEndIndex())
+				return true;
+			// get characters surrounding the break without
+			// altering the current index of underlying text.
+			int originalIndex = text.getIndex();
+			char next = text.setIndex(baseBreak);
+			char prev = text.previous();
+			text.setIndex(originalIndex);
+			// When breaking at whitespace, jEdit treat the
+			// whitespaces as belonging to the previous line and
+			// make them editable.
+			return !Character.isWhitespace(next)
+				// Assuming that breaking without white spaces
+				// are wanted only for some natural languages
+				// which uses non-ASCII characters. Otherwise
+				// keep traditional jEdit behavior (break only
+				// at whitespaces).
+				&& (Character.isWhitespace(prev)
+					|| prev > 0x7f || next > 0x7f)
+				// Workarounds for the problem reported at
+				// - SF.net bug #3497312; Unexpected softwrap
+				//   in contracted words with ’ as apostrophe.
+				// - SF.net bug #3488310; unexpected soft wrap
+				//   happens at closing "&ldquo;".
+				// Probably the cause is in the implementation
+				// of BreakIterator for line breaks. Some
+				// similer problems are also reported in
+				// bugs.sun.com.
+				// http://www.google.co.jp/search?q=site%3Abugs.sun.com+BreakIterator+getLineInstance
+				// There seems to be some problems in handling
+				// of quotation marks.
+				&& !(prev == '’'
+					// This test excludes CJK characters
+					// which may come after a closing
+					// quote.
+					&& (Character.isLowerCase(next)
+						|| Character.isUpperCase(next)))
+				&& !isUnacceptableBreakInsideQuote(baseBreak,
+					text, prev, next);
+		}
+
+		// Retrieves char at specified index without altering
+		// the current index of CharacterIterator.
+		private static char charAt(CharacterIterator text, int index)
+		{
+			int originalIndex = text.getIndex();
+			char c = text.setIndex(index);
+			text.setIndex(originalIndex);
+			return c;
+		}
+
+		private static boolean isUnacceptableBreakInsideQuote(
+			int baseBreak, CharacterIterator text,
+			char prev, char next)
+		{
+			// The following quotation marks are accumulated
+			// cases that exhibits the problem under a local
+			// test on JRE 7u3 with samples taken from Wikipedia.
+			// http://en.wikipedia.org/wiki/Non-English_usage_of_quotation_marks
+			//
+			// The last check for enclosing whitespace avoids
+			// unwanted rejection of line breaks in CJK text
+			// (which don't have such whitespace) where default
+			// behavior of BreakIterator is reasonable.
+			//
+			if ("”’»›".indexOf(prev) >= 0
+				&& !Character.isWhitespace(next))
+			{
+				int beforeQuote = baseBreak - 2;
+				int beginIndex = text.getBeginIndex();
+				while (beforeQuote >= beginIndex)
+				{
+					char c = charAt(text, beforeQuote);
+					if (Character.isWhitespace(c))
+						return true;
+					if (Character.isLetterOrDigit(c))
+						return false;
+					// Look farther in case where the
+					// opening quote is enclosed by
+					// something like a opening parenthesis.
+					--beforeQuote;
+				}
+				return true;
+			}
+			else if (!Character.isWhitespace(prev)
+					&& "“„‘‚«‹".indexOf(next) >= 0)
+			{
+				int afterQuote = baseBreak + 1;
+				int endIndex = text.getEndIndex();
+				while (afterQuote < endIndex)
+				{
+					char c = charAt(text, afterQuote);
+					if (Character.isWhitespace(c))
+						return true;
+					if (Character.isLetterOrDigit(c))
+						return false;
+					// Look farther in case where the
+					// closing quote is enclosed by
+					// something like a closing parenthesis.
+					++afterQuote;
+				}
+				return true;
+			}
 			return false;
-
-		char ch1 = seg.array[seg.offset + c1.offset];
-		char ch2 = seg.array[seg.offset + c2.offset];
-
-		return ((c1.style == c2.style)
-			&& ch1 != '\t' && ch2 != '\t'
-			&& (c1.length + c2.length <= MAX_CHUNK_LEN));
+		}
 	} //}}}
 
 	//}}}
