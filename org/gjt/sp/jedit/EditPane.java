@@ -26,7 +26,6 @@ package org.gjt.sp.jedit;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.FontMetrics;
 import java.awt.Graphics2D;
 import java.util.HashMap;
 import java.util.Map;
@@ -88,7 +87,7 @@ import org.gjt.sp.util.ThreadUtilities;
  * @see View#getEditPanes()
  *
  * @author Slava Pestov
- * @version $Id: EditPane.java 19610 2011-06-20 22:53:22Z Vampire0 $
+ * @version $Id: EditPane.java 19592 2011-06-17 16:18:59Z kpouer $
  */
 public class EditPane extends JPanel implements BufferSetListener
 {
@@ -767,36 +766,36 @@ public class EditPane extends JPanel implements BufferSetListener
 	EditPane(View view, BufferSet bufferSetSource, Buffer buffer)
 	{
 		super(new BorderLayout());
-		BufferSet.Scope scope = jEdit.getBufferSetManager().getScope();
-		BufferSet source = bufferSetSource;
-		switch (scope)
-		{
-			case editpane:
-				// do nothing
-				break;
-			case view:
-				{
-					EditPane editPane = view.getEditPane();
-					if (editPane != null)
-					{
-						// if we have an editpane we copy it
-						source = editPane.getBufferSet();
-					}
-				}
-				break;
-			case global:
-				View activeView = jEdit.getActiveView();
-				if (activeView != null)
-				{
-					EditPane editPane = activeView.getEditPane();
-					if (editPane != null)
-					{
-						source = editPane.getBufferSet();
-					}
-				}
-				break;
-		}
-		bufferSet = new BufferSet(source);
+        BufferSet.Scope scope = jEdit.getBufferSetManager().getScope();
+        BufferSet source = bufferSetSource;
+        switch (scope)
+        {
+            case editpane:
+                // do nothing
+                break;
+            case view:
+                {
+                    EditPane editPane = view.getEditPane();
+                    if (editPane != null)
+                    {
+                        // if we have an editpane we copy it
+                        source = editPane.getBufferSet();
+                    }
+                }
+                break;
+            case global:
+                View activeView = jEdit.getActiveView();
+                if (activeView != null)
+                {
+                    EditPane editPane = activeView.getEditPane();
+                    if (editPane != null)
+                    {
+                        source = editPane.getBufferSet();
+                    }
+                }
+                break;
+        }
+        bufferSet = new BufferSet(source);
 
 		init = true;
 
@@ -1265,9 +1264,8 @@ public class EditPane extends JPanel implements BufferSetListener
 				if(buffer.getMarkerInRange(start,end) != null)
 				{
 					gfx.setColor(getMarkerHighlightColor());
-					FontMetrics fm = textArea.getPainter().getFontMetrics();
-					gfx.fillRect(0,y,textArea.getGutter()
-						.getWidth(),fm.getHeight());
+					int height = textArea.getPainter().getLineHeight();
+					gfx.fillRect(0, y, textArea.getGutter().getWidth(), height);
 				}
 			}
 		} //}}}
@@ -1278,7 +1276,7 @@ public class EditPane extends JPanel implements BufferSetListener
 		{
 			if(isMarkerHighlightEnabled())
 			{
-				int lineHeight = textArea.getPainter().getFontMetrics().getHeight();
+				int lineHeight = textArea.getPainter().getLineHeight();
 				if(lineHeight == 0)
 					return null;
 

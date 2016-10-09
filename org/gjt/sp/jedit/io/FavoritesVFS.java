@@ -4,6 +4,7 @@
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2000, 2004 Slava Pestov
+ * Portions Copyright (C) 2011 Matthieu Casanova
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -25,6 +26,7 @@ package org.gjt.sp.jedit.io;
 //{{{ Imports
 import java.awt.Component;
 import java.util.*;
+
 import org.gjt.sp.jedit.msg.DynamicMenuChanged;
 import org.gjt.sp.jedit.*;
 //}}}
@@ -36,7 +38,7 @@ import org.gjt.sp.jedit.*;
  * favorite and clicking 'delete' in the browser just deletes the
  * favorite, and not the directory itself.
  * @author Slava Pestov
- * @version $Id: FavoritesVFS.java 14466 2009-01-25 12:49:34Z kpouer $
+ * @version $Id: FavoritesVFS.java 19948 2011-09-09 16:35:32Z kpouer $
  */
 public class FavoritesVFS extends VFS
 {
@@ -45,7 +47,7 @@ public class FavoritesVFS extends VFS
 	//{{{ FavoritesVFS constructor
 	public FavoritesVFS()
 	{
-		super("favorites",DELETE_CAP | LOW_LATENCY_CAP,
+		super("favorites",DELETE_CAP | RENAME_CAP | LOW_LATENCY_CAP,
 			new String[] { EA_TYPE });
 
 		/* addToFavorites(), which is a static method
@@ -56,12 +58,14 @@ public class FavoritesVFS extends VFS
 	} //}}}
 
 	//{{{ getParentOfPath() method
+	@Override
 	public String getParentOfPath(String path)
 	{
-		return PROTOCOL + ":";
+		return PROTOCOL + ':';
 	} //}}}
 
 	//{{{ _listFiles() method
+	@Override
 	public VFSFile[] _listFiles(Object session, String url,
 		Component comp)
 	{
@@ -69,6 +73,7 @@ public class FavoritesVFS extends VFS
 	} //}}}
 
 	//{{{ _getFile() method
+	@Override
 	public VFSFile _getFile(Object session, String path,
 		Component comp)
 	{
@@ -77,6 +82,7 @@ public class FavoritesVFS extends VFS
 	} //}}}
 
 	//{{{ _delete() method
+	@Override
 	public boolean _delete(Object session, String path, Component comp)
 	{
 		synchronized(lock)
@@ -91,7 +97,7 @@ public class FavoritesVFS extends VFS
 					iter.remove();
 					VFSManager.sendVFSUpdate(this,PROTOCOL
 						+ ':',false);
-					EditBus.send(new DynamicMenuChanged(
+					EditBus.sendAsync(new DynamicMenuChanged(
 						"favorites"));
 					return true;
 				}
@@ -101,6 +107,32 @@ public class FavoritesVFS extends VFS
 		return false;
 	} //}}}
 
+	//{{{ _delete() method
+
+	/**
+	 * Rename a favorite
+	 * @param session no session needed you can give null
+	 * @param from The old path (not the name)
+	 * @param to the new name
+	 * @param comp The component that will parent error dialog boxes
+	 * @return true if the favorite having that old path exists
+	 */
+	@Override
+	public boolean _rename(Object session, String from, String to, Component comp)
+	{
+		VFSFile[] favorites = getFavorites();
+		for (int i = 0; i < favorites.length; i++)
+		{
+			Favorite favorite = (Favorite) favorites[i];
+			if (favorite.getPath().equals(from))
+			{
+				favorite.label = to;
+				return true;
+			}
+		}
+		return false;
+	}  //}}}
+
 	//{{{ loadFavorites() method
 	public static void loadFavorites()
 	{
@@ -108,14 +140,20 @@ public class FavoritesVFS extends VFS
 		{
 			favorites = new LinkedList<Favorite>();
 
-			String favorite;
+			String favoritePath;
 			int i = 0;
-			while((favorite = jEdit.getProperty("vfs.favorite." + i)) != null)
+			while((favoritePath = jEdit.getProperty("vfs.favorite." + i)) != null)
 			{
-				favorites.add(new Favorite(favorite,
+				Favorite favorite = new Favorite(favoritePath,
 					jEdit.getIntegerProperty("vfs.favorite."
 					+ i + ".type",
-					VFSFile.DIRECTORY)));
+								VFSFile.DIRECTORY));
+				favorites.add(favorite);
+				String label = jEdit.getProperty("vfs.favorite." + i + ".label");
+				if (label != null)
+				{
+					favorite.label = label;
+				}
 				i++;
 			}
 		}
@@ -155,6 +193,8 @@ public class FavoritesVFS extends VFS
 			{
 				jEdit.setProperty("vfs.favorite." + i,
 					favorite.getPath());
+				jEdit.setProperty("vfs.favorite." + i
+					+ ".label", favorite.getLabel());
 				jEdit.setIntegerProperty("vfs.favorite." + i
 					+ ".type", favorite.getType());
 
@@ -186,13 +226,22 @@ public class FavoritesVFS extends VFS
 	//}}}
 
 	//{{{ Favorite class
-	static class Favorite extends VFSFile
+	public static class Favorite extends VFSFile
 	{
+		private String label;
+
 		Favorite(String path, int type)
 		{
-			super(path,path,PROTOCOL + ':' + path,type,0,false);
+			super(path,path,PROTOCOL + ':' + path,type, 0L,false);
+			this.label = path;
 		}
 
+		public String getLabel()
+		{
+			return label;
+		}
+
+		@Override
 		public String getExtendedAttribute(String name)
 		{
 			if(name.equals(EA_TYPE))
@@ -203,6 +252,12 @@ public class FavoritesVFS extends VFS
 				// etc.
 				return null;
 			}
+		}
+
+		@Override
+		public VFS getVFS()
+		{
+			return VFSManager.getVFSForProtocol(FavoritesVFS.PROTOCOL);
 		}
 	} //}}}
 }

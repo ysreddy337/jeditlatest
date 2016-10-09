@@ -28,10 +28,7 @@ import javax.swing.JComponent;
 
 import java.awt.event.MouseEvent;
 import java.awt.font.*;
-import java.awt.geom.AffineTransform;
 import java.awt.*;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
 import java.util.*;
 import org.gjt.sp.jedit.buffer.IndentFoldHandler;
 import org.gjt.sp.jedit.buffer.JEditBuffer;
@@ -57,7 +54,7 @@ import org.gjt.sp.util.Log;
  * @see TextArea
  *
  * @author Slava Pestov
- * @version $Id: TextAreaPainter.java 18575 2010-09-18 08:48:27Z shlomy $
+ * @version $Id: TextAreaPainter.java 20109 2011-10-18 12:25:29Z evanpw $
  */
 public class TextAreaPainter extends JComponent implements TabExpander
 {
@@ -233,7 +230,6 @@ public class TextAreaPainter extends JComponent implements TabExpander
 		}
 	} //}}}
 
-
 	//{{{ getFocusTraversalKeysEnabled() method
 	/**
 	 * Makes the tab key work in Java 1.4.
@@ -268,13 +264,9 @@ public class TextAreaPainter extends JComponent implements TabExpander
 	 */
 	public final void setStyles(SyntaxStyle[] styles)
 	{
-		// assumed this is called after a font render context is set up.
-		// changing font render context settings without a setStyles()
-		// call will not reset cached monospaced font info.
-		fonts.clear();
-
 		this.styles = styles;
 		styles[Token.NULL] = new SyntaxStyle(getForeground(),null,getFont());
+		textArea.chunkCache.invalidateAll();
 		repaint();
 	} //}}}
 
@@ -630,18 +622,11 @@ public class TextAreaPainter extends JComponent implements TabExpander
 	public final void setFoldLineStyle(SyntaxStyle[] foldLineStyle)
 	{
 		this.foldLineStyle = foldLineStyle;
+		textArea.chunkCache.invalidateAll();
 		repaint();
 	} //}}}
 
 	//{{{ setAntiAliasEnabled() method
-	/**
-	 * @deprecated use setAntiAlias(AntiAlias newMode)
-	 */
-	@Deprecated
-	public void setAntiAliasEnabled(boolean isEnabled)
-	{
-		setAntiAlias(new AntiAlias(isEnabled));
-	}
 	/**
 	 * As of jEdit 4.3pre4, a new JDK 1.6 subpixel antialias mode is supported.
 	 *
@@ -653,6 +638,7 @@ public class TextAreaPainter extends JComponent implements TabExpander
 		updateRenderingHints();
 	} //}}}
 
+	//{{{ getAntiAlias() method
 	/**
 	 * @return the AntiAlias value that is currently used for TextAreas.
 	 * @since jedit 4.3pre4
@@ -660,18 +646,6 @@ public class TextAreaPainter extends JComponent implements TabExpander
 	public AntiAlias getAntiAlias()
 	{
 		return antiAlias;
-	}
-
-	//{{{ isAntiAliasEnabled() method
-	/**
-	 * Returns if anti-aliasing is enabled.
-	 * @since jEdit 3.2pre6
-	 * @deprecated - use @ref getAntiAlias()
-	 */
-	@Deprecated
-	public boolean isAntiAliasEnabled()
-	{
-		return antiAlias.val() > 0;
 	} //}}}
 
 	//{{{ setFractionalFontMetricsEnabled() method
@@ -782,7 +756,45 @@ public class TextAreaPainter extends JComponent implements TabExpander
 	{
 		return fm;
 	} //}}}
+	
+	//{{{ getLineHeight() method
+	/**
+	 * Returns the line height as given by the font metrics plus the 
+	 * added line spacing.
+	 */
+	public int getLineHeight()
+	{
+		return fm.getHeight() + extraLineSpacing;
+	} //}}}
+	
+	//{{{ getFontHeight() method
+	/**
+	 * Returns the font height as given by the font metrics.
+	 */
+	public int getFontHeight()
+	{
+		return fm.getHeight();
+	} //}}}
+	
+	//{{{ getLineExtraSpacing() method
+	/**
+	 * Returns the number of pixels from the start of the line to the start
+	 * of text (the extra line spacing).
+	 */
+	public int getLineExtraSpacing()
+	{
+		return extraLineSpacing;
+	} //}}}
 
+	//{{{ setLineExtraSpacing() method
+	/**
+	 * Sets extra spacing between lines in pixels.
+	 */
+	public void setLineExtraSpacing(int spacing)
+	{
+		extraLineSpacing = spacing;
+	} //}}}
+	
 	//{{{ setFont() method
 	/**
 	 * Sets the font for this component. This is overridden to update the
@@ -819,6 +831,18 @@ public class TextAreaPainter extends JComponent implements TabExpander
 		}
 	} //}}}
 
+	//{{{ getRenderingHints() method
+	/**
+	 * Returns the rendering hints used by the Graphics2D class; in this
+         * case, for anti-aliasing of text.
+	 *
+	 * @since jEdit 4.5pre1
+	 */
+        public RenderingHints getRenderingHints()
+	{
+            return renderingHints;
+        } //}}}
+
 	//{{{ update() method
 	/**
 	 * Repaints the text.
@@ -844,7 +868,8 @@ public class TextAreaPainter extends JComponent implements TabExpander
 		fontRenderContext = gfx.getFontRenderContext();
 
 		Rectangle clipRect = gfx.getClipBounds();
-		int lineHeight = fm.getHeight();
+		int lineHeight = getLineHeight();
+		int charHeight = getFontHeight();
 		if(lineHeight == 0 || textArea.getBuffer().isLoading())
 		{
 			gfx.setColor(getBackground());
@@ -867,7 +892,8 @@ public class TextAreaPainter extends JComponent implements TabExpander
 			int y = firstLine * lineHeight;
 			gfx.fillRect(0,y,getWidth(),numLines * lineHeight);
 			extensionMgr.paintScreenLineRange(textArea,gfx,
-				firstLine,lastLine,y,lineHeight);
+							  firstLine,lastLine,
+							  y, lineHeight);
 			linesTime = System.nanoTime() - linesTime;
 
 			if(Debug.PAINT_TIMER && numLines >= 1)
@@ -876,7 +902,7 @@ public class TextAreaPainter extends JComponent implements TabExpander
 
 		textArea.updateMaxHorizontalScrollWidth();
 	} //}}}
-
+	
 	//{{{ nextTabStop() method
 	/**
 	 * Implementation of TabExpander interface. Returns next tab stop after
@@ -904,7 +930,7 @@ public class TextAreaPainter extends JComponent implements TabExpander
 		for(int i = 0; i < foo.length; i++)
 			foo[i] = ' ';
 		dim.width = (int)getStringWidth(new String(foo));
-		dim.height = fm.getHeight() * 25;
+		dim.height = getLineHeight() * 25;
 		return dim;
 	} //}}}
 
@@ -949,6 +975,7 @@ public class TextAreaPainter extends JComponent implements TabExpander
 	Color selectionFgColor;
 	// should try to use this as little as possible.
 	FontMetrics fm;
+	int extraLineSpacing;
 	//}}}
 
 	//{{{ TextAreaPainter constructor
@@ -964,7 +991,6 @@ public class TextAreaPainter extends JComponent implements TabExpander
 
 		this.textArea = textArea;
 		antiAlias = new AntiAlias(0);
-		fonts = new HashMap();
 		extensionMgr = new ExtensionManager();
 
 		setAutoscrolls(true);
@@ -984,6 +1010,8 @@ public class TextAreaPainter extends JComponent implements TabExpander
 		addExtension(TEXT_LAYER,new PaintText());
 		addExtension(TEXT_LAYER,new PaintSelectionText());
 		caretExtension = new PaintCaret();
+		
+		extraLineSpacing = 0;
 	} //}}}
 
 	//}}}
@@ -994,30 +1022,10 @@ public class TextAreaPainter extends JComponent implements TabExpander
 	private final ExtensionManager extensionMgr;
 	private final PaintCaret caretExtension;
 	private FontRenderContext fontRenderContext;
-	private final Map fonts;
 	private Cursor hiddenCursor;
 	private boolean defaultCursor = true;
 	//}}}
-
-	private static Object sm_hrgbRender;
-	private static Constructor<FontRenderContext> sm_frcConstructor;
-
-	static
-	{
-		try
-		{
-			Field f = RenderingHints.class.getField("VALUE_TEXT_ANTIALIAS_LCD_HRGB");
-			sm_hrgbRender = f.get(null);
-			Class[] fracFontMetricsTypeList = {AffineTransform.class, Object.class, Object.class};
-			sm_frcConstructor = FontRenderContext.class.getConstructor(fracFontMetricsTypeList);
-		}
-		catch (NullPointerException npe) {}
-		catch (SecurityException se) {}
-		catch (NoSuchFieldException nsfe) {}
-		catch (IllegalArgumentException iae) {}
-		catch (IllegalAccessException iae) {}
-		catch (NoSuchMethodException nsme) {}
-	}
+	
 	//{{{ updateRenderingHints() method
 	private void updateRenderingHints()
 	{
@@ -1027,28 +1035,22 @@ public class TextAreaPainter extends JComponent implements TabExpander
 			fracFontMetrics ? RenderingHints.VALUE_FRACTIONALMETRICS_ON
 				: RenderingHints.VALUE_FRACTIONALMETRICS_OFF);
 
+		hints.put(RenderingHints.KEY_TEXT_ANTIALIASING, antiAlias.renderHint());
+		
+
 		if (antiAlias.val() == 0)
 		{
 			hints.put(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
-			hints.put(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
 			fontRenderContext = new FontRenderContext(null, antiAlias.val() > 0, fracFontMetrics);
 		}
-		/** LCD HRGB mode - works with JRE 1.6 only, which is why we use reflection */
-		else if (antiAlias.val() == 2 && sm_hrgbRender != null )
+		/* Subpixel antialiasing mode */
+		else if (antiAlias.val() > 1) 
 		{
-			hints.put(RenderingHints.KEY_TEXT_ANTIALIASING, sm_hrgbRender);
 			Object fontRenderHint = fracFontMetrics ?
 				RenderingHints.VALUE_FRACTIONALMETRICS_ON :
 				RenderingHints.VALUE_FRACTIONALMETRICS_OFF;
-			Object[] paramList = {null, sm_hrgbRender, fontRenderHint};
-			try
-			{
-				fontRenderContext = sm_frcConstructor.newInstance(paramList);
-			}
-			catch (Exception e)
-			{
-				fontRenderContext = new FontRenderContext(null, antiAlias.val() > 0, fracFontMetrics);
-			}
+			fontRenderContext = new FontRenderContext(null, antiAlias.renderHint(), 
+				fontRenderHint);			
 		}
 		else /** Standard Antialias Version */
 		{
@@ -1135,7 +1137,7 @@ public class TextAreaPainter extends JComponent implements TabExpander
 			if(paintLineHighlight || collapsedFold)
 			{
 				gfx.setColor(bgColor);
-				gfx.fillRect(0,y,getWidth(),fm.getHeight());
+				gfx.fillRect(0,y,getWidth(),getLineHeight());
 			} //}}}
 
 			//{{{ Paint token backgrounds
@@ -1144,12 +1146,11 @@ public class TextAreaPainter extends JComponent implements TabExpander
 
 			if(lineInfo.chunks != null)
 			{
-				float baseLine = y + fm.getHeight()
-					- (fm.getLeading()+1) - fm.getDescent();
+				float baseLine = y + getLineHeight() - (fm.getLeading()+1) - fm.getDescent();
 				Chunk.paintChunkBackgrounds(
 					lineInfo.chunks,gfx,
 					textArea.getHorizontalOffset(),
-					baseLine);
+					baseLine, getLineHeight());
 			} //}}}
 		} //}}}
 	} //}}}
@@ -1191,7 +1192,7 @@ public class TextAreaPainter extends JComponent implements TabExpander
 			int x1 = selectionStartAndEnd[0];
 			int x2 = selectionStartAndEnd[1];
 
-			gfx.fillRect(x1,y,x2 - x1,fm.getHeight());
+			gfx.fillRect(x1, y, x2 - x1, getLineHeight());
 		} //}}}
 	} //}}}
 
@@ -1368,7 +1369,6 @@ public class TextAreaPainter extends JComponent implements TabExpander
 		{
 			ChunkCache.LineInfo lineInfo = textArea.chunkCache
 				.getLineInfo(screenLine);
-
 			Font defaultFont = getFont();
 			Color defaultColor = getForeground();
 
@@ -1378,8 +1378,7 @@ public class TextAreaPainter extends JComponent implements TabExpander
 			int x = textArea.getHorizontalOffset();
 			int originalX = x;
 
-			float baseLine = y + fm.getHeight()
-				- (fm.getLeading()+1) - fm.getDescent();
+			float baseLine = y + getLineHeight() - (fm.getLeading()+1) - fm.getDescent();
 
 			if(lineInfo.chunks != null)
 			{
@@ -1470,30 +1469,32 @@ public class TextAreaPainter extends JComponent implements TabExpander
 			textArea.offsetToXY(physicalLine,
 					    offset, textArea.offsetXY);
 			int caretX = textArea.offsetXY.x;
-			int lineHeight = fm.getHeight();
+			int lineHeight = getLineHeight();
+			int charHeight = getFontHeight();
+			int charOffset = lineHeight - charHeight;
 
 			gfx.setColor(caretColor);
 
 			if(textArea.isOverwriteEnabled())
 			{
-				gfx.drawLine(caretX,y + lineHeight - 1,
+				gfx.drawLine(caretX, y + lineHeight - 1,
 					     caretX + textArea.charWidth,
 					     y + lineHeight - 1);
 			}
 			else if(blockCaret)
-				gfx.drawRect(caretX,y,textArea.charWidth - 1,
-					     lineHeight - 1);
+				gfx.drawRect(caretX, y + charOffset, textArea.charWidth - 1, charHeight - 1);
 			else
 			{
 				if (thickCaret)
-					gfx.drawRect(caretX, y,
-						1, lineHeight - 1);
+					gfx.drawRect(caretX, y + charOffset, 1, charHeight - 1);
 				else
-					gfx.drawLine(caretX,y,
-						caretX,y + lineHeight - 1);
+					gfx.drawLine(caretX, y + charOffset, caretX, 
+						     y + charOffset + charHeight - 1);
 			}
 		}
 	} //}}}
+
+	//}}}
 
 	//}}}
 }

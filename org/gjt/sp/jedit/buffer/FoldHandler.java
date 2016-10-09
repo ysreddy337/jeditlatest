@@ -39,19 +39,11 @@ import javax.swing.text.Segment;
  * See {@link org.gjt.sp.jedit.ServiceManager} for details.
  *
  * @author Slava Pestov
- * @version $Id: FoldHandler.java 18013 2010-06-08 12:32:48Z kpouer $
+ * @version $Id: FoldHandler.java 18919 2010-11-04 10:52:55Z kpouer $
  * @since jEdit 4.3pre3
  */
 public abstract class FoldHandler
 {
-	/**
-	 * The service type. See {@link org.gjt.sp.jedit.ServiceManager}.
-	 * @since jEdit 4.2pre1
-	 * @deprecated use {@link org.gjt.sp.jedit.ServiceManager.ServiceFoldHandlerProvider}
-	 */
-	@Deprecated
-	public static final String SERVICE = "org.gjt.sp.jedit.buffer.FoldHandler";
-
 	/** The FoldHandlerProvider. */
 	public static FoldHandlerProvider foldHandlerProvider;
 

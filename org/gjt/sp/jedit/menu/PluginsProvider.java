@@ -48,8 +48,6 @@ public class PluginsProvider implements DynamicMenuProvider
 			letters[i] = new ArrayList<JMenuItem>();
 		}
 
-		Vector<JMenuItem> pluginMenuItems = new Vector<JMenuItem>();
-
 		PluginJAR[] pluginArray = jEdit.getPluginJARs();
 		for(int i = 0; i < pluginArray.length; i++)
 		{
@@ -64,33 +62,6 @@ public class PluginsProvider implements DynamicMenuProvider
 				addToLetterMap(letters,menuItem);
 				count++;
 			}
-			//{{{ old API
-			else if(jEdit.getProperty("plugin."
-				+ plugin.getClassName()
-				+ ".activate") == null)
-			{
-				try
-				{
-					pluginMenuItems.clear();
-					plugin.createMenuItems(pluginMenuItems);
-
-					Iterator<JMenuItem> iter
-						= pluginMenuItems.iterator();
-					while(iter.hasNext())
-					{
-						addToLetterMap(letters,
-							iter.next());
-						count++;
-					}
-				}
-				catch(Throwable t)
-				{
-					Log.log(Log.ERROR,this,
-						"Error creating menu items"
-						+ " for plugin");
-					Log.log(Log.ERROR,this,t);
-				}
-			} //}}}
 		}
 
 		if(count == 0)

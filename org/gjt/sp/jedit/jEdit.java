@@ -23,7 +23,8 @@ package org.gjt.sp.jedit;
 
 //{{{ Imports
 import org.gjt.sp.jedit.datatransfer.JEditTransferableService;
-import org.gjt.sp.jedit.textarea.TextArea;
+import org.gjt.sp.jedit.gui.tray.JEditSwingTrayIcon;
+import org.gjt.sp.jedit.gui.tray.JTrayIconManager;
 import org.gjt.sp.jedit.visitors.JEditVisitor;
 
 import java.awt.*;
@@ -31,7 +32,7 @@ import java.awt.*;
 import org.gjt.sp.jedit.View.ViewConfig;
 import org.gjt.sp.jedit.bsh.UtilEvalError;
 import javax.swing.*;
-import java.awt.event.KeyEvent;
+import java.awt.event.*;
 import java.io.*;
 import java.net.*;
 import java.text.MessageFormat;
@@ -60,6 +61,7 @@ import org.gjt.sp.jedit.bufferset.BufferSetManager;
 import org.gjt.sp.jedit.bufferset.BufferSet;
 import org.gjt.sp.util.Log;
 import org.gjt.sp.util.StandardUtilities;
+import org.gjt.sp.util.StringList;
 import org.gjt.sp.util.XMLUtilities;
 import org.gjt.sp.util.IOUtilities;
 import org.gjt.sp.util.SyntaxUtilities;
@@ -68,7 +70,7 @@ import org.gjt.sp.util.SyntaxUtilities;
 /**
  * The main class of the jEdit text editor.
  * @author Slava Pestov
- * @version $Id: jEdit.java 19955 2011-09-12 14:38:34Z evanpw $
+ * @version $Id: jEdit.java 21008 2012-01-29 18:38:41Z Vampire0 $
  */
 public class jEdit
 {
@@ -89,7 +91,7 @@ public class jEdit
 	public static String getBuild()
 	{
 		// (major).(minor).(<99 = preX, 99 = "final").(bug fix)
-		return "04.04.99.02";
+		return "04.05.99.00";
 	} //}}}
 
 	//{{{ main() method
@@ -100,6 +102,7 @@ public class jEdit
 	 */
 	public static void main(String[] args)
 	{
+		StringList slargs = new StringList(args);
 		//{{{ Check for Java 1.6 or later
 		String javaVersion = System.getProperty("java.version");
 		if(javaVersion.compareTo("1.6") < 0)
@@ -139,6 +142,7 @@ public class jEdit
 		boolean wait = false;
 		boolean shouldRelocateSettings = true;
 		String userDir = System.getProperty("user.dir");
+		boolean splash = true;
 
 		// script to run
 		String scriptFile = null;
@@ -222,6 +226,8 @@ public class jEdit
 					wait = true;
 				else if(arg.equals("-quit"))
 					quit = true;
+				else if(arg.equals("-nosplash"))
+					splash = false;
 				else
 				{
 					System.err.println("Unknown option: "
@@ -232,6 +238,9 @@ public class jEdit
 				args[i] = null;
 			}
 		} //}}}
+
+		JTrayIconManager.setTrayIconArgs(restore, userDir, args);
+
 
 		//{{{ We need these initializations very early on
 		if(settingsDirectory != null)
@@ -249,6 +258,8 @@ public class jEdit
 			portFile = null;
 
 		Log.init(true,level);
+
+		Log.log(Log.MESSAGE,jEdit.class, "starting with command line arguments: " + slargs.join(" "));
 		//}}}
 
 		//{{{ Try connecting to another running jEdit instance
@@ -258,7 +269,7 @@ public class jEdit
 			{
 				BufferedReader in = new BufferedReader(new FileReader(portFile));
 				String check = in.readLine();
-				if(!check.equals("b"))
+				if(!"b".equals(check))
 					throw new Exception("Wrong port file format");
 
 				int port = Integer.parseInt(in.readLine());
@@ -324,7 +335,7 @@ public class jEdit
 
 		// don't show splash screen if there is a file named
 		// 'nosplash' in the settings directory
-		if(!new File(settingsDirectory,"nosplash").exists())
+		if(splash && (!new File(settingsDirectory,"nosplash").exists()))
 			GUIUtilities.showSplashScreen();
 
 		//{{{ Mac settings migration code. Should eventually be removed
@@ -915,6 +926,8 @@ public class jEdit
 	 */
 	public static void propertiesChanged()
 	{
+		initPLAF();
+
 		initKeyBindings();
 
 		Autosave.setInterval(getIntegerProperty("autosave",30));
@@ -946,9 +959,18 @@ public class jEdit
 		}
 
 		HistoryModel.setDefaultMax(getIntegerProperty("history",25));
+		HistoryModel.setDefaultMaxSize(getIntegerProperty("historyMaxSize", 5000000));
 		KillRing.getInstance().propertiesChanged(getIntegerProperty("history",25));
 		Chunk.propertiesChanged(propertyManager);
 
+		if (getBooleanProperty("systrayicon"))
+		{
+			JTrayIconManager.addTrayIcon();
+		}
+		else
+		{
+			JTrayIconManager.removeTrayIcon();
+		}
 		EditBus.send(new PropertiesChanged(null));
 	} //}}}
 
@@ -1043,7 +1065,7 @@ public class jEdit
 	 */
 	public static EditPlugin[] getPlugins()
 	{
-		List<EditPlugin> pluginList = new ArrayList<EditPlugin>();
+		Collection<EditPlugin> pluginList = new ArrayList<EditPlugin>();
 		for(int i = 0; i < jars.size(); i++)
 		{
 			EditPlugin plugin = jars.elementAt(i).getPlugin();
@@ -1265,34 +1287,6 @@ public class jEdit
 		return actionContext.getActionSetForAction(action);
 	} //}}}
 
-	//{{{ getActionSetForAction() method
-	/**
-	 * @deprecated Use the form that takes a String instead
-	 */
-	@Deprecated
-	public static ActionSet getActionSetForAction(EditAction action)
-	{
-		return actionContext.getActionSetForAction(action.getName());
-	} //}}}
-
-	//{{{ getActions() method
-	/**
-	 * @deprecated Call getActionNames() instead
-	 */
-	@Deprecated
-	public static EditAction[] getActions()
-	{
-		String[] names = actionContext.getActionNames();
-		EditAction[] actions = new EditAction[names.length];
-		for(int i = 0; i < actions.length; i++)
-		{
-			actions[i] = actionContext.getAction(names[i]);
-			if(actions[i] == null)
-				Log.log(Log.ERROR,jEdit.class,"wtf: " + names[i]);
-		}
-		return actions;
-	} //}}}
-
 	//{{{ getActionNames() method
 	/**
 	 * Returns all registered action names.
@@ -1437,7 +1431,7 @@ public class jEdit
 	 *
 	 * @return the buffer if succesfully loaded immediately, or null otherwise
 	 *
-	 * @since jEdit 4.4.2
+	 * @since jEdit 4.5pre1
 	 */
 	public static Buffer openFileAfterStartup(String path)
 	{
@@ -1453,7 +1447,7 @@ public class jEdit
 			return null;
 		}
 	}
-	
+
 	/**
 	 * Opens a file. Note that as of jEdit 2.5pre1, this may return
 	 * null if the buffer could not be opened.
@@ -1467,27 +1461,6 @@ public class jEdit
 	public static Buffer openFile(View view, String path)
 	{
 		return openFile(view,null,path,false,new Hashtable());
-	}
-	/**
-	 * @deprecated The openFile() forms with the readOnly parameter
-	 * should not be used. The readOnly prameter is no longer supported.
-	 */
-	@Deprecated
-	public static Buffer openFile(View view, String parent,
-		String path, boolean readOnly, boolean newFile)
-	{
-		return openFile(view,parent,path,newFile,new Hashtable());
-	}
-	/**
-	 * @deprecated The openFile() forms with the readOnly parameter
-	 * should not be used. The readOnly prameter is no longer supported.
-	 */
-	@Deprecated
-	public static Buffer openFile(View view, String parent,
-		String path, boolean readOnly, boolean newFile,
-		Hashtable props)
-	{
-		return openFile(view,parent,path,newFile,props);
 	}
 
 	/**
@@ -1552,7 +1525,7 @@ public class jEdit
 		try
 		{
 			URL u = new URL(path);
-			if (u.getProtocol().equals("file"))
+			if ("file".equals(u.getProtocol()))
 				path = URLDecoder.decode(u.getPath());
 		}
 		catch (MalformedURLException mue)
@@ -1644,7 +1617,7 @@ public class jEdit
 
 		if(MiscUtilities.isURL(path))
 		{
-			if(MiscUtilities.getProtocolOfURL(path).equals("file"))
+			if("file".equals(MiscUtilities.getProtocolOfURL(path)))
 				path = path.substring(5);
 		}
 
@@ -2305,8 +2278,7 @@ public class jEdit
 		// will jump to the same location
 		visit(new SaveCaretInfoVisitor());
 
-		Buffer buffer;
-		buffer = buffersFirst;
+		Buffer buffer = buffersFirst;
 
 		int[] states = new int[bufferCount];
 		int i = 0;
@@ -2576,7 +2548,7 @@ public class jEdit
 		File newSettingsDir = new File(settingsDirectory);
 		if(oldSettingsDir.exists() && !newSettingsDir.exists())
 		{
-			Log.log(Log.NOTICE,jEdit.class,"Old settings directory found (HOME/.jedit). Moving to new location ("+newSettingsDir+")");
+			Log.log(Log.NOTICE,jEdit.class,"Old settings directory found (HOME/.jedit). Moving to new location ("+newSettingsDir+ ')');
 			try
 			{
 				oldSettingsDir.renameTo(newSettingsDir);
@@ -2765,20 +2737,6 @@ public class jEdit
 			propsModTime = file2.lastModified();
 		}
 	} //}}}
-
-	// {{{ createTextArea() method
-	/**
-	 * Create a standalone TextArea.
-	 *
-	 * @return a textarea
-	 * @since 4.3pre13
-	 * @deprecated use new JEditEmbeddedTextArea() instead
-	 */
-	@Deprecated
-	public static TextArea createTextArea()
-	{
-		return new JEditEmbeddedTextArea();
-	} // }}}
 
 	//{{{ exit() method
 	/**
@@ -3053,6 +3011,7 @@ public class jEdit
 			{
 				EventQueue.invokeLater(new Runnable()
 				{
+					@Override
 					public void run()
 					{
 						showPluginErrorDialog();
@@ -3121,7 +3080,7 @@ public class jEdit
 	private static View viewsLast;
 	private static View activeView;
 
-	private static Vector<Boolean> startupDone = new Vector<Boolean>();
+	private static final List<Boolean> startupDone = new Vector<Boolean>();
 	private static Vector<String> additionalFiles = new Vector<String>();
 
 	private static Thread mainThread;
@@ -3141,6 +3100,7 @@ public class jEdit
 		System.out.println("	<file> +line:<line>,<column>: Positions caret"
 			+ " at line number <line> and column number <column>");
 		System.out.println("	--: End of options");
+		System.out.println("	-nosplash: Don't show splash screen");
 		System.out.println("	-background: Run in background mode");
 		System.out.println("	-nobackground: Disable background mode (default)");
 		System.out.println("	-gui: Only if running in background mode; open initial view (default)");
@@ -3377,20 +3337,23 @@ public class jEdit
 		// macros if they are changed from within the editor
 		EditBus.addToBus(new SettingsReloader());
 
+		// Set the ContextClassLoader for the main jEdit thread.
+		// This way, the ContextClassLoader will be a JARClassLoader
+		// even at plugin activation and the EventQueue can also pick
+		// up the JARClassLoader. That's why this call has to be done
+		// before the usage of the EventQueue.
+		Thread.currentThread().setContextClassLoader(new JARClassLoader());
 		// Perhaps if Xerces wasn't slightly brain-damaged, we would
 		// not need this
 		EventQueue.invokeLater(new Runnable()
 		{
+			@Override
 			public void run()
 			{
 				Thread.currentThread().setContextClassLoader(
 					new JARClassLoader());
 			}
 		});
-		// Also set the ContextClassLoader for the main jEdit thread.
-		// This way, the ContextClassLoader will be a JARClassLoader
-		// even at plugin activation.
-		Thread.currentThread().setContextClassLoader(new JARClassLoader());
 	} //}}}
 
 	//{{{ initSystemProperties() method
@@ -3582,6 +3545,12 @@ public class jEdit
 	 */
 	private static void initPLAF()
 	{
+		String lf = getProperty("lookAndFeel");
+		if (isStartupDone() && UIManager.getLookAndFeel().getClass().getName().equals(lf))
+		{
+			return;
+		}
+
 		Font primaryFont = jEdit.getFontProperty(
 			"metal.primary.font");
 		if(primaryFont != null)
@@ -3624,7 +3593,6 @@ public class jEdit
 
 		try
 		{
-			String lf = getProperty("lookAndFeel");
 			if(lf != null && lf.length() != 0)
 				UIManager.setLookAndFeel(lf);
 			else if(OperatingSystem.isMacOS())
@@ -3692,6 +3660,14 @@ public class jEdit
 			getBooleanProperty("decorate.frames"));
 		JDialog.setDefaultLookAndFeelDecorated(
 			getBooleanProperty("decorate.dialogs"));
+
+		if (isStartupDone())
+		{
+			for (Window window : Window.getWindows())
+			{
+				SwingUtilities.updateComponentTreeUI(window);
+			}
+		}
 	} //}}}
 
 	//{{{ getNextUntitledBufferId() method
@@ -3873,6 +3849,7 @@ public class jEdit
 	{
 		EventQueue.invokeLater(new Runnable()
 		{
+			@Override
 			public void run()
 			{
 				int count = getBufferCount();
@@ -3894,7 +3871,7 @@ public class jEdit
 						view = newView(null,null);
 
 					Buffer buffer;
-					
+
 					// Treat the elements of additionalFiles just like command-line arguments
 					if (!additionalFiles.isEmpty())
 					{
@@ -3907,7 +3884,7 @@ public class jEdit
 					{
 						buffer = openFiles(null,userDir,args);
 					}
-					
+
 					if(buffer != null)
 						view.setBuffer(buffer,true);
 				}
@@ -4002,6 +3979,7 @@ loop:		for(int i = 0; i < list.length; i++)
 	{
 		VFSManager.runInAWTThread(new Runnable()
 		{
+			@Override
 			public void run()
 			{
 				int pos;
@@ -4325,12 +4303,12 @@ loop:		for(int i = 0; i < list.length; i++)
 		if(entry != null && saveCaret && props.get(Buffer.CARET) == null)
 		{
 			props.put(Buffer.CARET, entry.caret);
-			/* if(entry.selection != null)
+			 if(entry.selection != null)
 			{
 				// getSelection() converts from string to
 				// Selection[]
 				props.put(Buffer.SELECTION,entry.getSelection());
-			} */
+			}
 		}
 
 		if(entry != null && props.get(JEditBuffer.ENCODING) == null)
@@ -4395,6 +4373,7 @@ loop:		for(int i = 0; i < list.length; i++)
 	//{{{ JEditPropertyManager class
 	public static class JEditPropertyManager implements IPropertyManager
 	{
+		@Override
 		public String getProperty(String name)
 		{
 			return jEdit.getProperty(name);
@@ -4404,9 +4383,9 @@ loop:		for(int i = 0; i < list.length; i++)
 	//{{{ DockingLayoutSetter class
 	private static class DockingLayoutSetter implements Runnable
 	{
-		private View view;
-		private ViewConfig config;
-		private int startupDoneIndex;
+		private final View view;
+		private final ViewConfig config;
+		private final int startupDoneIndex;
 
 		DockingLayoutSetter(View view, ViewConfig config, int startupDoneIndex)
 		{
@@ -4415,6 +4394,7 @@ loop:		for(int i = 0; i < list.length; i++)
 			this.startupDoneIndex = startupDoneIndex;
 		}
 
+		@Override
 		public void run()
 		{
 			DockableWindowManager wm = view.getDockableWindowManager();

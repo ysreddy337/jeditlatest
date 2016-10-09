@@ -32,7 +32,7 @@ import org.gjt.sp.util.*;
 /**
  * A buffer autosave request.
  * @author Slava Pestov
- * @version $Id: BufferAutosaveRequest.java 12504 2008-04-22 23:12:43Z ezust $
+ * @version $Id: BufferAutosaveRequest.java 19408 2011-02-28 14:52:25Z kpouer $
  */
 public class BufferAutosaveRequest extends BufferIORequest
 {
@@ -80,6 +80,10 @@ public class BufferAutosaveRequest extends BufferIORequest
 					return;
 
 				write(buffer,out);
+			}
+			catch (FileNotFoundException e)
+			{
+				Log.log(Log.WARNING,this,"Unable to save " + e.getMessage());
 			}
 			catch(Exception e)
 			{

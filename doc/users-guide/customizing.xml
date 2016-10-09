@@ -84,7 +84,7 @@
         <informaltable>
             <tgroup cols="2">
                 <colspec colnum="1" colwidth="1.5in" />
-                <colspec colwidth="*"/>
+                <colspec colwidth="1*"/>
 
                 <thead>
                     <row>
@@ -117,10 +117,6 @@
     offset));</programlisting></entry>
                     </row>
 
-                    <row><entry><varname>encoding</varname></entry>
-                    <entry> The character encoding that should be used for this file. 
-                    See <xref linkend="encodings"/>. </entry></row>
-                    
                     <row>
                         <entry><varname>folding</varname></entry>
 
@@ -196,6 +192,16 @@
                 </tbody>
             </tgroup>
         </informaltable>
+
+        <para> You may see <literal>:encoding=XXX:</literal> in a file
+        as it is a buffer-local property and specifying the character encoding
+        for the file. But it is not really a buffer-local property, and behaves
+        differently.
+        It is detected by <literal>buffer-local-properties</literal> detector
+        only if the detector is selected in encoding options. Thus, it works
+        only at loading, and it must appear near the top of the file.
+        See <xref linkend="encodings"/>. </para>
+
     </section>
 
     <section id="global-opts">
@@ -211,12 +217,12 @@
 
         <section id="general-pane">
             <title>The General Pane</title>
-
             <para>The <guibutton>General</guibutton> pane contains various
-            settings, such as the default line separator, the number of recent
-            files to remember, if the buffer list should be sorted, and so
-            on.</para>
-
+            settings, such as
+            the number of recent files to remember,
+            how often to check for changed files,
+            if the recent file list should be sorted,
+            if previously open files or split configurations should be restored on startup, and so on.</para>
         </section>
 
         <section id="abbrevs-pane">
@@ -261,9 +267,6 @@
             retained in history text fields can also be set here; see
             <xref linkend="history" />.</para>
 
-            <para>Note that changes to certain settings such as the Swing look
-            and feel and the docking framework require a restart of jEdit to
-            take effect.</para>
         </section>
 
 
@@ -278,7 +281,7 @@
         <section id="docking-pane">
             <title>The Docking Pane</title>
 
-            <para>The <guibutton>Docking</guibutton> option pane shows a 
+            <para>The <guibutton>Docking</guibutton> option pane shows a
             list of available dockables, and allows you to specify
             docking locations for each of them. Another way to
             specify docking locations is to use the popup menus associated with each dockable window. </para>
@@ -316,18 +319,17 @@
         <section id="encodings-pane">
             <title>The Encodings Pane</title>
 
-            <para>This option pane is new to jEdit 4.3, and offers international
-            users of jEdit many flexible options for defining how Encodings are
-            handled in jEdit. See <xref linkend="encodings" /> for the
+            <para>This option pane offers
+            users of jEdit many flexible options for defining how Encodings are handled in jEdit. See <xref linkend="encodings" /> for the
             basics.</para>
 
-            <para> In previous versions of jEdit, there was very little encoding autodetection, so <guilabel>use autodetection when possible</guilabel> is an option you can switch on or off.
-            </para>
+            <para>The default line separator character (see <xref linkend="line-separators" />) can be set from here. </para>
+
+            <para> <guilabel>Use autodetection when possible</guilabel> is an option you can switch on or off.</para>
 
             <para>The <literal>List of Encoding Autodetector Names</literal>
-            can be used to control what encoding detections are used on each
-            file when it is loaded. The order they appear in this list
-            determines the order of detectors that are tried.
+            can be used to control what encoding detections are used on each file when it is loaded.
+            The order they appear in this list determines the order of detectors that are tried.
             There are some detectors which are available with jEdit core:
             <itemizedlist>
               <listitem><para>
@@ -355,8 +357,8 @@
               <listitem><para>
                 <literal>buffer-local-property</literal>:
                 detects same syntax described at <xref linkend="buffer-local" />
-                for property name "encoding".
-                (The above "python" encoding detector also accepts this syntax.)
+                for property name "encoding". Note that unlike other buffer-local
+                properties, this one will not work unless it is at the top of the file.
               </para></listitem>
             </itemizedlist>
             Others can be defined in plugins as services and added to this
@@ -437,7 +439,7 @@
             settings for the autosave and backup features. See <xref
             linkend="autosave" /> and <xref linkend="backups" />.</para>
         </section>
-        
+
         <section id="shortcuts-pane">
             <title>The Shortcuts Pane</title>
 
@@ -540,6 +542,11 @@
         Log</guimenuitem>). For example:</para>
 
         <screen>[message] jEdit: Settings directory is /home/slava/.jedit</screen>
+
+        <para>Another way to find the location of your settings directory is to
+        use the "Utilities" menu, then the "Settings Directory" menu item. The
+        first item in the pullout menu is the location of your settings directory.
+        </para>
 
         <para>Specifying the <userinput>-settings</userinput> switch on the
         command line instructs jEdit to store settings in a directory other than
@@ -677,9 +684,35 @@
             stored as strings, but are interpreted as other types (such as
             integer or boolean) by plugins at runtime.</para>
 
-            <para>Editing and saving this file while jEdit is running means that
-            until you restart jEdit again, all other changed settings will be
-            lost.</para>
+            <para>Do not edit this file while jEdit is running. If you do, it
+            is possible that your changes will be lost since jEdit writes to this
+            this file frequently.</para>
+        </section>
+
+        <section id="sitepropertiesfiles">
+            <title>Site Properties</title>
+            <para>
+                You may also put properties files in the "properties" directory in
+                the jEdit home directory (NOT the .jedit settings directory). You
+                can locate the jEdit home directory by going to the Utilities menu
+                directory, then the "jEdit Home Directory" menu item, and the first
+                item in the pullout menu will be the location of the jEdit home
+                directory. This is intended for site-wide settings and it is
+                useful for things like a set of custom key bindings that you might
+                want to share between different computers. This lets you keep your
+                custom properties separate from the jEdit properties, so they are
+                easier to find, edit, and move between machines. Note that your
+                custom properties files must have ".props" as the file name extension.
+            </para>
+            <para>
+                Site properties files are read in alphabetically by file name. This means
+                that if you have a property with the same name in more than one file,
+                the value for that property will be the value found in the last file
+                that was read.
+            </para>
+            <para>
+                You can edit these files inside jEdit - changes made to these files will not be re-read until the next time jEdit is started.
+            </para>
         </section>
     </section>
 </chapter>

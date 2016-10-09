@@ -38,7 +38,7 @@ import org.gjt.sp.util.*;
 /**
  * HyperSearch results window.
  * @author Slava Pestov
- * @version $Id: HyperSearchRequest.java 18456 2010-08-31 11:11:08Z kpouer $
+ * @version $Id: HyperSearchRequest.java 19386 2011-02-24 11:06:57Z kpouer $
  */
 class HyperSearchRequest extends Task
 {
@@ -241,6 +241,8 @@ class HyperSearchRequest extends Task
 	private int doHyperSearch(Buffer buffer, int start, int end,
 		DefaultMutableTreeNode bufferNode)
 	{
+		String noWordSep = (String) buffer.getMode().getProperty("noWordSep");
+		matcher.setNoWordSep(noWordSep);
 		int resultCount = 0;
 		JEditTextArea textArea = jEdit.getActiveView().getTextArea();
 		int caretLine = textArea.getBuffer() == buffer ? textArea.getCaretLine() : -1;

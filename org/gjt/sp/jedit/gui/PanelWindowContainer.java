@@ -67,12 +67,13 @@ import org.gjt.sp.jedit.jEdit;
 import org.gjt.sp.jedit.gui.DockableWindowManager.DockingArea;
 import org.gjt.sp.jedit.msg.DockableWindowUpdate;
 import org.gjt.sp.util.StandardUtilities;
+//}}}
 
 /**
  * A container for dockable windows. This class should never be used
  * directly.
  * @author Slava Pestov
- * @version $Id: PanelWindowContainer.java 16341 2009-10-14 10:05:51Z kpouer $
+ * @version $Id: PanelWindowContainer.java 20108 2011-10-18 12:16:38Z evanpw $
  * @since jEdit 4.0pre1
  */
 public class PanelWindowContainer implements DockableWindowContainer, DockingArea
@@ -646,7 +647,7 @@ public class PanelWindowContainer implements DockableWindowContainer, DockingAre
 			this.font = font;
 
 			FontRenderContext fontRenderContext
-				= new FontRenderContext(null,true,true);
+				= new FontRenderContext(null,true,false);
 			glyphs = font.createGlyphVector(fontRenderContext,text);
 			width = (int)glyphs.getLogicalBounds().getWidth() + 4;
 			//height = (int)glyphs.getLogicalBounds().getHeight();

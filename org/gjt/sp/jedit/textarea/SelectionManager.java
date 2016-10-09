@@ -271,7 +271,7 @@ class SelectionManager
 
 		return returnValue;
 	} //}}}
-	
+
 	//{{{ invertSelection() method
 	void invertSelection()
 	{

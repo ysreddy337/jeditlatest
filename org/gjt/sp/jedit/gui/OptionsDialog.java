@@ -35,13 +35,14 @@ import java.util.List;
 
 
 import org.gjt.sp.jedit.*;
+import org.gjt.sp.util.EnhancedTreeCellRenderer;
 import org.gjt.sp.util.Log;
 //}}}
 
 /**
  * An abstract options dialog box.
  * @author Slava Pestov
- * @version $Id: OptionsDialog.java 16686 2009-12-20 14:16:58Z daleanson $
+ * @version $Id: OptionsDialog.java 19788 2011-08-11 00:57:19Z Vampire0 $
  */
 public abstract class OptionsDialog extends EnhancedDialog
 	implements ActionListener, TreeSelectionListener
@@ -491,7 +492,7 @@ public abstract class OptionsDialog extends EnhancedDialog
 	//}}}
 
 	//{{{ PaneNameRenderer class
-	public static class PaneNameRenderer extends DefaultTreeCellRenderer
+	public static class PaneNameRenderer extends EnhancedTreeCellRenderer
 	{
 		public PaneNameRenderer()
 		{
@@ -501,13 +502,17 @@ public abstract class OptionsDialog extends EnhancedDialog
 			groupFont = paneFont.deriveFont(Font.BOLD);
 		}
 
-		public Component getTreeCellRendererComponent(JTree tree,
+		@Override
+		protected TreeCellRenderer newInstance()
+		{
+			return new PaneNameRenderer();
+		}
+
+		@Override
+		protected void configureTreeCellRendererComponent(JTree tree,
 			Object value, boolean selected, boolean expanded,
 			boolean leaf, int row, boolean hasFocus)
 		{
-			super.getTreeCellRendererComponent(tree,value,
-				selected,expanded,leaf,row,hasFocus);
-
 			String name = null;
 
 			if (value instanceof OptionGroup)
@@ -542,8 +547,6 @@ public abstract class OptionsDialog extends EnhancedDialog
 			}
 
 			setIcon(null);
-
-			return this;
 		}
 
 		private Font paneFont;

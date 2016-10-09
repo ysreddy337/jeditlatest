@@ -31,7 +31,7 @@ import java.util.regex.Pattern;
 /**
  * A set of parser rules.
  * @author mike dillon
- * @version $Id: ParserRuleSet.java 17560 2010-03-31 09:19:23Z kpouer $
+ * @version $Id: ParserRuleSet.java 19477 2011-03-22 12:25:14Z kpouer $
  */
 public class ParserRuleSet
 {
@@ -139,13 +139,13 @@ public class ParserRuleSet
 		if (null == r.upHashChars)
 		{
 			keys = new Character[1];
-			if ((null == r.upHashChar) || (0 >= r.upHashChar.length()))
+			if ((null == r.upHashChar) || (0 >= r.upHashChar.length))
 			{
 				keys[0] = null;
 			}
 			else
 			{
-				keys[0] = Character.valueOf(r.upHashChar.charAt(0));
+				keys[0] = Character.valueOf(r.upHashChar[0]);
 			}
 		}
 		else
@@ -167,23 +167,7 @@ public class ParserRuleSet
 			}
 			int ruleAmount = rules.size();
 			rules.add(r);
-			// fill the deprecated ParserRule.next pointer
-			if (ruleAmount > 0)
-			{
-				rules.get(ruleAmount).next = r;
-			}
 		}
-	} //}}}
-
-	//{{{ getRules() method
-	/**
-	* @deprecated As the linking between rules is not anymore done within the rule, use {@link #getRules(Character)} instead
-	*/
-	@Deprecated
-	public ParserRule getRules(char ch)
-	{
-		List<ParserRule> rules = getRules(Character.valueOf(ch));
-		return rules.get(0);
 	} //}}}
 
 	//{{{ getRules() method
@@ -212,8 +196,6 @@ public class ParserRuleSet
 			List<ParserRule> mixed = new ArrayList<ParserRule>(size);
 			mixed.addAll(rulesForKey);
 			mixed.addAll(rulesForNull);
-			// fill the deprecated ParserRule.next pointer
-			rulesForKey.get(rulesForKey.size() - 1).next = rulesForNull.get(0);
 			return mixed;
 		}
 	} //}}}
@@ -353,7 +335,7 @@ public class ParserRuleSet
 	} //}}}
 
 	//{{{ Private members
-	private static ParserRuleSet[] standard;
+	private static final ParserRuleSet[] standard;
 
 	static
 	{
@@ -366,7 +348,8 @@ public class ParserRuleSet
 		}
 	}
 
-	private String modeName, setName;
+	private final String modeName;
+	private final String setName;
 	private Hashtable<String, String> props;
 
 	private KeywordMap keywords;

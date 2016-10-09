@@ -37,18 +37,19 @@ import javax.swing.text.Segment;
  * Deep indent rule.
  *
  * @author Matthieu Casanova
- * @version $Id: DeepIndentRule.java 13045 2008-07-11 06:48:37Z vanza $
+ * @version $Id: DeepIndentRule.java 20108 2011-10-18 12:16:38Z evanpw $
  */
 public class DeepIndentRule implements IndentRule
 {
 	private final char openChar;
 	private final char closeChar;
 
+	//{{{ DeepIndentRule constructor
 	public DeepIndentRule(char openChar, char closeChar)
 	{
 		this.openChar = openChar;
 		this.closeChar = closeChar;
-	}
+	} //}}}
 
 	//{{{ apply() method
 	public void apply(JEditBuffer buffer, int thisLineIndex,
@@ -112,7 +113,7 @@ public class DeepIndentRule implements IndentRule
 		}
 	} //}}}
 
-
+	//{{{ getIndent() method
 	/**
 	 * Returns the length of the string as if it were indented with
 	 * spaces instead of tabs.
@@ -137,9 +138,9 @@ public class DeepIndentRule implements IndentRule
 			}
 		}
 		return cnt;
-	}
+	} //}}}
 
-
+	//{{{ Parens class
 	/**
 	 * A token filter that looks for the position of the open and
 	 * close characters in the line being parsed. Characters inside
@@ -226,6 +227,5 @@ public class DeepIndentRule implements IndentRule
 			return "Parens(" + openOffset + ',' + closeOffset + ')';
 		}
 	} //}}}
-
 }
 

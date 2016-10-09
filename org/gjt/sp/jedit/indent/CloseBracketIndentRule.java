@@ -29,7 +29,7 @@ import org.gjt.sp.util.StandardUtilities;
 
 /**
  * @author Slava Pestov
- * @version $Id: CloseBracketIndentRule.java 12529 2008-05-01 04:47:58Z vanza $
+ * @version $Id: CloseBracketIndentRule.java 18919 2010-11-04 10:52:55Z kpouer $
  */
 public class CloseBracketIndentRule extends BracketIndentRule
 {
@@ -95,18 +95,6 @@ public class CloseBracketIndentRule extends BracketIndentRule
 
 			indentActions.add(alignBracket);
 		}
-	} //}}}
-
-	//{{{ isMatch() method
-	/**
-	 * @deprecated
-	 *   This method calls BracketIndentRule#getBrackets(String)
-	 *   which has been deprecated.
-	 */
-	@Deprecated
-	public boolean isMatch(String line)
-	{
-		return getBrackets(line).closeCount != 0;
 	} //}}}
 
 	private boolean aligned;

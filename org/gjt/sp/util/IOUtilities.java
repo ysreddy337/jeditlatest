@@ -25,10 +25,10 @@ package org.gjt.sp.util;
 import java.io.*;
 
 /**
- * IO tools that depends on JDK only.
+ * IO tools that depend on JDK only.
  *
  * @author Matthieu Casanova
- * @version $Id: IOUtilities.java 17805 2010-05-11 16:56:35Z kpouer $
+ * @version $Id: IOUtilities.java 19107 2010-12-08 18:49:10Z ezust $
  * @since 4.3pre5
  */
 public class IOUtilities

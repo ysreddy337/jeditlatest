@@ -24,13 +24,9 @@
 package org.gjt.sp.jedit.options;
 
 //{{{ Imports
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import javax.swing.Box;
-import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JTextField;
@@ -41,8 +37,6 @@ import org.gjt.sp.jedit.buffer.JEditBuffer;
 import org.gjt.sp.util.StandardUtilities;
 import static java.awt.GridBagConstraints.BOTH;
 import static java.util.Arrays.sort;
-import static javax.swing.Box.createHorizontalBox;
-import static javax.swing.Box.createHorizontalStrut;
 import static org.gjt.sp.jedit.jEdit.getBooleanProperty;
 import static org.gjt.sp.jedit.jEdit.getProperty;
 import static org.gjt.sp.jedit.jEdit.setBooleanProperty;
@@ -57,7 +51,7 @@ import static org.gjt.sp.jedit.MiscUtilities.getEncodings;
  * @author Björn Kautler
  * @author Matthieu Casanova
  * @since jEdit 4.3pre6
- * @version $Id: EncodingsOptionPane.java 17766 2010-05-08 12:39:07Z k_satoda $
+ * @version $Id: EncodingsOptionPane.java 20765 2012-01-12 23:05:12Z ezust $
  */
 public class EncodingsOptionPane extends AbstractOptionPane
 {
@@ -66,9 +60,7 @@ public class EncodingsOptionPane extends AbstractOptionPane
 	private JCheckBox encodingAutodetect;
 	private JTextField encodingDetectors;
 	private JTextField fallbackEncodings;
-
-	private JButton selectAllButton;
-	private JButton selectNoneButton;
+	private JComboBox lineSeparator;
 	private PingPongList<String> pingPongList;
 	//}}}
 
@@ -82,6 +74,24 @@ public class EncodingsOptionPane extends AbstractOptionPane
 	@Override
 	protected void _init()
 	{
+		
+		/* Line separator */
+		String[] lineSeps = { jEdit.getProperty("lineSep.unix"),
+			jEdit.getProperty("lineSep.windows"),
+			jEdit.getProperty("lineSep.mac") };
+		lineSeparator = new JComboBox(lineSeps);
+		String lineSep = jEdit.getProperty("buffer."+ JEditBuffer.LINESEP,
+			System.getProperty("line.separator"));
+		if("\n".equals(lineSep))
+			lineSeparator.setSelectedIndex(0);
+		else if("\r\n".equals(lineSep))
+			lineSeparator.setSelectedIndex(1);
+		else if("\r".equals(lineSep))
+			lineSeparator.setSelectedIndex(2);
+		addComponent(jEdit.getProperty("options.general.lineSeparator"),
+			lineSeparator);
+
+		
 		// Default file encoding
 		String[] encodings = getEncodings(true);
 		sort(encodings,new StandardUtilities.StringCompare<String>(true));
@@ -130,30 +140,27 @@ public class EncodingsOptionPane extends AbstractOptionPane
 		pingPongList.setRightTooltip(getProperty("options.encodings.selected.tooltip"));
 		addComponent(pingPongList,BOTH);
 
-		// Select All/None Buttons
-		Box buttonsBox = createHorizontalBox();
-		buttonsBox.add(createHorizontalStrut(12));
-		
-		ActionHandler actionHandler = new ActionHandler();
-		selectAllButton = new JButton(getProperty("options.encodings.selectAll"));
-		selectAllButton.addActionListener(actionHandler);
-		selectAllButton.setEnabled(pingPongList.getLeftSize() != 0);
-		buttonsBox.add(selectAllButton);
-		buttonsBox.add(createHorizontalStrut(12));
-
-		selectNoneButton = new JButton(getProperty("options.encodings.selectNone"));
-		selectNoneButton.addActionListener(actionHandler);
-		selectNoneButton.setEnabled(pingPongList.getRightSize() != 0);
-		buttonsBox.add(selectNoneButton);
-		buttonsBox.add(createHorizontalStrut(12));
-		
-		addComponent(buttonsBox);
 	} //}}}
 
 	//{{{ _save() method
 	@Override
 	protected void _save()
 	{
+		String lineSep = null;
+		switch(lineSeparator.getSelectedIndex())
+		{
+		case 0:
+			lineSep = "\n";
+			break;
+		case 1:
+			lineSep = "\r\n";
+			break;
+		case 2:
+			lineSep = "\r";
+			break;
+		}
+		jEdit.setProperty("buffer."+ JEditBuffer.LINESEP,lineSep);
+		
 		jEdit.setProperty("buffer."+ JEditBuffer.ENCODING,(String)
 			defaultEncoding.getSelectedItem());
 		jEdit.setBooleanProperty("buffer.encodingAutodetect",
@@ -175,23 +182,4 @@ public class EncodingsOptionPane extends AbstractOptionPane
 		}
 	} //}}}
 
-	//{{{ Inner classes
-
-	//{{{ ActionHandler class
-	private class ActionHandler implements ActionListener
-	{
-		public void actionPerformed(ActionEvent ae)
-		{
-			Object source = ae.getSource();
-			if (source == selectAllButton)
-			{
-				pingPongList.moveAllToRight();
-			}
-			else if (source == selectNoneButton)
-			{
-				pingPongList.moveAllToLeft();
-			}      
-		}
-	} //}}}
-	//}}}
 } //}}}

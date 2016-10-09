@@ -123,7 +123,7 @@ import static org.gjt.sp.jedit.EditBus.EBHandler;
  * @see org.gjt.sp.jedit.ServiceManager
  *
  * @author Slava Pestov
- * @version $Id: PluginJAR.java 17144 2010-01-30 00:32:11Z kpouer $
+ * @version $Id: PluginJAR.java 20791 2012-01-14 08:53:42Z kpouer $
  * @since jEdit 4.2pre1
  */
 public class PluginJAR
@@ -187,6 +187,12 @@ public class PluginJAR
 			for (String jarName: pluginLoadList)
 			{
 				String jarPath = findPlugin(jarName);
+				if (jarPath == null)
+				{
+					Log.log(Log.WARNING, PluginJAR.class, "Unable to load dependency " + jarName+
+								   " the plugin is not installed");
+					continue;
+				}
 				load(jarPath, true);
 			}
 		}
@@ -208,6 +214,7 @@ public class PluginJAR
 		}
 		jar.checkDependencies();
 		jar.activatePluginIfNecessary();
+		jEdit.propertiesChanged();
 		return jar;
 	} // }}}
 
@@ -371,16 +378,6 @@ public class PluginJAR
 			zipFile = new ZipFile(path);
 		}
 		return zipFile;
-	} //}}}
-
-	//{{{ getActions() method
-	/**
-	 * @deprecated Call getActionSet() instead
-	 */
-	@Deprecated
-	public ActionSet getActions()
-	{
-		return getActionSet();
 	} //}}}
 
 	//{{{ getActionSet() method
@@ -772,7 +769,7 @@ public class PluginJAR
 	public void activatePluginIfNecessary()
 	{
 		String filename = MiscUtilities.getFileName(getPath());
-		jEdit.setBooleanProperty("plugin-blacklist." + filename, false);
+		jEdit.unsetProperty("plugin-blacklist." + filename);
 		if(!(plugin instanceof EditPlugin.Deferred && plugin != null))
 		{
 			return;
@@ -1161,6 +1158,12 @@ public class PluginJAR
 				cache.cachedBrowserActionNames,
 				cache.cachedBrowserActionToggleFlags,
 				cache.browserActionsURI);
+			String label = jEdit.getProperty(
+					"plugin." + cache.pluginClass
+					+ ".name");
+			browserActions.setLabel(jEdit.getProperty(
+					"action-set.plugin",
+					new String[] { label }));
 			VFSBrowser.getActionContext().addActionSet(browserActions);
 		}
 

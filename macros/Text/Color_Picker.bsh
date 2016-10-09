@@ -17,7 +17,7 @@
  * along with the jEdit application; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
- * $Id: Color_Picker.bsh 4988 2004-03-08 04:29:12Z spestov $
+ * $Id: Color_Picker.bsh 19055 2010-11-29 19:15:07Z kerik-sf $
  */
 
 selection = textArea.getSelectedText();
@@ -32,7 +32,7 @@ if (color != null){
 	if(buffer.isReadOnly())
 		Macros.error(view, "Buffer is read-only.");
 	else
-		textArea.setSelectedText(GUIUtilities.getColorHexString(color));
+		textArea.setSelectedText(SyntaxUtilities.getColorHexString(color));
 }
 
 /*

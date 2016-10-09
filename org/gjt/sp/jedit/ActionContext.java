@@ -22,8 +22,6 @@
 
 package org.gjt.sp.jedit;
 
-import java.util.*;
-
 /**
  * Manages a collection of action sets. There are two instances of this class
  * in jEdit:
@@ -35,7 +33,7 @@ import java.util.*;
  *
  * @since jEdit 4.2pre1
  * @author Slava Pestov
- * @version $Id: ActionContext.java 13436 2008-08-27 02:32:08Z ezust $
+ * @version $Id: ActionContext.java 19264 2011-01-25 11:37:31Z kpouer $
  */
 public abstract class ActionContext extends JEditActionContext<EditAction, ActionSet>
 {

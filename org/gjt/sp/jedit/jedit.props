@@ -42,6 +42,9 @@ autosaveUntitled=true
 # Maximum number of elements in a history list
 history=20
 
+# Maximum size (in characters) of a history list
+historyMaxSize=5000000
+
 # Number of recent files
 recentFiles=40
 
@@ -126,9 +129,13 @@ autoReload=true
 checkFileStatus=0
 
 # Encoding detectors
-encodingDetectors=BOM XML-PI html python
+encodingDetectors=BOM XML-PI html python buffer-local-property
 
 #}}}
+
+# The critical size, over it a buffer will prompt when setting the edit mode
+# to switch to context insensitive or default mode
+largeBufferSize=4000000
 
 #{{{ Buffer settings
 # These can also be specified as buffer-local properties
@@ -155,6 +162,9 @@ buffer.indentSize=8
 
 # Soft tabs
 buffer.noTabs=false
+
+#elastic tabstops
+buffer.elasticTabstops=false 
 
 # Default edit mode
 buffer.defaultMode=text
@@ -261,7 +271,7 @@ view.minStartupWidth=200
 view.minStartupHeight=200
 
 # The default bufferSet scope
-editpane.bufferset.default=global
+editpane.bufferset.default=view
 
 #{{{ Gutter
 
@@ -454,6 +464,7 @@ vfs.browser.colors.7.color=#330066
 vfs.browser.colors.8.glob=*.{props,properties}
 vfs.browser.colors.8.color=#666666
 
+browser.custom.context=
 #}}}
 
 #{{{ Plugin manager settings

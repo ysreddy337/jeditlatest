@@ -43,7 +43,7 @@ import org.gjt.sp.util.ThreadUtilities;
 /**
  * VFS browser tree view.
  * @author Slava Pestov
- * @version $Id: BrowserView.java 18572 2010-09-17 10:57:58Z kpouer $
+ * @version $Id: BrowserView.java 20867 2012-01-19 21:14:50Z ezust $
  */
 class BrowserView extends JPanel
 {
@@ -170,7 +170,11 @@ class BrowserView extends JPanel
 
 		Object session = vfs.createVFSSession(path,this);
 		if(session == null)
+		{
+			if (delayedAWTTask != null)
+				ThreadUtilities.runInDispatchThread(delayedAWTTask);
 			return;
+		}
 
 		if(node == null)
 		{
@@ -189,7 +193,7 @@ class BrowserView extends JPanel
 			}
 		};
 		ThreadUtilities.runInBackground(new ListDirectoryBrowserTask(browser,
-			session, vfs, path, null, loadInfo, awtRunnable));
+			session, vfs, path, loadInfo, awtRunnable));
 	} //}}}
 
 	//{{{ directoryLoaded() method

@@ -94,6 +94,10 @@
         <literal>VALUE</literal> attribute with the property's value.</para>
         <para>All buffer-local properties listed in <xref
         linkend="buffer-local" /> may be given values in edit modes.</para>
+	<para><literal>contextInsensitive</literal> - If true the property
+	indicate that a line can always be highlighted without taking care of
+	the previous line. If activated the syntax will be much faster.
+	</para>
         <para>The following mode properties specify commenting strings:</para>
         <itemizedlist>
             <listitem>
@@ -114,7 +118,7 @@
         </itemizedlist>
         <para>When performing auto indent, a number of mode properties determine
         the resulting indent level:</para>
-        <itemizedlist>
+        <itemizedlist>        
             <listitem>
                 <para>The line and the one before it are scanned for brackets
                 listed in the <literal>indentCloseBrackets</literal> and
@@ -150,11 +154,15 @@
                 the <literal>doubleBracketIndent</literal> property is set to
                 <literal>true</literal>, the previous line is checked against
                 the regular expressions in the <literal>indentNextLine</literal>
-                and <literal>indentNextLines</literal> properties. If the
+                and <literal>indentNextLines</literal> properties.
+                If the
                 previous line matches the former, the indent of the current line
                 is increased and the subsequent line is shifted back again. If
                 the previous line matches the latter, the indent of the current
                 and subsequent lines is increased.</para>
+
+                <para> There are corresponding <literal>unindentThisLine</literal> and <literal>unindentNextLines</literal> properties which are checked also, for doing the reverse-indent operation on lines that match certain regular expressions. </para>
+                
                 <para>In Java mode, for example, the
                 <literal>indentNextLine</literal> property is set to match
                 control structures such as <quote>if</quote>,
@@ -178,7 +186,12 @@
     }</programlisting>
             </listitem>
             <listitem><para>
-             <literal>electricKeys</literal>: characters listed here, when typed on a line, cause the current line to be re-indented. </para></listitem>
+             <literal>electricKeys</literal>: characters listed here, when typed
+             on a line, cause the current line to be re-indented. Notice that by
+             default, pressing "Enter" does not re-indent the current line, only
+             the new line. To get this behavior, add the newline character to
+             <literal>electricKeys</literal> in the xml-escaped form &amp;#xA;
+             </para></listitem>
         </itemizedlist>
         <para>Here is the complete <literal>&lt;PROPS&gt;</literal> tag for Java
         mode:</para>
@@ -275,8 +288,13 @@
             expression that highlights Java-style numeric literals (normal
             numbers, hexadecimals prefixed with <literal>0x</literal>, numbers
             suffixed with various type indicators, and floating point literals
-            containing an exponent):</para>
-            <programlisting>DIGIT_RE="(0[lL]?|[1-9]\d{0,9}(\d{0,9}[lL])?|0[xX]\p{XDigit}{1,8}(\p{XDigit}{0,8}[lL])?|0[0-7]{1,11}([0-7]{0,11}[lL])?|([0-9]+\.[0-9]*|\.[0-9]+)([eE][+-]?[0-9]+)?[fFdD]?|[0-9]+([eE][+-]?[0-9]+[fFdD]?|([eE][+-]?[0-9]+)?[fFdD]))"</programlisting>
+            containing an exponent). Note that newlines have been inserted here
+            for readability.</para>
+            <programlisting>DIGIT_RE="(0[lL]?|[1-9]\d{0,9}(\d{0,9}[lL])?
+|0[xX]\p{XDigit}{1,8}(\p{XDigit}{0,8}[lL])?
+|0[0-7]{1,11}([0-7]{0,11}[lL])?|([0-9]+\.[0-9]*
+|\.[0-9]+)([eE][+-]?[0-9]+)?[fFdD]?|[0-9]+([eE][+-]?[0-9]+[fFdD]?
+|([eE][+-]?[0-9]+)?[fFdD]))"</programlisting>
             <para>Regular expression syntax is described in <xref
             linkend="regexps" />.</para>
         </section>
@@ -449,10 +467,10 @@
     <section id="mode-rule-span-regexp">
         <title>The SPAN_REGEXP Tag</title>
         <para>The <literal>SPAN_REGEXP</literal> rule is similar to the
-        <literal>SPAN</literal> rule except the start sequence is taken to be a
-        regular expression. In addition to the attributes supported by the
-        <literal>SPAN</literal> tag, the following attributes are
-        supported:</para>
+        <literal>SPAN</literal> rule except the start sequence and optionally
+        the end sequence are taken to be regular expressions. In addition to the
+        attributes supported by the <literal>SPAN</literal> tag, the following
+        attributes are supported:</para>
         <itemizedlist>
             <listitem>
                 <para><literal>HASH_CHAR</literal> - a literal string which must
@@ -474,6 +492,10 @@
         case where there is no other reliable way to get the highlighting you
         need, for example, with comments in the Cobol programming
         language.</para>
+        <para>In addition, the <literal>END</literal> subtag supports the
+        attribute <literal>REGEXP</literal>, which if set to
+        <literal>TRUE</literal>, tells the highlighter to interpret the
+        <literal>END</literal> text as a regular expression as well.</para>
         <para>The regular expression match cannot span more than one line. Any
         text matched by groups in the <literal>BEGIN</literal> regular
         expression is substituted in the <literal>END</literal> string. See
@@ -744,7 +766,8 @@
         (wikiword) that can start with any uppercase letter and contain lower
         case letters and at least one uppercase letter in the middle.</para>
         <programlisting>
- 		&lt;SEQ_REGEXP HASH_CHARS="ABCDEFGHIJKLMNOPQRSTUVWXYZ" AT_WORD_START="TRUE" TYPE="KEYWORD2"&gt;[A-Z][a-z]+[A-Z][a-zA-Z]+&lt;/SEQ_REGEXP&gt;
+ 		&lt;SEQ_REGEXP HASH_CHARS="ABCDEFGHIJKLMNOPQRSTUVWXYZ" AT_WORD_START="TRUE"
+ 		TYPE="KEYWORD2"&gt;[A-Z][a-z]+[A-Z][a-zA-Z]+&lt;/SEQ_REGEXP&gt;
  </programlisting>
     </section>
     <section id="mode-rule-import">

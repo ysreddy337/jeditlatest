@@ -32,44 +32,23 @@ import org.gjt.sp.util.ThreadUtilities;
 
 /**
  * @author Matthieu Casanova
- * @version $Id: AbstractBrowserTask.java 18380 2010-08-18 13:10:43Z kpouer $
+ * @version $Id: AbstractBrowserTask.java 19705 2011-07-26 17:19:05Z kpouer $
  */
 abstract class AbstractBrowserTask extends Task
 {
-	//{{{ BrowserIORequest constructors
+	//{{{ BrowserIORequest constructor
 	/**
 	 * Creates a new browser I/O request.
 	 * @param browser The VFS browser instance
-	 * @param path1 The first path name to operate on
-	 * @param path2 The second path name to operate on
-	 * @param loadInfo A two-element array filled out by the request;
-	 * element 1 is the canonical path, element 2 is the file list.
+	 * @param path The first path name to operate on
 	 */
 	AbstractBrowserTask(VFSBrowser browser,
-		Object session, VFS vfs, String path1, String path2,
-		Object[] loadInfo)
-	{
-		this(browser, session, vfs, path1, path2, loadInfo, null);
-	}
-
-	/**
-	 * Creates a new browser I/O request.
-	 * @param browser The VFS browser instance
-	 * @param path1 The first path name to operate on
-	 * @param path2 The second path name to operate on
-	 * @param loadInfo A two-element array filled out by the request;
-	 * element 1 is the canonical path, element 2 is the file list.
-	 */
-	AbstractBrowserTask(VFSBrowser browser,
-		Object session, VFS vfs, String path1, String path2,
-		Object[] loadInfo, Runnable awtTask)
+		Object session, VFS vfs, String path, Runnable awtTask)
 	{
 		this.browser = browser;
 		this.session = session;
 		this.vfs = vfs;
-		this.path1 = path1;
-		this.path2 = path2;
-		this.loadInfo = loadInfo;
+		this.path = path;
 		if (awtTask != null)
 		{
 			MyTaskListener listener = new MyTaskListener(awtTask);
@@ -81,9 +60,7 @@ abstract class AbstractBrowserTask extends Task
 	protected VFSBrowser browser;
 	protected Object session;
 	protected VFS vfs;
-	protected String path1;
-	protected String path2;
-	protected Object[] loadInfo;
+	protected String path;
 	//}}}
 
 	private class MyTaskListener implements TaskListener
@@ -95,14 +72,17 @@ abstract class AbstractBrowserTask extends Task
 			this.runnable = runnable;
 		}
 
+		@Override
 		public void waiting(Task task)
 		{
 		}
 
+		@Override
 		public void running(Task task)
 		{
 		}
 
+		@Override
 		public void done(Task task)
 		{
 			if (task == AbstractBrowserTask.this)
@@ -112,14 +92,17 @@ abstract class AbstractBrowserTask extends Task
 			}
 		}
 
+		@Override
 		public void statusUpdated(Task task)
 		{
 		}
 
+		@Override
 		public void maximumUpdated(Task task)
 		{
 		}
 
+		@Override
 		public void valueUpdated(Task task)
 		{
 		}

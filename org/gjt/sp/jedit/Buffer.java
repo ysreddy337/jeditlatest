@@ -32,14 +32,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Vector;
 
-import javax.swing.Icon;
-import javax.swing.JOptionPane;
-import javax.swing.text.AttributeSet;
+import javax.swing.*;
 import javax.swing.text.Segment;
 
 import org.gjt.sp.jedit.browser.VFSBrowser;
-import org.gjt.sp.jedit.buffer.BufferChangeListener;
-import org.gjt.sp.jedit.buffer.BufferListener;
 import org.gjt.sp.jedit.buffer.BufferUndoListener;
 import org.gjt.sp.jedit.buffer.FoldHandler;
 import org.gjt.sp.jedit.buffer.JEditBuffer;
@@ -47,24 +43,21 @@ import org.gjt.sp.jedit.bufferio.BufferAutosaveRequest;
 import org.gjt.sp.jedit.bufferio.BufferIORequest;
 import org.gjt.sp.jedit.bufferio.MarkersSaveRequest;
 import org.gjt.sp.jedit.bufferset.BufferSet;
-import org.gjt.sp.jedit.gui.StyleEditor;
 import org.gjt.sp.jedit.io.FileVFS;
 import org.gjt.sp.jedit.io.VFS;
 import org.gjt.sp.jedit.io.VFSFile;
 import org.gjt.sp.jedit.io.VFSManager;
 import org.gjt.sp.jedit.msg.BufferUpdate;
 import org.gjt.sp.jedit.options.GeneralOptionPane;
-import org.gjt.sp.jedit.syntax.DefaultTokenHandler;
 import org.gjt.sp.jedit.syntax.ModeProvider;
 import org.gjt.sp.jedit.syntax.ParserRuleSet;
-import org.gjt.sp.jedit.syntax.Token;
-import org.gjt.sp.jedit.textarea.JEditTextArea;
 import org.gjt.sp.jedit.visitors.JEditVisitorAdapter;
 import org.gjt.sp.jedit.visitors.SaveCaretInfoVisitor;
 import org.gjt.sp.util.IntegerArray;
 import org.gjt.sp.util.Log;
 import org.gjt.sp.util.StandardUtilities;
 import org.gjt.sp.util.ThreadUtilities;
+//}}}
 
 /**
  * A <code>Buffer</code> represents the contents of an open text
@@ -93,7 +86,7 @@ import org.gjt.sp.util.ThreadUtilities;
 
  *
  * @author Slava Pestov
- * @version $Id: Buffer.java 19187 2011-01-09 16:59:29Z ezust $
+ * @version $Id: Buffer.java 20007 2011-09-24 00:49:35Z Vampire0 $
  */
 public class Buffer extends JEditBuffer
 {
@@ -260,7 +253,13 @@ public class Buffer extends JEditBuffer
 				undoMgr.setLimit(jEdit.getIntegerProperty(
 					"buffer.undoCount",100));
 
-				if(!getFlag(TEMPORARY))
+				// If the buffer is temporary, we don't need to
+				// call finishLoading() because it sets the FoldHandler
+				// and reload markers. But we always need to set the edit
+				// mode that is necessary for HyperSearch on directories
+				if (getFlag(TEMPORARY))
+					setMode();
+				else
 					finishLoading();
 
 				setLoading(false);
@@ -364,6 +363,7 @@ public class Buffer extends JEditBuffer
 	 * @param view The view
 	 * @param rename True if the buffer's path should be changed, false
 	 * if only a copy should be saved to the specified filename
+	 * @return true if the buffer was successfully saved
 	 * @since jEdit 2.6pre5
 	 */
 	public boolean saveAs(View view, boolean rename)
@@ -388,6 +388,7 @@ public class Buffer extends JEditBuffer
 	 * name if it's null.
 	 * @param view The view
 	 * @param path The path name to save the buffer to, or null to use
+	 * @return true if the buffer was successfully saved
 	 * the existing path
 	 */
 	public boolean save(View view, String path)
@@ -404,6 +405,7 @@ public class Buffer extends JEditBuffer
 	 * the existing path
 	 * @param rename True if the buffer's path should be changed, false
 	 * if only a copy should be saved to the specified filename
+	 * @return true if the buffer was successfully saved
 	 * @since jEdit 2.6pre5
 	 */
 	public boolean save(View view, String path, boolean rename)
@@ -422,6 +424,7 @@ public class Buffer extends JEditBuffer
 	 * if only a copy should be saved to the specified filename
 	 * @param disableFileStatusCheck  Disables file status checking
 	 * regardless of the state of the checkFileStatus property
+	 * @return true if the buffer was successfully saved
 	 */
 	public boolean save(final View view, String path, final boolean rename, boolean disableFileStatusCheck)
 	{
@@ -940,54 +943,6 @@ public class Buffer extends JEditBuffer
 
 	//}}}
 
-	//{{{ Buffer events
-
-	//{{{ addBufferChangeListener() method
-	/**
-	 * @deprecated Call {@link JEditBuffer#addBufferListener(BufferListener,int)}.
-	 */
-	@Deprecated
-	public void addBufferChangeListener(BufferChangeListener listener,
-		int priority)
-	{
-		addBufferListener(new BufferChangeListener.Adapter(listener),priority);
-	} //}}}
-
-	//{{{ addBufferChangeListener() method
-	/**
-	 * @deprecated Call {@link JEditBuffer#addBufferListener(BufferListener)}.
-	 */
-	@Deprecated
-	public void addBufferChangeListener(BufferChangeListener listener)
-	{
-		addBufferListener(new BufferChangeListener.Adapter(listener), NORMAL_PRIORITY);
-	} //}}}
-
-	//{{{ removeBufferChangeListener() method
-	/**
-	 * @deprecated Call {@link JEditBuffer#removeBufferListener(BufferListener)}.
-	 */
-	@Deprecated
-	public void removeBufferChangeListener(BufferChangeListener listener)
-	{
-		BufferListener[] listeners = getBufferListeners();
-
-		for(int i = 0; i < listeners.length; i++)
-		{
-			BufferListener l = listeners[i];
-			if(l instanceof BufferChangeListener.Adapter)
-			{
-				if(((BufferChangeListener.Adapter)l).getDelegate() == listener)
-				{
-					removeBufferListener(l);
-					return;
-				}
-			}
-		}
-	} //}}}
-
-	//}}}
-
 	//{{{ Property methods
 
 	//{{{ propertiesChanged() method
@@ -1141,100 +1096,75 @@ public class Buffer extends JEditBuffer
 	 */
 	public void setMode()
 	{
+		Mode mode = null;
 		String userMode = getStringProperty("mode");
 		if(userMode != null)
 		{
 			unsetProperty("mode");
-			Mode m = ModeProvider.instance.getMode(userMode);
-			if(m != null)
-			{
-				setMode(m);
-				return;
-			}
+			mode = ModeProvider.instance.getMode(userMode);
 		}
-
-		String firstLine = getLineText(0);
-
-		Mode mode = ModeProvider.instance.getModeForFile(name, firstLine);
+		if (mode == null)
+		{
+			String firstLine = getLineText(0);
+			mode = ModeProvider.instance.getModeForFile(getVFS().getFilePath(path), null, firstLine);
+		}
 		if (mode != null)
 		{
-			setMode(mode);
+			boolean forceInsensitive = false;
+			if (!getFlag(TEMPORARY) && getLength() > jEdit.getIntegerProperty("largeBufferSize", 4000000))
+			{
+				boolean contextInsensitive = mode.getBooleanProperty("contextInsensitive");
+				if (!contextInsensitive)
+				{
+					JTextPane tp = new JTextPane();
+					tp.setEditable(false);
+					tp.setText(jEdit.getProperty("largeBufferDialog.message"));
+					int i = JOptionPane.showOptionDialog(jEdit.getActiveView(),
+						tp,
+						jEdit.getProperty("largeBufferDialog.title", new String[]{name}),
+						JOptionPane.DEFAULT_OPTION,
+						JOptionPane.WARNING_MESSAGE,
+						null,
+						new String[]{
+							jEdit.getProperty("largeBufferDialog.fullSyntax"),
+							jEdit.getProperty("largeBufferDialog.contextInsensitive"),
+							jEdit.getProperty("largeBufferDialog.defaultMode")},
+						jEdit.getProperty("largeBufferDialog.fullSyntax"));
+					switch (i)
+					{
+						case 0:
+							// do nothing
+							break;
+						case 1:
+							forceInsensitive = true;
+							break;
+						case 2:
+							mode =  getDefaultMode();
+							break;
+					}
+				}
+			}
+			setMode(mode, forceInsensitive);
 			return;
 		}
 
-		Mode defaultMode = jEdit.getMode(jEdit.getProperty("buffer.defaultMode"));
-		if(defaultMode == null)
-			defaultMode = jEdit.getMode("text");
+		Mode defaultMode = getDefaultMode();
 
 		if (defaultMode != null)
 			setMode(defaultMode);
 	} //}}}
 
+	private static Mode getDefaultMode()
+	{
+		Mode defaultMode = jEdit.getMode(jEdit.getProperty("buffer.defaultMode"));
+		if(defaultMode == null)
+			defaultMode = jEdit.getMode("text");
+		return defaultMode;
+	}
+
 	//}}}
 
 	//{{{ Deprecated methods
-
-	//{{{ putProperty() method
-	/**
-	 * @deprecated Call <code>setProperty()</code> instead.
-	 */
-	@Deprecated
-	public void putProperty(Object name, Object value)
-	{
-		// for backwards compatibility
-		if(!(name instanceof String))
-			return;
-
-		setProperty((String)name,value);
-	} //}}}
-
-	//{{{ putBooleanProperty() method
-	/**
-	 * @deprecated Call <code>setBooleanProperty()</code> instead
-	 */
-	@Deprecated
-	public void putBooleanProperty(String name, boolean value)
-	{
-		setBooleanProperty(name,value);
-	} //}}}
-
-	//{{{ markTokens() method
-	/**
-	 * @deprecated Use org.gjt.sp.jedit.syntax.DefaultTokenHandler instead
-	 */
-	@Deprecated
-	public static class TokenList extends DefaultTokenHandler
-	{
-		public Token getFirstToken()
-		{
-			return getTokens();
-		}
-	}
-
-	/**
-	 * @deprecated Use the other form of <code>markTokens()</code> instead
-	 */
-	@Deprecated
-	public TokenList markTokens(int lineIndex)
-	{
-		TokenList list = new TokenList();
-		markTokens(lineIndex,list);
-		return list;
-	} //}}}
-
-	//{{{ insertString() method
-	/**
-	 * Insert a string into the buffer
-	 * @param offset The offset
-	 * @param str The string
-	 * @param attr ignored
-	 * @deprecated Call <code>insert()</code> instead.
-	 */
-	@Deprecated
-	public void insertString(int offset, String str, AttributeSet attr)
-	{
-		insert(offset,str);
-	} //}}}
 
 	//{{{ getFile() method
 	/**
@@ -1468,19 +1398,6 @@ public class Buffer extends JEditBuffer
 				return marker;
 		}
 		return null;
-	} //}}}
-
-	//{{{ getMarkersPath() method
-	/**
-	 * Returns the path for this buffer's markers file
-	 * @param vfs The appropriate VFS
-	 * @since jEdit 4.3pre7
-	 * @deprecated it will fail if you save to another VFS. use {@link #getMarkersPath(VFS, String)}
-	 */
-	@Deprecated
-	public String getMarkersPath(VFS vfs)
-	{
-		return getMarkersPath(vfs, path);
 	} //}}}
 
 	//{{{ getMarkersPath() method
@@ -1835,6 +1752,10 @@ public class Buffer extends JEditBuffer
 	private long modTime;
 	private byte[] md5hash;
 	private int initialLength;
+	/**
+	 * The longBufferMode is an option
+	 */
+	private int longBufferMode;
 
 	private final Vector<Marker> markers;
 
@@ -2198,20 +2119,5 @@ public class Buffer extends JEditBuffer
 		} //}}}
 	} //}}}
 
-	//{{{ editSyntaxStyle() method
-	/**
-	 * Edit the syntax style of the token under the caret.
-	 *
-	 * @param textArea the textarea where your caret is
-	 * @since jEdit 4.3pre11
-	 * @deprecated
-	 *   This method implicitly assumes (textArea.getBuffer() == this).
-	 *   Use gui.StyleEditor#invokeForCaret(JEditTextArea) instead.
-	 */
-	@Deprecated
-	public void editSyntaxStyle(JEditTextArea textArea)
-	{
-		StyleEditor.invokeForCaret(textArea);
-	} //}}}
 	//}}}
 }

@@ -35,7 +35,7 @@ import org.gjt.sp.jedit.browser.VFSBrowser;
  * The Save and Backup option panel.
  *
  * @author Slava Pestov
- * @author $Id: SaveBackupOptionPane.java 18147 2010-06-25 20:39:03Z ezust $
+ * @author $Id: SaveBackupOptionPane.java 20350 2011-11-15 08:24:51Z ezust $
  */
 public class SaveBackupOptionPane extends AbstractOptionPane
 {
@@ -77,6 +77,8 @@ public class SaveBackupOptionPane extends AbstractOptionPane
 
 		suppressNotSavedConfirmUntitled = new JCheckBox(jEdit.getProperty(
 			"options.save-back.suppressNotSavedConfirmUntitled"));
+		suppressNotSavedConfirmUntitled.setToolTipText(jEdit.getProperty(
+			"options.save-back.suppressNotSavedConfirmUntitled.tooltip"));
 		suppressNotSavedConfirmUntitled.setSelected(
 			jEdit.getBooleanProperty("suppressNotSavedConfirmUntitled"));
 		addComponent(suppressNotSavedConfirmUntitled);

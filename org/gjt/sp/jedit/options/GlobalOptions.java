@@ -57,40 +57,25 @@ public class GlobalOptions extends OptionsDialog
 	} //}}}
 
 	//{{{ createOptionTreeModel() method
+	@Override
 	protected OptionTreeModel createOptionTreeModel()
 	{
 		OptionTreeModel paneTreeModel = new OptionTreeModel();
 		OptionGroup rootGroup = (OptionGroup) paneTreeModel.getRoot();
 
-		// initialize the jEdit branch of the options tree
-		OptionGroup jEditGroup = new OptionGroup("jedit");
-
-		jEditGroup.addOptionPane("general");
-		jEditGroup.addOptionPane("abbrevs");
-		jEditGroup.addOptionPane("appearance");
-		jEditGroup.addOptionPane("context");
-		jEditGroup.addOptionPane("docking");
-		jEditGroup.addOptionPane("editing");
-		jEditGroup.addOptionPane("encodings");
-		jEditGroup.addOptionPane("gutter");
-		jEditGroup.addOptionPane("mouse");
-		jEditGroup.addOptionPane("plugin-manager");
-		jEditGroup.addOptionPane("print");
-		jEditGroup.addOptionPane("firewall");
-		jEditGroup.addOptionPane("save-back");
-		jEditGroup.addOptionPane("shortcuts");
-		jEditGroup.addOptionPane("status");
-		jEditGroup.addOptionPane("syntax");
-		jEditGroup.addOptionPane("textarea");
-		jEditGroup.addOptionPane("toolbar");
-		jEditGroup.addOptionPane("view");
-		rootGroup.addOptionGroup(jEditGroup);
-
-		OptionGroup browserGroup = new OptionGroup("browser");
-		browserGroup.addOptionPane("browser.general");
-		browserGroup.addOptionPane("browser.colors");
-		rootGroup.addOptionGroup(browserGroup);
-
+		String optionGroups = jEdit.getProperty("options.groups");
+		String[] groups = optionGroups.split(" ");
+		for (String group : groups)
+		{
+			OptionGroup optionGroup = new OptionGroup(group);
+			String optionPanes = jEdit.getProperty("options.group." + group);
+			String[] panes = optionPanes.split(" ");
+			for (String pane : panes)
+			{
+				optionGroup.addOptionPane(pane);
+			}
+			rootGroup.addOptionGroup(optionGroup);
+		}
 		return paneTreeModel;
 	} //}}}
 
@@ -115,6 +100,7 @@ public class GlobalOptions extends OptionsDialog
 	} //}}}
 
 	//{{{ getDefaultGroup() method
+	@Override
 	protected OptionGroup getDefaultGroup()
 	{
 		return null;

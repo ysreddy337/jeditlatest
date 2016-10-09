@@ -25,34 +25,34 @@ import org.gjt.sp.jedit.*;
 /**
  * Right-click context menu editor.
  * @author Slava Pestov
- * @version $Id: ContextOptionPane.java 18968 2010-11-15 23:31:24Z ezust $
+ * @version $Id: ContextOptionPane.java 19655 2011-07-07 10:02:06Z kpouer $
  */
 public class ContextOptionPane extends AbstractContextOptionPane
 {
-
 	public ContextOptionPane()
 	{
 		super("context", jEdit.getProperty("options.context.caption"));
 	}
 
-    /**
+	/**
 	 * Returns jEdit's context menu configuration.
 	 *
 	 * @since jEdit 4.3pre13
 	 */
-    protected String getContextMenu()
-    {
+	@Override
+	protected String getContextMenu()
+	{
 		return jEdit.getProperty("view.context");
 	}
 
-    /**
+	/**
 	 * Saves jEdit's context menu configuration.
 	 *
 	 * @since jEdit 4.3pre13
 	 */
-    protected void saveContextMenu(String menu)
-    {
+	@Override
+	protected void saveContextMenu(String menu)
+	{
 		jEdit.setProperty("view.context", menu);
-    }
-
+	}
 }

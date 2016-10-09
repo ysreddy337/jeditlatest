@@ -127,7 +127,7 @@ import org.gjt.sp.util.StandardUtilities;
  *
  * @author Slava Pestov
  * @author John Gellene (API documentation)
- * @version $Id: View.java 19139 2010-12-14 21:44:18Z ezust $
+ * @version $Id: View.java 20108 2011-10-18 12:16:38Z evanpw $
  */
 public class View extends JFrame implements InputHandlerProvider
 {
@@ -220,12 +220,6 @@ public class View extends JFrame implements InputHandlerProvider
 	public static final int BELOW_SEARCH_BAR_LAYER = 50;
 
 	// Layers for bottom group
-	/**
-	 * @deprecated Status bar no longer added as a tool bar.
-	 */
-	@Deprecated
-	public static final int ABOVE_ACTION_BAR_LAYER = -50;
-
 	/**
 	 * Action bar layer.
 	 * @see #addToolBar(int,int,java.awt.Component)
@@ -638,25 +632,14 @@ public class View extends JFrame implements InputHandlerProvider
 	 */
 	public void processKeyEvent(KeyEvent evt, int from)
 	{
-		processKeyEvent(evt,from,false);
-	}
-	/**
-	 * Forwards key events directly to the input handler.
-	 * This is slightly faster than using a KeyListener
-	 * because some Swing overhead is avoided.
-	 * @deprecated do not use, try {@link org.gjt.sp.jedit.gui.InputHandler#processKeyEvent(java.awt.event.KeyEvent, int, boolean)}
-	 */
-	@Deprecated
-	public void processKeyEvent(KeyEvent evt, int from, boolean global)
-	{
-		inputHandler.processKeyEvent(evt, from, global);
+		inputHandler.processKeyEvent(evt, from, false);
 		if(!evt.isConsumed())
 			super.processKeyEvent(evt);
-	} //}}}
-
-
+	}
 	//}}}
 
+	//}}}
+	
 	//{{{ Buffers, edit panes, split panes
 
 	//{{{ splitHorizontally() method
@@ -2322,6 +2305,6 @@ loop:		while (true)
 			editPane.setCursor(cursor);
 		}
 	}//}}}
-	//}}}
-
+	 //}}}
+	
 }

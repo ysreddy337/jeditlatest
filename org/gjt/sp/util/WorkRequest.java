@@ -26,8 +26,8 @@ package org.gjt.sp.util;
  * A subclass of the Runnable interface.
  * @since jEdit 2.6pre1
  * @deprecated
- * @see org.gjt.sp.util.Task 
- * @version $Id: WorkRequest.java 19045 2010-11-28 02:24:02Z ezust $
+ * @see org.gjt.sp.util.Task
+ * @version $Id: WorkRequest.java 19046 2010-11-28 02:26:21Z ezust $
  */
 @Deprecated
 public abstract class WorkRequest implements Runnable, ProgressObserver

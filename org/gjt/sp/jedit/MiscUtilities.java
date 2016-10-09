@@ -25,28 +25,18 @@
 package org.gjt.sp.jedit;
 
 //{{{ Imports
-import javax.swing.text.Segment;
-import javax.swing.JMenuItem;
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.MalformedInputException;
-import java.text.DecimalFormat;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.xml.sax.InputSource;
-import org.xml.sax.helpers.DefaultHandler;
-
 import org.gjt.sp.jedit.io.*;
 import org.gjt.sp.util.Log;
-import org.gjt.sp.util.ProgressObserver;
-import org.gjt.sp.util.StandardUtilities;
 import org.gjt.sp.util.IOUtilities;
 
-import org.gjt.sp.util.XMLUtilities;
-import org.gjt.sp.jedit.menu.MenuItemTextComparator;
 import org.gjt.sp.jedit.buffer.JEditBuffer;
 //}}}
 
@@ -61,40 +51,13 @@ import org.gjt.sp.jedit.buffer.JEditBuffer;
  * <li>{@link #getParentOfPath(String)}</li>
  * <li>{@link #constructPath(String,String)}</li>
  * </ul>
- * <b>String comparison:</b><p>
-
- * A {@link #compareStrings(String,String,boolean)} method that unlike
- * <function>String.compareTo()</function>, correctly recognizes and handles
- * embedded numbers.<p>
- *
- * This class also defines several inner classes for use with the
- * sorting features of the Java collections API:
- *
- * <ul>
- * <li>{@link MiscUtilities.StringICaseCompare}</li>
- * <li>{@link MiscUtilities.MenuItemCompare}</li>
- * </ul>
- *
- * For example, you might call:<p>
- *
- * <code>Arrays.sort(myListOfStrings,
- *     new MiscUtilities.StringICaseCompare());</code>
  *
  * @author Slava Pestov
  * @author John Gellene (API documentation)
- * @version $Id: MiscUtilities.java 19902 2011-09-02 16:59:40Z shlomy $
+ * @version $Id: MiscUtilities.java 20855 2012-01-19 07:48:56Z kpouer $
  */
 public class MiscUtilities
 {
-	/**
-	 * This encoding is not supported by Java, yet it is useful.
-	 * A UTF-8 file that begins with 0xEFBBBF.
-	 * @deprecated
-	 *   Extended encodings are now supported as services.
-	 *   This value is no longer used.
-	 */
-	@Deprecated public static final String UTF_8_Y = "UTF-8Y";
-
 	//{{{ Path name methods
 
 	//{{{ canonPath() method
@@ -169,10 +132,13 @@ public class MiscUtilities
 	 *     expansions.
 	 *     @return a string which is either the unchanged input string, or one with expanded variables.
 	 *     @since 4.3pre7
+	 *     @see #abbreviate
 	 *     @author ezust
 	 */
 	public static String expandVariables(String arg)
 	{
+		if (arg.startsWith("~/") || arg.startsWith("~\\")) 
+			return System.getProperty("user.home") + arg.substring(1);			
 		Pattern p = varPattern;
 		Matcher m = p.matcher(arg);
 		if (!m.find())
@@ -202,8 +168,8 @@ public class MiscUtilities
 	} //}}}
 
 	//{{{ abbreviate() method
-	/** returns an abbreviated path, replacing
-	 *  values with variables, if a prefix exists.
+	/** @return an abbreviated path, replacing values with variables, if a prefix exists.
+	 *  @see #expandVariables
 	 *  @since jEdit 4.3pre16
 	 */
 	public static String abbreviate(String path)
@@ -474,16 +440,6 @@ public class MiscUtilities
 			return name.substring(0,index);
 	} //}}}
 
-	//{{{ getFileParent() method
-	/**
-	 * @deprecated Call getParentOfPath() instead
-	 */
-	@Deprecated
-	public static String getFileParent(String path)
-	{
-		return getParentOfPath(path);
-	} //}}}
-
 	//{{{ getParentOfPath() method
 	/**
 	 * Returns the parent of the specified path. This method is VFS-aware.
@@ -493,16 +449,6 @@ public class MiscUtilities
 	public static String getParentOfPath(String path)
 	{
 		return VFSManager.getVFSForPath(path).getParentOfPath(path);
-	} //}}}
-
-	//{{{ getFileProtocol() method
-	/**
-	 * @deprecated Call getProtocolOfURL() instead
-	 */
-	@Deprecated
-	public static String getFileProtocol(String url)
-	{
-		return getProtocolOfURL(url);
 	} //}}}
 
 	//{{{ getProtocolOfURL() method
@@ -659,81 +605,7 @@ public class MiscUtilities
 		}
 	} //}}}
 
-	//{{{ moveFile() method
-	/**
-	 * Moves the source file to the destination.
-	 *
-	 * If the destination cannot be created or is a read-only file, the
-	 * method returns <code>false</code>. Otherwise, the contents of the
-	 * source are copied to the destination, the source is deleted,
-	 * and <code>true</code> is returned.
-	 *
-	 * @param source The source file to move.
-	 * @param dest   The destination where to move the file.
-	 * @return true on success, false otherwise.
-	 *
-	 * @since jEdit 4.3pre1
-	 * @deprecated use {@link org.gjt.sp.util.IOUtilities#moveFile(java.io.File, java.io.File)}
-	 */
-	@Deprecated
-	public static boolean moveFile(File source, File dest)
-	{
-		return IOUtilities.moveFile(source, dest);
-	} //}}}
-
-	//{{{ copyStream() methods
-	/**
-	 * Copy an input stream to an output stream.
-	 *
-	 * @param bufferSize the size of the buffer
-	 * @param progress the progress observer it could be null
-	 * @param in the input stream
-	 * @param out the output stream
-	 * @param canStop if true, the copy can be stopped by interrupting the thread
-	 * @return <code>true</code> if the copy was done, <code>false</code> if it was interrupted
-	 * @throws IOException  IOException If an I/O error occurs
-	 * @since jEdit 4.3pre3
-	 * @deprecated use {@link IOUtilities#copyStream(int, org.gjt.sp.util.ProgressObserver, java.io.InputStream, java.io.OutputStream, boolean)}
-	 */
-	@Deprecated
-	public static boolean copyStream(int bufferSize, ProgressObserver progress,
-		InputStream in, OutputStream out, boolean canStop)
-		throws IOException
-	{
-		return IOUtilities.copyStream(bufferSize, progress, in, out, canStop);
-	}
-
-	/**
-	 * Copy an input stream to an output stream with a buffer of 4096 bytes.
-	 *
-	 * @param progress the progress observer it could be null
-	 * @param in the input stream
-	 * @param out the output stream
-	 * @param canStop if true, the copy can be stopped by interrupting the thread
-	 * @return <code>true</code> if the copy was done, <code>false</code> if it was interrupted
-	 * @throws IOException  IOException If an I/O error occurs
-	 * @since jEdit 4.3pre3
-	 * @deprecated use {@link IOUtilities#copyStream(org.gjt.sp.util.ProgressObserver, java.io.InputStream, java.io.OutputStream, boolean)}
-	 */
-	@Deprecated
-	public static boolean copyStream(ProgressObserver progress, InputStream in, OutputStream out, boolean canStop)
-		throws IOException
-	{
-		return IOUtilities.copyStream(4096,progress, in, out, canStop);
-	} //}}}
-
 	//{{{ isBinary() methods
-	/**
-	 * Check if a Reader is binary.
-	 * @deprecated
-	 *   Use isBinary(InputStream) instead.
-	 */
-	@Deprecated
-	public static boolean isBinary(Reader reader) throws IOException
-	{
-		return containsNullCharacter(reader);
-	}
-
 	/**
 	 * Check if an InputStream is binary.
 	 * First this tries encoding auto detection. If an encoding is
@@ -847,34 +719,6 @@ public class MiscUtilities
 		return result;
 	} //}}}
 
-	//{{{ closeQuietly() method
-	/**
-	 * Method that will close an {@link InputStream} ignoring it if it is null and ignoring exceptions.
-	 *
-	 * @param in the InputStream to close.
-	 * @since jEdit 4.3pre3
-	 * @deprecated use {@link IOUtilities#closeQuietly(java.io.InputStream)}
-	 */
-	@Deprecated
-	public static void closeQuietly(InputStream in)
-	{
-		IOUtilities.closeQuietly(in);
-	} //}}}
-
-	//{{{ copyStream() method
-	/**
-	 * Method that will close an {@link OutputStream} ignoring it if it is null and ignoring exceptions.
-	 *
-	 * @param out the OutputStream to close.
-	 * @since jEdit 4.3pre3
-	 * @deprecated use {@link IOUtilities#closeQuietly(java.io.OutputStream)}
-	 */
-	@Deprecated
-	public static void closeQuietly(OutputStream out)
-	{
-		IOUtilities.closeQuietly(out);
-	} //}}}
-
 	//{{{ fileToClass() method
 	/**
 	 * Converts a file name to a class name. All slash characters are
@@ -933,144 +777,6 @@ public class MiscUtilities
 
 	//{{{ Text methods
 
-	//{{{ getLeadingWhiteSpace() method
-	/**
-	 * Returns the number of leading white space characters in the
-	 * specified string.
-	 * @param str The string
-	 * @deprecated use {@link org.gjt.sp.util.StandardUtilities#getLeadingWhiteSpace(String)}
-	 */
-	@Deprecated
-	public static int getLeadingWhiteSpace(String str)
-	{
-		return StandardUtilities.getLeadingWhiteSpace(str);
-	} //}}}
-
-	//{{{ getTrailingWhiteSpace() method
-	/**
-	 * Returns the number of trailing whitespace characters in the
-	 * specified string.
-	 * @param str The string
-	 * @since jEdit 2.5pre5
-	 * @deprecated use {@link org.gjt.sp.util.StandardUtilities#getTrailingWhiteSpace(String)}
-	 */
-	@Deprecated
-	public static int getTrailingWhiteSpace(String str)
-	{
-		return StandardUtilities.getTrailingWhiteSpace(str);
-	} //}}}
-
-	//{{{ getLeadingWhiteSpaceWidth() method
-	/**
-	 * Returns the width of the leading white space in the specified
-	 * string.
-	 * @param str The string
-	 * @param tabSize The tab size
-	 * @deprecated use {@link org.gjt.sp.util.StandardUtilities#getLeadingWhiteSpace(String)}
-	 */
-	@Deprecated
-	public static int getLeadingWhiteSpaceWidth(String str, int tabSize)
-	{
-		return StandardUtilities.getLeadingWhiteSpaceWidth(str, tabSize);
-	} //}}}
-
-	//{{{ getVirtualWidth() method
-	/**
-	 * Returns the virtual column number (taking tabs into account) of the
-	 * specified offset in the segment.
-	 *
-	 * @param seg The segment
-	 * @param tabSize The tab size
-	 * @since jEdit 4.1pre1
-	 * @deprecated use {@link org.gjt.sp.util.StandardUtilities#getVirtualWidth(javax.swing.text.Segment, int)}
-	 */
-	@Deprecated
-	public static int getVirtualWidth(Segment seg, int tabSize)
-	{
-		return StandardUtilities.getVirtualWidth(seg, tabSize);
-	} //}}}
-
-	//{{{ getOffsetOfVirtualColumn() method
-	/**
-	 * Returns the array offset of a virtual column number (taking tabs
-	 * into account) in the segment.
-	 *
-	 * @param seg The segment
-	 * @param tabSize The tab size
-	 * @param column The virtual column number
-	 * @param totalVirtualWidth If this array is non-null, the total
-	 * virtual width will be stored in its first location if this method
-	 * returns -1.
-	 *
-	 * @return -1 if the column is out of bounds
-	 *
-	 * @since jEdit 4.1pre1
-	 * @deprecated use {@link org.gjt.sp.util.StandardUtilities#getVirtualWidth(javax.swing.text.Segment, int)}
-	 */
-	@Deprecated
-	public static int getOffsetOfVirtualColumn(Segment seg, int tabSize,
-					    int column, int[] totalVirtualWidth)
-	{
-		return StandardUtilities.getOffsetOfVirtualColumn(seg, tabSize, column, totalVirtualWidth);
-	} //}}}
-
-	//{{{ createWhiteSpace() methods
-	/**
-	 * Creates a string of white space with the specified length.<p>
-	 *
-	 * To get a whitespace string tuned to the current buffer's
-	 * settings, call this method as follows:
-	 *
-	 * <pre>myWhitespace = MiscUtilities.createWhiteSpace(myLength,
-	 *     (buffer.getBooleanProperty("noTabs") ? 0
-	 *     : buffer.getTabSize()));</pre>
-	 *
-	 * @param len The length
-	 * @param tabSize The tab size, or 0 if tabs are not to be used
-	 * @deprecated use {@link org.gjt.sp.util.StandardUtilities#createWhiteSpace(int, int)}
-	 */
-	@Deprecated
-	public static String createWhiteSpace(int len, int tabSize)
-	{
-		return StandardUtilities.createWhiteSpace(len,tabSize,0);
-	}
-
-	/**
-	 * Creates a string of white space with the specified length.<p>
-	 *
-	 * To get a whitespace string tuned to the current buffer's
-	 * settings, call this method as follows:
-	 *
-	 * <pre>myWhitespace = MiscUtilities.createWhiteSpace(myLength,
-	 *     (buffer.getBooleanProperty("noTabs") ? 0
-	 *     : buffer.getTabSize()));</pre>
-	 *
-	 * @param len The length
-	 * @param tabSize The tab size, or 0 if tabs are not to be used
-	 * @param start The start offset, for tab alignment
-	 * @since jEdit 4.2pre1
-	 * @deprecated use {@link org.gjt.sp.util.StandardUtilities#createWhiteSpace(int, int, int)}
-	 */
-	@Deprecated
-	public static String createWhiteSpace(int len, int tabSize, int start)
-	{
-		return StandardUtilities.createWhiteSpace(len, tabSize, start);
-	} //}}}
-
-	//{{{ globToRE() method
-	/**
-	 * Converts a Unix-style glob to a regular expression.<p>
-	 *
-	 * ? becomes ., * becomes .*, {aa,bb} becomes (aa|bb).
-	 * @param glob The glob pattern
-	 * @deprecated Use {@link org.gjt.sp.util.StandardUtilities#globToRE(String)}.
-	 */
-	@Deprecated
-	public static String globToRE(String glob)
-	{
-		return StandardUtilities.globToRE(glob);
-	} //}}}
-
 	//{{{ escapesToChars() method
 	/**
 	 * Converts "\n" and "\t" escapes in the specified string to
@@ -1111,121 +817,6 @@ public class MiscUtilities
 			}
 		}
 		return buf.toString();
-	} //}}}
-
-	//{{{ charsToEscapes() methods
-	/**
-	 * Escapes newlines, tabs, backslashes, and quotes in the specified
-	 * string.
-	 * @param str The string
-	 * @since jEdit 2.3pre1
-	 * @deprecated use {@link org.gjt.sp.util.StandardUtilities#charsToEscapes(String)}
-	 */
-	@Deprecated
-	public static String charsToEscapes(String str)
-	{
-		return StandardUtilities.charsToEscapes(str);
-	}
-
-	/**
-	 * Escapes the specified characters in the specified string.
-	 * @param str The string
-	 * @param toEscape Any characters that require escaping
-	 * @since jEdit 4.1pre3
-	 * @deprecated use {@link org.gjt.sp.util.StandardUtilities#charsToEscapes(String)}
-	 */
-	@Deprecated
-	public static String charsToEscapes(String str, String toEscape)
-	{
-		return StandardUtilities.charsToEscapes(str, toEscape);
-	} //}}}
-
-	//{{{ compareVersions() method
-	/**
-	 * @deprecated Call {@link StandardUtilities#compareStrings(String, String, boolean)} instead
-	 */
-	@Deprecated
-	public static int compareVersions(String v1, String v2)
-	{
-		return StandardUtilities.compareStrings(v1,v2,false);
-	} //}}}
-
-	//{{{ compareStrings() method
-	/**
-	 * Compares two strings.<p>
-	 *
-	 * Unlike <function>String.compareTo()</function>,
-	 * this method correctly recognizes and handles embedded numbers.
-	 * For example, it places "My file 2" before "My file 10".<p>
-	 *
-	 * @param str1 The first string
-	 * @param str2 The second string
-	 * @param ignoreCase If true, case will be ignored
-	 * @return negative If str1 &lt; str2, 0 if both are the same,
-	 * positive if str1 &gt; str2
-	 * @since jEdit 4.0pre1
-	 * @deprecated use {@link org.gjt.sp.util.StandardUtilities#compareStrings(String, String, boolean)}
-	 */
-	@Deprecated
-	public static int compareStrings(String str1, String str2, boolean ignoreCase)
-	{
-		return StandardUtilities.compareStrings(str1, str2, ignoreCase);
-	} //}}}
-
-	//{{{ stringsEqual() method
-	/**
-	 * @deprecated Call {@link StandardUtilities#objectsEqual(Object, Object)} instead.
-	 */
-	@Deprecated
-	public static boolean stringsEqual(String s1, String s2)
-	{
-		return StandardUtilities.objectsEqual(s1,s2);
-	} //}}}
-
-	//{{{ objectsEqual() method
-	/**
-	 * Returns if two strings are equal. This correctly handles null pointers,
-	 * as opposed to calling <code>o1.equals(o2)</code>.
-	 * @since jEdit 4.2pre1
-	 * @deprecated use {@link StandardUtilities#objectsEqual(Object, Object)}
-	 */
-	@Deprecated
-	public static boolean objectsEqual(Object o1, Object o2)
-	{
-		return StandardUtilities.objectsEqual(o1, o2);
-	} //}}}
-
-	//{{{ charsToEntities() method
-	/**
-	 * Converts &lt;, &gt;, &amp; in the string to their HTML entity
-	 * equivalents.
-	 * @param str The string
-	 * @since jEdit 4.2pre1
-	 * @deprecated	Use {@link org.gjt.sp.util.XMLUtilities#charsToEntities(String, boolean)}.
-	 */
-	@Deprecated
-	public static String charsToEntities(String str)
-	{
-		return XMLUtilities.charsToEntities(str,false);
-	} //}}}
-
-	//{{{ formatFileSize() method
-	@Deprecated
-	public static final DecimalFormat KB_FORMAT = new DecimalFormat("#.# kB");
-	@Deprecated
-	public static final DecimalFormat MB_FORMAT = new DecimalFormat("#.# MB");
-
-	/**
-	 * Formats the given file size into a nice string (123 Bytes, 10.6 kB,
-	 * 1.2 MB).
-	 * @param length The size
-	 * @since jEdit 4.2pre1
-	 * @deprecated use {@link org.gjt.sp.util.StandardUtilities#formatFileSize(long)} 
-	 */
-	@Deprecated
-	public static String formatFileSize(long length)
-	{
-		return StandardUtilities.formatFileSize(length);
 	} //}}}
 
 	//{{{ getLongestPrefix() methods
@@ -1308,132 +899,6 @@ loop:		for(;;)
 	} //}}}
 
 	//}}}
-
-	//{{{ quicksort() deprecated methods
-	/**
-	 * Sorts the specified array. Equivalent to calling
-	 * <code>Arrays.sort()</code>.
-	 * @param obj The array
-	 * @param compare Compares the objects
-	 * @since jEdit 4.0pre4
-	 * @deprecated use <code>Arrays.sort()</code>
-	 */
-	@Deprecated
-	public static void quicksort(Object[] obj, Comparator compare)
-	{
-		Arrays.sort(obj,compare);
-	}
-
-
-	/**
-	 * Sorts the specified vector.
-	 * @param vector The vector
-	 * @param compare Compares the objects
-	 * @since jEdit 4.0pre4
-	 * @deprecated <code>Collections.sort()</code>
-	 */
-	@Deprecated
-	public static void quicksort(Vector vector, Comparator compare)
-	{
-		Collections.sort(vector,compare);
-	}
-
-	/**
-	 * Sorts the specified list.
-	 * @param list The list
-	 * @param compare Compares the objects
-	 * @since jEdit 4.0pre4
-	 * @deprecated <code>Collections.sort()</code>
-	 */
-	@Deprecated
-	public static void quicksort(List list, Comparator compare)
-	{
-		Collections.sort(list,compare);
-	}
-
-	/**
-	 * Sorts the specified array. Equivalent to calling
-	 * <code>Arrays.sort()</code>.
-	 * @param obj The array
-	 * @param compare Compares the objects
-	 * @deprecated use <code>Arrays.sort()</code>
-	 */
-	@Deprecated
-	public static void quicksort(Object[] obj, Compare compare)
-	{
-		Arrays.sort(obj,compare);
-	}
-
-	/**
-	 * Sorts the specified vector.
-	 * @param vector The vector
-	 * @param compare Compares the objects
-	 * @deprecated <code>Collections.sort()</code>
-	 */
-	@Deprecated
-	public static void quicksort(Vector vector, Compare compare)
-	{
-		Collections.sort(vector,compare);
-	} //}}}
-
-	//{{{ Compare deprecated interface
-	/**
-	 * An interface for comparing objects. This is a hold-over from
-	 * they days when jEdit had its own sorting API due to JDK 1.1
-	 * compatibility requirements. Use <code>java.util.Comparator</code>
-	 * instead.
-	 * @deprecated
-	 */
-	@Deprecated
-	public interface Compare extends Comparator
-	{
-		int compare(Object obj1, Object obj2);
-	} //}}}
-
-	//{{{ StringCompare deprecated class
-	/**
-	 * Compares strings.
-	 * @deprecated use {@link org.gjt.sp.util.StandardUtilities.StringCompare}
-	 */
-	@Deprecated
-	public static class StringCompare implements Compare
-	{
-		public int compare(Object obj1, Object obj2)
-		{
-			return StandardUtilities.compareStrings(obj1.toString(),
-				obj2.toString(),false);
-		}
-	} //}}}
-
-	//{{{ StringICaseCompare deprecated class
-	/**
-	 * Compares strings ignoring case.
-	 * @deprecated use {@link org.gjt.sp.util.StandardUtilities.StringCompare}
-	 */
-	@Deprecated
-	public static class StringICaseCompare implements Comparator<Object>
-	{
-		public int compare(Object obj1, Object obj2)
-		{
-			return StandardUtilities.compareStrings(obj1.toString(), obj2.toString(), true);
-		}
-	} //}}}
-
-	//{{{ MenuItemCompare deprecated class
-	/**
-	 * Compares menu item labels.
-	 * @deprecated Replaced with {@link org.gjt.sp.jedit.menu.MenuItemTextComparator}
-	 */
-	@Deprecated
-	public static class MenuItemCompare implements Compare
-	{
-		private MenuItemTextComparator comparator = new MenuItemTextComparator();
-
-		public int compare(Object obj1, Object obj2)
-		{
-			return comparator.compare((JMenuItem)obj1, (JMenuItem)obj2);
-		}
-	} //}}}
 
 	//{{{ buildToVersion() method
 	/**
@@ -1628,17 +1093,6 @@ loop:		for(;;)
 	//{{{ getEncodings() methods
 	/**
 	 * Returns a list of supported character encodings.
-	 * @since jEdit 4.2pre5
-	 * @deprecated See #getEncodings(boolean)
-	 */
-	@Deprecated
-	public static String[] getEncodings()
-	{
-		return getEncodings(false);
-	}
-
-	/**
-	 * Returns a list of supported character encodings.
 	 * @since jEdit 4.3pre5
 	 * @param getSelected Whether to return just the selected encodings or all.
 	 */
@@ -1668,34 +1122,6 @@ loop:		for(;;)
 		return s.toString();
 	} //}}}
 
-	//{{{ parseXML() method
-	/**
-	 * Convenience method for parsing an XML file.
-	 *
-	 * @return Whether any error occured during parsing.
-	 * @since jEdit 4.3pre5
-	 * @deprecated Use {@link XMLUtilities#parseXML(InputStream,DefaultHandler)}.
-	 */
-	@Deprecated
-	public static boolean parseXML(InputStream in, DefaultHandler handler)
-		throws IOException
-	{
-		return XMLUtilities.parseXML(in, handler);
-	} //}}}
-
-	//{{{ resolveEntity() method
-	/**
-	 * Tries to find the given systemId in the context of the given
-	 * class.
-	 *
-	 * @deprecated Use {@link XMLUtilities#findEntity(String,String,Class)}.
-	 */
-	@Deprecated
-	public static InputSource findEntity(String systemId, String test, Class where)
-	{
-		return XMLUtilities.findEntity(systemId, test, where);
-	} //}}}
-	
 	//{{{ Private members
 	private MiscUtilities() {}
 

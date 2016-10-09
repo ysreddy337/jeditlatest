@@ -24,7 +24,6 @@ package org.gjt.sp.jedit.io;
 
 //{{{ Imports
 import javax.swing.JOptionPane;
-import javax.swing.SwingUtilities;
 import java.awt.Component;
 import java.awt.Frame;
 import java.io.IOException;
@@ -50,7 +49,7 @@ import org.gjt.sp.util.StandardUtilities;
  * {@link #waitForRequests()}.
  *
  * @author Slava Pestov
- * @version $Id: VFSManager.java 18333 2010-08-12 08:44:46Z kpouer $
+ * @version $Id: VFSManager.java 18947 2010-11-09 07:50:33Z kpouer $
  */
 public class VFSManager
 {
@@ -71,8 +70,7 @@ public class VFSManager
 		JARClassLoader classLoader = new JARClassLoader();
 		for(int i = 0; i < ioThreadPool.getThreadCount(); i++)
 		{
-			ioThreadPool.getThread(i).setContextClassLoader(
-				classLoader);
+			ioThreadPool.getThread(i).setContextClassLoader(classLoader);
 		}
 	} //}}}
 
@@ -107,21 +105,6 @@ public class VFSManager
 		return urlVFS;
 	} //}}}
 
-	//{{{ getVFSByName() method
-	/**
-	 * @deprecated Use <code>getVFSForProtocol()</code> instead.
-	 */
-	@Deprecated
-	public static VFS getVFSByName(String name)
-	{
-		// in new api, protocol always equals name
-		VFS vfs = (VFS)ServiceManager.getService(SERVICE,name);
-		if(vfs == null)
-			return vfsHash.get(name);
-		else
-			return vfs;
-	} //}}}
-
 	//{{{ getVFSForProtocol() method
 	/**
 	 * Returns the VFS for the specified protocol.
@@ -135,8 +118,6 @@ public class VFSManager
 		else
 		{
 			VFS vfs = (VFS)ServiceManager.getService(SERVICE,protocol);
-			if(vfs == null)
-				vfs = protocolHash.get(protocol);
 
 			if(vfs != null)
 				return vfs;
@@ -159,31 +140,6 @@ public class VFSManager
 			return fileVFS;
 	} //}}}
 
-	//{{{ registerVFS() method
-	/**
-	 * @deprecated Write a <code>services.xml</code> file instead;
-	 * see {@link org.gjt.sp.jedit.ServiceManager}.
-	 */
-	@Deprecated
-	public static void registerVFS(String protocol, VFS vfs)
-	{
-		Log.log(Log.DEBUG,VFSManager.class,"Registered "
-			+ vfs.getName() + " filesystem for "
-			+ protocol + " protocol");
-		vfsHash.put(vfs.getName(),vfs);
-		protocolHash.put(protocol,vfs);
-	} //}}}
-
-	//{{{ getFilesystems() method
-	/**
-	 * @deprecated Use <code>getVFSs()</code> instead.
-	 */
-	@Deprecated
-	public static Enumeration<VFS> getFilesystems()
-	{
-		return vfsHash.elements();
-	} //}}}
-
 	//{{{ getVFSs() method
 	/**
 	 * Returns a list of all registered filesystems.
@@ -202,9 +158,6 @@ public class VFSManager
 				returnValue.add(newAPI[i]);
 			}
 		}
-		Enumeration<String> oldAPI = vfsHash.keys();
-		while(oldAPI.hasMoreElements())
-			returnValue.add(oldAPI.nextElement());
 		return returnValue.toArray(new String[returnValue.size()]);
 	} //}}}
 
@@ -254,6 +207,12 @@ public class VFSManager
 	 * Executes the specified runnable in the AWT thread once all
 	 * pending I/O requests are complete.
 	 * @since jEdit 2.5pre1
+	 * @deprecated Using that method, when you run a task in AWT Thread,
+	 * it will wait for all background task causing some unwanted delays.
+	 * If you need calling a task after a background work, please add your
+	 * runnable to the EDT thread yourself at the end of the background task
+	 * @see org.gjt.sp.util.ThreadUtilities#runInDispatchThread(Runnable)
+	 * @see org.gjt.sp.util.ThreadUtilities#runInDispatchThreadAndWait(Runnable)
 	 */
 	@Deprecated
 	public static void runInAWTThread(Runnable run)
@@ -265,6 +224,10 @@ public class VFSManager
 	/**
 	 * Executes the specified runnable in one of the I/O threads.
 	 * @since jEdit 2.6pre2
+	 * @deprecated You should not use this method, this threadpool
+	 * links the AWT Threads and Work threads.
+	 * @see org.gjt.sp.util.ThreadUtilities#runInBackground(org.gjt.sp.util.Task)
+	 * @see org.gjt.sp.util.ThreadUtilities#runInBackground(Runnable)
 	 */
 	@Deprecated
 	public static void runInWorkThread(Runnable run)
@@ -283,42 +246,6 @@ public class VFSManager
 	{
 		Log.log(Log.ERROR,VFSManager.class,e);
 		VFSManager.error(comp,path,"ioerror",new String[] { e.toString() });
-	} //}}}
-
-	//{{{ error() method
-	/**
-	 * @deprecated Call the other <code>error()</code> method instead.
-	 */
-	@Deprecated
-	public static void error(final Component comp, final String error, final Object[] args)
-	{
-		// if we are already in the AWT thread, take a shortcut
-		if(SwingUtilities.isEventDispatchThread())
-		{
-			GUIUtilities.error(comp,error,args);
-			return;
-		}
-
-		// the 'error' chicanery ensures that stuff like:
-		// VFSManager.waitForRequests()
-		// if(VFSManager.errorOccurred())
-		//         ...
-		// will work (because the below runnable will only be
-		// executed in the next event)
-		VFSManager.error = true;
-
-		runInAWTThread(new Runnable()
-		{
-			public void run()
-			{
-				VFSManager.error = false;
-
-				if(comp == null || !comp.isShowing())
-					GUIUtilities.error(null,error,args);
-				else
-					GUIUtilities.error(comp,error,args);
-			}
-		});
 	} //}}}
 
 	//{{{ error() method
@@ -451,8 +378,6 @@ public class VFSManager
 	private static WorkThreadPool ioThreadPool;
 	private static VFS fileVFS;
 	private static VFS urlVFS;
-	private static final Hashtable<String, VFS> vfsHash;
-	private static final Map<String, VFS> protocolHash;
 	private static boolean error;
 	private static final Object errorLock = new Object();
 	private static final Vector<ErrorListDialog.ErrorEntry> errors;
@@ -466,8 +391,6 @@ public class VFSManager
 		errors = new Vector<ErrorListDialog.ErrorEntry>();
 		fileVFS = new FileVFS();
 		urlVFS = new UrlVFS();
-		vfsHash = new Hashtable<String, VFS>();
-		protocolHash = new Hashtable<String, VFS>();
 		vfsUpdates = new ArrayList<VFSUpdate>(10);
 	} //}}}
 

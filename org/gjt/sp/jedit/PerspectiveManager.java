@@ -22,9 +22,12 @@
 
 package org.gjt.sp.jedit;
 
+import java.io.StreamTokenizer;
+import java.io.StringReader;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.LinkedList;
+import java.util.Stack;
 
 import org.gjt.sp.util.IOUtilities;
 import org.gjt.sp.util.Log;
@@ -37,7 +40,7 @@ import org.xml.sax.helpers.DefaultHandler;
  * Manages persistence of open buffers and views across jEdit sessions.
  * @since jEdit 4.2pre1
  * @author Slava Pestov
- * @version $Id: PerspectiveManager.java 19168 2010-12-29 23:24:51Z ezust $
+ * @version $Id: PerspectiveManager.java 20108 2011-10-18 12:16:38Z evanpw $
  */
 public class PerspectiveManager
 {
@@ -123,17 +126,13 @@ public class PerspectiveManager
 		if(jEdit.getBufferCount() == 0)
 			return;
 
-		boolean restoreFiles = jEdit.getBooleanProperty("restore", true);
 		Buffer[] buffers = jEdit.getBuffers();
 		Collection<Buffer> savedBuffers = new LinkedList<Buffer>();
-		if (restoreFiles) 
+		for (Buffer buffer: buffers)
 		{
-			for (Buffer buffer: buffers)
+			if (!buffer.isNewFile())
 			{
-				if (!buffer.isNewFile())
-				{
-					savedBuffers.add(buffer);
-				}
+				savedBuffers.add(buffer);
 			}
 		}
 
@@ -199,13 +198,8 @@ public class PerspectiveManager
 
 				out.write("<PANES>");
 				out.write(lineSep);
-				// save the split config only if the user has
-				// elected to restore files on start up.
-				if (restoreFiles)
-				{					
-					out.write(XMLUtilities.charsToEntities(
-						config.splitConfig,false));
-				}
+				out.write(XMLUtilities.charsToEntities(
+					config.splitConfig,false));
 				out.write(lineSep);
 				out.write("</PANES>");
 				out.write(lineSep);
@@ -249,6 +243,7 @@ public class PerspectiveManager
 	//{{{ Private members
 	private static boolean dirty, enabled = true;
 	private static SettingsXML perspectiveXML;
+	//}}}
 
 	//{{{ Class initializer
 	static
@@ -267,11 +262,13 @@ public class PerspectiveManager
 		private StringBuilder charData;
 		View.ViewConfig config;
 		boolean restoreFiles;
+		boolean restoreSplits;
 		String autoReload, autoReloadDialog;
 		
 		PerspectiveHandler(boolean restoreFiles)
 		{
 			this.restoreFiles = restoreFiles;
+			restoreSplits = jEdit.getBooleanProperty("restore.splits", true);
 			config = new View.ViewConfig();
 			charData = new StringBuilder();
 			config.docking = View.getDockingFrameworkProvider().createDockingLayout();
@@ -351,9 +348,13 @@ public class PerspectiveManager
 					}
 				}
 			}
-			else if(name.equals("PANES") && restoreFiles)
+			else if(name.equals("PANES"))
 			{
-				config.splitConfig = charData.toString();
+				SplitConfigParser parser = new SplitConfigParser(charData.toString());
+				parser.setIncludeSplits(restoreSplits);
+				parser.setIncludeFiles(restoreFiles);
+				parser.setIncludeRemoteFiles(jEdit.getBooleanProperty("restore.remote"));
+				config.splitConfig = parser.parse();
 			}
 			else if(name.equals("VIEW"))
 			{
@@ -372,7 +373,7 @@ public class PerspectiveManager
 		{
 			charData.append(ch,start,length);
 		}
-	} //}}}
-
+		
+	}
 	//}}}
 }

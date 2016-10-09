@@ -30,6 +30,9 @@ import org.gjt.sp.jedit.TextUtilities;
 import org.gjt.sp.jedit.indent.IndentAction;
 import org.gjt.sp.jedit.indent.IndentRule;
 import org.gjt.sp.jedit.syntax.*;
+import org.gjt.sp.jedit.textarea.ColumnBlock;
+import org.gjt.sp.jedit.textarea.ColumnBlockLine;
+import org.gjt.sp.jedit.textarea.Node;
 import org.gjt.sp.jedit.textarea.TextArea;
 import org.gjt.sp.util.IntegerArray;
 import org.gjt.sp.util.Log;
@@ -63,7 +66,7 @@ import java.util.regex.Pattern;
  * </ul>
  *
  * @author Slava Pestov
- * @version $Id: JEditBuffer.java 19873 2011-08-30 05:16:57Z ezust $
+ * @version $Id: JEditBuffer.java 20422 2011-11-25 17:23:30Z ezust $
  *
  * @since jEdit 4.3pre3
  */
@@ -421,13 +424,12 @@ public class JEditBuffer
 	 */
 	public int getPriorNonEmptyLine(int lineIndex)
 	{
-		int returnValue = -1;
-
 		if (!mode.getIgnoreWhitespace())
 		{
 			return lineIndex - 1;
 		}
 
+		int returnValue = -1;
 		for(int i = lineIndex - 1; i >= 0; i--)
 		{
 			Segment seg = new Segment();
@@ -493,6 +495,23 @@ public class JEditBuffer
 	 */
 	public void getLineText(int line, Segment segment)
 	{
+		getLineText(line, 0, segment);
+	}
+
+	/**
+	 * Returns the specified line from the starting point passed in relativeStartOffset  in a <code>Segment</code>.<p>
+	 *
+	 * Using a <classname>Segment</classname> is generally more
+	 * efficient than using a <classname>String</classname> because it
+	 * results in less memory allocation and array copying.<p>
+	 *
+	 * This method is thread-safe.
+	 *
+	 * @param line The line
+	 * @since jEdit 4.0pre1
+	 */
+	public void getLineText(int line,int relativeStartOffset, Segment segment)
+	{
 		if(line < 0 || line >= lineMgr.getLineCount())
 			throw new ArrayIndexOutOfBoundsException(line);
 
@@ -500,17 +519,23 @@ public class JEditBuffer
 		{
 			readLock();
 
-			int start = line == 0 ? 0 : lineMgr.getLineEndOffset(line - 1);
+			int start = (line == 0 ? 0 : lineMgr.getLineEndOffset(line - 1)); 
 			int end = lineMgr.getLineEndOffset(line);
-
-			getText(start,end - start - 1,segment);
+			if((start+relativeStartOffset)>end)
+			{
+				throw new IllegalArgumentException("This index is outside the line length (start+relativeOffset):"+start+" + "+relativeStartOffset+" > "+"endffset:"+end);
+			}
+			else
+			{	
+				getText(start+relativeStartOffset,end - start -relativeStartOffset- 1,segment);
+			}	
 		}
 		finally
 		{
 			readUnlock();
 		}
 	} //}}}
-
+	
 	//{{{ getLineSegment() method
 	/**
 	 * Returns the text on the specified line.
@@ -814,23 +839,23 @@ public class JEditBuffer
 
 			for(int i = 0; i < lines.length; i++)
 			{
-				int pos, lineStart, lineEnd, tail;
 				Segment seg = new Segment();
 				getLineText(lines[i],seg);
 
 				// blank line
 				if (seg.count == 0) continue;
 
-				lineStart = seg.offset;
-				lineEnd = seg.offset + seg.count - 1;
+				int lineStart = seg.offset;
+				int lineEnd = seg.offset + seg.count - 1;
 
+				int pos;
 				for (pos = lineEnd; pos >= lineStart; pos--)
 				{
 					if (!Character.isWhitespace(seg.array[pos]))
 						break;
 				}
 
-				tail = lineEnd - pos;
+				int tail = lineEnd - pos;
 
 				// no whitespace
 				if (tail == 0) continue;
@@ -967,16 +992,6 @@ public class JEditBuffer
 	} //}}}
 
 	//{{{ indentLine() methods
-	/**
-	 * @deprecated Use {@link #indentLine(int,boolean)} instead.
-	 */
-	 @Deprecated
-	 public boolean indentLine(int lineIndex, boolean canIncreaseIndent,
-		boolean canDecreaseIndent)
-	{
-		return indentLine(lineIndex,canDecreaseIndent);
-	}
-
 	/**
 	 * Indents the specified line.
 	 * @param lineIndex The line number to indent
@@ -1282,18 +1297,6 @@ loop:		for(int i = 0; i < seg.count; i++)
 	/**
 	 * Should inserting this character trigger a re-indent of
 	 * the current line?
-	 * @since jEdit 4.3pre2
-	 * @deprecated Use #isElectricKey(char,int)
-	 */
-	@Deprecated
-	public boolean isElectricKey(char ch)
-	{
-		return mode.isElectricKey(ch);
-	}
-
-	/**
-	 * Should inserting this character trigger a re-indent of
-	 * the current line?
 	 * @since jEdit 4.3pre9
 	 */
 	public boolean isElectricKey(char ch, int line)
@@ -1328,7 +1331,7 @@ loop:		for(int i = 0; i < seg.count; i++)
 
 		int firstInvalidLineContext = lineMgr.getFirstInvalidLineContext();
 		int start;
-		if(textMode || firstInvalidLineContext == -1)
+		if(contextInsensitive || firstInvalidLineContext == -1)
 		{
 			start = lineIndex;
 		}
@@ -1349,7 +1352,7 @@ loop:		for(int i = 0; i < seg.count; i++)
 			oldContext = lineMgr.getLineContext(i);
 
 			TokenMarker.LineContext prevContext = (
-				(i == 0 || textMode) ? null
+				(i == 0 || contextInsensitive) ? null
 				: lineMgr.getLineContext(i - 1)
 			);
 
@@ -1828,6 +1831,21 @@ loop:		for(int i = 0; i < seg.count; i++)
 	 */
 	public void setMode(Mode mode)
 	{
+		setMode(mode, false);
+	}
+
+	/**
+	 * Sets this buffer's edit mode. Note that calling this before a buffer
+	 * is loaded will have no effect; in that case, set the "mode" property
+	 * to the name of the mode. A bit inelegant, I know...
+	 * @param mode The mode
+	 * @param forceContextInsensitive true if you want to force the buffer to be
+	 * insensitive to the context. Careful it can break syntax highlight. Default
+	 * value is false
+	 * @since jEdit 4.5pre1
+	 */
+	public void setMode(Mode mode, boolean forceContextInsensitive)
+	{
 		/* This protects against stupid people (like me)
 		 * doing stuff like buffer.setMode(jEdit.getMode(...)); */
 		if(mode == null)
@@ -1835,13 +1853,14 @@ loop:		for(int i = 0; i < seg.count; i++)
 
 		this.mode = mode;
 
-		textMode = "text".equals(mode.getName());
+		contextInsensitive = forceContextInsensitive ||
+			mode.getBooleanProperty("contextInsensitive");
 
 		setTokenMarker(mode.getTokenMarker());
 
 		resetCachedProperties();
 		propertiesChanged();
-	} //}}}
+	}//}}}
 
 	//}}}
 
@@ -2350,12 +2369,44 @@ loop:		for(int i = 0; i < seg.count; i++)
 		return undoMgr.canRedo();
 	} //}}}
 
+	//{{{ isContextInsensitive() method
+	/**
+	 * Returns true if the buffer highlight is
+	 * not sensitive to the context.
+	 * @return true if the highlight is insensitive to
+	 * the context
+	 * @since jEdit 4.5pre1
+	 */
+	public boolean isContextInsensitive()
+	{
+		return contextInsensitive;
+	}//}}}
+
+	//{{{ setContextInsensitive() method
+	/**
+	 * Set the buffer to be insensitive to the context during
+	 * highlight.
+	 * @param contextInsensitive the new contextInsensitive value
+	 * the context
+	 * @since jEdit 4.5pre1
+	 */
+	public void setContextInsensitive(boolean contextInsensitive)
+	{
+		this.contextInsensitive = contextInsensitive;
+	}//}}}
+
 	//}}}
 
 	//{{{ Protected members
-
+	/**
+	 * The edit mode of the buffer.
+	 */
 	protected Mode mode;
-	protected boolean textMode;
+	/**
+	 * If true the syntax highlight is context insensitive.
+	 * To highlight a line we don't keed the context of the previous line.
+	 */
+	protected boolean contextInsensitive;
 	protected UndoManager undoMgr;
 
 	//{{{ Event firing methods
@@ -2659,13 +2710,13 @@ loop:		for(int i = 0; i < seg.count; i++)
 	//}}}
 
 	//{{{ Private members
-	private List<Listener> bufferListeners;
+	private final List<Listener> bufferListeners;
 	private final ReentrantReadWriteLock lock;
-	private ContentManager contentMgr;
-	private LineManager lineMgr;
-	private PositionManager positionMgr;
+	private final ContentManager contentMgr;
+	private final LineManager lineMgr;
+	private final PositionManager positionMgr;
 	private FoldHandler foldHandler;
-	private IntegerArray integerArray;
+	private final IntegerArray integerArray;
 	private TokenMarker tokenMarker;
 	private boolean undoInProgress;
 	private boolean dirty;
@@ -2676,6 +2727,8 @@ loop:		for(int i = 0; i < seg.count; i++)
 	private boolean io;
 	private final Map<Object, PropValue> properties;
 	private final Object propertyLock;
+	public boolean elasticTabstopsOn = false; 
+	private ColumnBlock columnBlock;
 
 	//{{{ getListener() method
 	private BufferListener getListener(int index)
@@ -2741,12 +2794,17 @@ loop:		for(int i = 0; i < seg.count; i++)
 				}
 				if(name != null)
 				{
-					// use the low-level property setting code
-					// so that if we have a buffer-local
-					// property with the same value as a default,
-					// later changes in the default don't affect
-					// the buffer-local property
-					properties.put(name,new PropValue(buf.toString(),false));
+					// encoding mustn't be set this way as it must
+					// be equal to encoding used to load or save the
+					// file.
+					if (!name.equals(ENCODING)) {
+						// use the low-level property setting code
+						// so that if we have a buffer-local
+						// property with the same value as a default,
+						// later changes in the default don't affect
+						// the buffer-local property
+						properties.put(name,new PropValue(buf.toString(),false));
+					}
 					name = null;
 				}
 				buf.setLength(0);
@@ -2787,6 +2845,7 @@ loop:		for(int i = 0; i < seg.count; i++)
 				}
 			default:
 				buf.append(c);
+				escape = false;
 				break;
 			}
 		}
@@ -2804,5 +2863,93 @@ loop:		for(int i = 0; i < seg.count; i++)
 		return ModeProvider.instance.getMode(modeName).getIndentRules();
 	} //}}}
 
+	//{{{ updateColumnBlocks() method
+	public void updateColumnBlocks(int startLine,int endLine,int startColumn,Node parent)
+	{
+		if((parent!=null)&&(startLine>=0)&&(endLine>=0)&&(startLine<=endLine))
+		{	
+			int currentLine = startLine;
+			int colBlockWidth=0;
+			Vector<ColumnBlockLine> columnBlockLines = new Vector<ColumnBlockLine>();
+			//while(currentLine<=endLine)
+			for(int ik=startLine-((ColumnBlock)parent).getStartLine();currentLine<=endLine;ik++)
+			{
+				Segment seg = new Segment();
+				int actualStart =  startColumn ;
+				if(((ColumnBlock)parent).getLines().size()>0)
+				{
+					ColumnBlockLine line = ((ColumnBlockLine)(((ColumnBlock)parent).getLines().elementAt(ik)));
+					if(currentLine!=line.getLine())
+					{
+						throw new IllegalArgumentException();
+					}
+					actualStart = line.getColumnEndIndex()+1;
+				}
+				getLineText(currentLine, actualStart, seg);
+				int tabPos = getTabStopPosition(seg);
+				if(tabPos>=0)
+				{
+					columnBlockLines.add(new ColumnBlockLine(currentLine, actualStart, actualStart+tabPos));
+					if( tabPos>colBlockWidth)
+					{
+						colBlockWidth =  tabPos;
+					}
+				}
+				if((( tabPos<0)&&(columnBlockLines.size()>0))||((columnBlockLines.size()>0)&&(currentLine==endLine)))
+				{
+					ColumnBlock  block = new ColumnBlock(this,((ColumnBlockLine)columnBlockLines.elementAt(0)).getLine(),startColumn+colBlockWidth,((ColumnBlockLine)columnBlockLines.elementAt(columnBlockLines.size()-1)).getLine(),startColumn+colBlockWidth);
+					block.setLines(columnBlockLines);
+					block.setParent(parent);
+					block.setWidth(colBlockWidth);
+					block.setTabSizeDirtyStatus(true,false);
+					//block.populateTabSizes();
+					parent.addChild(block);
+					colBlockWidth=0;
+					columnBlockLines = new Vector<ColumnBlockLine>();
+					updateColumnBlocks(block.getStartLine(), block.getEndLine(), startColumn+block.getColumnWidth()+1, block);
+				}
+				currentLine++;
+			}
+		}
+		else
+		{
+			throw new IllegalArgumentException();
+		}
+	}
 	//}}}
+	
+	//{{{ getTabStopPosition() method
+	public int getTabStopPosition(Segment seg )
+	{
+		for (int i = 0; i < seg.count; i++)
+		{
+			if(seg.array[i+seg.offset]=='\t')
+			{
+				return i;
+			}
+		}
+		return -5;
+	}
+	 //}}}
+	
+	public final String columnBlockLock = "columnBlockLock";
+	
+	//{{{ indentUsingElasticTabstops() method
+	public void indentUsingElasticTabstops()
+	{
+		synchronized(columnBlockLock)
+		{
+			columnBlock = new ColumnBlock(this,0,getLineCount()-1);
+			updateColumnBlocks(0, lineMgr.getLineCount()-1, 0, columnBlock);
+		}	
+	}
+	 //}}}
+	
+	//{{{ getColumnBlock() method
+	public ColumnBlock getColumnBlock()
+	{
+		return columnBlock;
+	}
+	 //}}}
+//}}}	
 }

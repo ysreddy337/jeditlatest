@@ -45,7 +45,7 @@ import org.gjt.sp.util.*;
  * Wraps the VFS browser in a modal dialog.
  * Shows up when "File-Open" is used. 
  * @author Slava Pestov
- * @version $Id: VFSFileChooserDialog.java 17393 2010-02-27 12:13:39Z k_satoda $
+ * @version $Id: VFSFileChooserDialog.java 20108 2011-10-18 12:16:38Z evanpw $
  */
 public class VFSFileChooserDialog extends EnhancedDialog
 {
@@ -88,6 +88,7 @@ public class VFSFileChooserDialog extends EnhancedDialog
 		_init(view,path,mode,multipleSelection,autoshow);
 	} //}}}
 
+	//{{{ VFSFileChooserDialog constructor
 	/**
 	 * Constructs a new VFSFileChooserDialog.
 	 * This version can specify a Frame as the parent instead
@@ -101,7 +102,6 @@ public class VFSFileChooserDialog extends EnhancedDialog
 		setFocusTraversalPolicy(new LayoutFocusTraversalPolicy());		
 		_init(view,path,mode,multipleSelection,autoshow);
 	} //}}}
-
 
 	//{{{ getBrowser() method
 	/**

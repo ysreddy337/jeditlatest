@@ -1,40 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<sect1 id="usage">
+<section id="usage">
     <title>Usage Questions</title>
 
     <!-- jEdit buffer-local properties:                      -->
-
     <!-- :indentSize=4:noTabs=false:tabSize=4: -->
-
     <!-- :xml.root=faq.xml:                                  -->
-
     <!-- jEdit FAQ                                           -->
-
-    <!-- Copyright (C) 2003 John Gellene, Kris Kopicki       -->
 
     <para>This section deals general usage of jEdit, including
     customisation.</para>
 
     <qandaset defaultlabel="qanda">
         <!--********************************************************* Abrevs -->
-
         <qandadiv id="text-abbrev">
             <title>Abbreviations</title>
-
             <qandaentry>
                 <question id="abbrevs-create-onfly">
                     <para>How can I create abbreviations <quote>on the
                     fly</quote> as I type?</para>
                 </question>
-
                 <answer>
                     <para>Type the form of abbreviation you wish to use, then
                     without pressing the <keycap>SPACE</keycap> key, press
                     <keycombo action="simul">
-                            <keycap>CTRL</keycap>
-
-                            <keycap>;</keycap>
-                        </keycombo>. A dialog will appear for entering text that
+                    <keycap>CTRL</keycap> <keycap>;</keycap> </keycombo>.
+                    A dialog will appear for entering text that
                     goes before and after the editing caret. For example, you
                     can insert an opening HTML or XML tag before the cursor and
                     its corresponding closing tag after the cursor. Use the
@@ -466,6 +456,20 @@
         <qandadiv id="source-compile">
             <title>Compiling source code</title>
 
+			<qandaentry>
+                <question id="jedit-compile">
+                    <para>How do you set the classpath for compiling Java files in jEdit?</para>
+                </question>
+                <answer>
+                    <para>The classpath can be set from ProjectViewer's project properties
+                    on a per-project basis. The ClassPath plugin provides this option pane
+                    to ProjectViewer. JavaSideKick uses it for completion, and other Java
+                    plugins should also. At the time of writing, the JCompiler plugin needs
+                    to be updated to use it, for example.
+                    </para>
+                </answer>
+            </qandaentry>
+
             <qandaentry>
                 <question id="compile-java">
                     <para>How do I compile my Java source in JEdit?</para>
@@ -475,18 +479,16 @@
                     <para>There are a number of plugins that you can use to
                     compile Java source code. You can run a Java compiler on the
                     command line in the <quote>System</quote> shell of the
-                    <application>Console</application> plugin. If you are using
-                    the JCompiler plugin, you will have a
-                    <quote>JCompiler</quote> shell in the
-                    <application>Console</application> plugin, and you can run
-                    the <userinput>compile</userinput> command for the current
-                    file, or the <userinput>compilepkg</userinput> command on
-                    all of the current directory's source code files. You can
-                    also use the <quote>Ant</quote> commandos from the
-                    <application>Console</application> plugin or the
-                    <application>AntFarm</application> plugin to run complex
-                    builds on a project of source code files, using a
-                    <filename>build.xml</filename> file to specify build
+                    <application>Console</application> plugin. When JCompiler is updated,
+                    you can use that again. Many Java projects
+                    can be built with Apache Ant, and that is how we build jEdit.
+                    You can use the <quote>Ant</quote> commandos from the
+                    <application>Console</application> plugin to run ant from jEdit,
+                    and parse the error messages for ErrorList. Also, the
+                    <application>Antelope</application> or
+                    <application>AntFarm</application> plugins provide a more
+                    Eclipse-like GUI front-end for Apache Ant.
+                    Apache Ant uses a <filename>build.xml</filename> file to specify build
                     commands and dependencies.</para>
                 </answer>
             </qandaentry>
@@ -677,7 +679,16 @@ expand-all-folds.shortcut=C+q x
                     select the fonts used for various displayed items.</para>
                 </answer>
             </qandaentry>
-
+            <qandaentry>
+                <question id="antialiased-text-everywhere">
+                    <para>How can I get antialiased text everywhere? </para>
+                </question>
+                <answer>
+                   <para>For the text area, go to <guimenuitem>Global Options - TextArea - Anti Aliased Smooth Text</guimenuitem>. </para>
+                   <para>For the dockables, starting <command>java</command> with command line options <literal>"-Dawt.useSystemAAFontSettings=on" "-Dswing.aatext=true"</literal> will give you antialiased text everywhere else.
+                   You can add these options to the batch file or shell script line that starts jEdit.</para>
+			    </answer>
+            </qandaentry>
             <qandaentry>
                 <question id="settings-add-classpath">
                     <para>I want to add a directory to the classpath. I did this
@@ -712,4 +723,4 @@ expand-all-folds.shortcut=C+q x
             </qandaentry>
         </qandadiv>
     </qandaset>
-</sect1>
+</section>

@@ -62,7 +62,7 @@ import org.gjt.sp.util.Log;
  *
  * @author Slava Pestov
  * @author John Gellene (API documentation)
- * @version $Id: Registers.java 17641 2010-04-14 09:01:44Z kpouer $
+ * @version $Id: Registers.java 20697 2011-12-25 17:23:17Z k_satoda $
  */
 public class Registers
 {
@@ -323,17 +323,6 @@ public class Registers
 		}
 
 		HistoryModel.getModel("clipboard").addItem(selection);
-	} //}}}
-
-	private static void applyMode(Mode mode, JEditBuffer buffer)
-	{
-		if (mode != null &&
-			"text".equals(buffer.getMode().getName()) &&
-		!mode.equals(buffer.getMode()) &&
-		buffer.getLength() == 0)
-		{
-			buffer.setMode(mode);
-		}
 	}
 
 	/**
@@ -449,15 +438,24 @@ public class Registers
 
 		HistoryModel.getModel("clipboard").addItem(selection);
 	} //}}}
+	
+	private static void applyMode(Mode mode, JEditBuffer buffer)
+	{
+		if (mode != null &&
+			"text".equals(buffer.getMode().getName()) &&
+		!mode.equals(buffer.getMode()) &&
+		buffer.getLength() == 0)
+		{
+			buffer.setMode(mode);
+		}
+	}
 
 	private static String getTextFromTransferable(Transferable transferable, DataFlavor dataFlavor)
 	{
 		try
 		{
 			Object data = transferable.getTransferData(dataFlavor);
-			if (dataFlavor.getRepresentationClass().equals(String.class))
-				return (String) data;
-			return data.toString();
+			return stripEOLChars(data.toString());
 		}
 		catch (UnsupportedFlavorException e)
 		{
@@ -542,7 +540,7 @@ public class Registers
 		}
 		else
 		{
-			DefaultRegister defaultRegister = new DefaultRegister();
+			Register defaultRegister = new DefaultRegister();
 			defaultRegister.setTransferable(transferable);
 			setRegister(name, defaultRegister);
 		}
@@ -560,7 +558,7 @@ public class Registers
 
 		Register register = registers[name];
 		if(name == '$' || name == '%')
-			register.setValue("");
+			register.setTransferable(new StringSelection(""));
 		else
 		{
 			registers[name] = null;
@@ -694,6 +692,38 @@ public class Registers
 		}
 	} //}}}
 
+	//{{{ loadRegisters() method
+	private static String stripEOLChars(String selection) throws IOException
+	{
+		boolean trailingEOL = selection.endsWith("\n")
+				      || selection.endsWith(System.getProperty(
+			"line.separator"));
+
+		// Some Java versions return the clipboard
+		// contents using the native line separator,
+		// so have to convert it here
+		BufferedReader in = new BufferedReader(
+			new StringReader(selection));
+		StringBuilder buf = new StringBuilder(selection.length());
+		String line;
+		while((line = in.readLine()) != null)
+		{
+			// broken Eclipse workaround!
+			// 24 Febuary 2004
+			if(line.endsWith("\0"))
+			{
+				line = line.substring(0,
+						      line.length() - 1);
+			}
+			buf.append(line);
+			buf.append('\n');
+		}
+		// remove trailing \n
+		if(!trailingEOL && buf.length() != 0)
+			buf.setLength(buf.length() - 1);
+		return buf.toString();
+	}  //}}}
+
 	//}}}
 
 	//{{{ Inner classes
@@ -712,6 +742,9 @@ public class Registers
 
 		/**
 		 * Sets the register contents.
+		 * @deprecated use {@link #setTransferable(java.awt.datatransfer.Transferable)}
+		 * instead, for example
+		 * <code>setTransferable(new StringSelection(""))</code>
 		 */
 		@Deprecated
 		void setValue(String value);
@@ -738,9 +771,10 @@ public class Registers
 		/**
 		 * Sets the clipboard contents.
 		 */
+		@Override
 		public void setValue(String value)
 		{
-			StringSelection selection = new StringSelection(value);
+			Transferable selection = new StringSelection(value);
 			clipboard.setContents(selection,null);
 		}
 
@@ -773,33 +807,7 @@ public class Registers
 					.getContents(this).getTransferData(
 					DataFlavor.stringFlavor);
 
-				boolean trailingEOL = selection.endsWith("\n")
-					|| selection.endsWith(System.getProperty(
-					"line.separator"));
-
-				// Some Java versions return the clipboard
-				// contents using the native line separator,
-				// so have to convert it here
-				BufferedReader in = new BufferedReader(
-					new StringReader(selection));
-				StringBuilder buf = new StringBuilder();
-				String line;
-				while((line = in.readLine()) != null)
-				{
-					// broken Eclipse workaround!
-					// 24 Febuary 2004
-					if(line.endsWith("\0"))
-					{
-						line = line.substring(0,
-							line.length() - 1);
-					}
-					buf.append(line);
-					buf.append('\n');
-				}
-				// remove trailing \n
-				if(!trailingEOL && buf.length() != 0)
-					buf.setLength(buf.length() - 1);
-				return buf.toString();
+				return stripEOLChars(selection);
 			}
 			catch(Exception e)
 			{
@@ -808,11 +816,13 @@ public class Registers
 			}
 		}
 
+		@Override
 		public Transferable getTransferable()
 		{
 			return clipboard.getContents(this);
 		}
 
+		@Override
 		public void setTransferable(Transferable transferable)
 		{
 			clipboard.setContents(transferable, null);
@@ -844,9 +854,10 @@ public class Registers
 	{
 		private Transferable transferable;
 
+		@Override
 		public void setValue(String value)
 		{
-			this.transferable = new StringSelection(value);
+			transferable = new StringSelection(value);
 		}
 
 		@Override
@@ -872,31 +883,16 @@ public class Registers
 			return transferable.toString();
 		}
 
+		@Override
 		public Transferable getTransferable()
 		{
 			return transferable;
 		}
 
+		@Override
 		public void setTransferable(Transferable transferable)
 		{
 			this.transferable = transferable;
-		}
-	} //}}}
-
-	//{{{ StringRegister class
-	/**
-	 * Register that stores a string.
-	 */
-	@Deprecated
-	public static class StringRegister extends DefaultRegister
-	{
-		/**
-		 * Creates a new string register.
-		 * @param value The contents
-		 */
-		public StringRegister(String value)
-		{
-			setValue(value);
 		}
 	} //}}}
 

@@ -26,7 +26,7 @@ import javax.swing.text.Segment;
 /**
  * Contains utility functions used by the syntax highlighting code.
  * @since jEdit 4.2pre1
- * @version $Id: SyntaxUtilities.java 12504 2008-04-22 23:12:43Z ezust $
+ * @version $Id: SyntaxUtilities.java 19475 2011-03-22 12:04:35Z kpouer $
  * @author Slava Pestov
  */
 public class SyntaxUtilities
@@ -39,6 +39,8 @@ public class SyntaxUtilities
 	 * @param text The segment
 	 * @param offset The offset into the segment
 	 * @param match The character array to match
+	 * @return true if the subregion of the segment was
+	 * equals to the character array
 	 * @since jEdit 4.2pre1
 	 */
 	public static boolean regionMatches(boolean ignoreCase, Segment text,

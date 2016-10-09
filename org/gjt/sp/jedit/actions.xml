@@ -371,7 +371,7 @@
 	</CODE>
 </ACTION>
 
-<ACTION NAME="focus-on-textarea">
+<ACTION NAME="focus-textarea">
 	<CODE>
 		editPane.focusOnTextArea();
 	</CODE>
@@ -461,6 +461,15 @@
 	<CODE>
 		view.quickHyperSearch(true);
 	</CODE>
+</ACTION>
+
+<ACTION NAME="whole-word">
+	<CODE>
+		SearchAndReplace.setWholeWord(!SearchAndReplace.getWholeWord());
+	</CODE>
+	<IS_SELECTED>
+		SearchAndReplace.getWholeWord();
+	</IS_SELECTED>
 </ACTION>
 
 <ACTION NAME="ignore-case">
@@ -625,9 +634,28 @@
 	</CODE>
 </ACTION>
 
+<ACTION NAME="new-macro">
+	<CODE>
+		dialog = new VFSFileChooserDialog(view,
+			jEdit.getSettingsDirectory()+File.separator+"macros"+
+			File.separator+"New_Macro.bsh", VFSBrowser.SAVE_DIALOG,
+			false);
+		files = dialog.getSelectedFiles();
+		if (files == null || files.length != 1) return;
+		b = jEdit.newFile(view);
+		b.save(view, files[0]);
+	</CODE>
+</ACTION>
+
 <ACTION NAME="new-plain-view">
 	<CODE>
 		jEdit.newView(view,buffer,true);
+	</CODE>
+</ACTION>
+
+<ACTION NAME="new-view-copy">
+	<CODE>
+		jEdit.newView(view);
 	</CODE>
 </ACTION>
 
@@ -1549,6 +1577,16 @@
 <ACTION NAME="unsplit-current">
 	<CODE>
 		view.unsplitCurrent();
+	</CODE>
+</ACTION>
+
+<ACTION NAME="userFeedback">
+	<CODE>
+		import java.awt.Desktop;
+		if (Desktop.isDesktopSupported())
+		{
+			Desktop.getDesktop().browse(new URI("http://jEdit.uservoice.com"));
+		}
 	</CODE>
 </ACTION>
 

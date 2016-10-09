@@ -39,7 +39,7 @@ import javax.swing.tree.TreePath;
 
 /**
  * @author Slava Pestov
- * @version $Id: HyperSearchOperationNode.java 14798 2009-03-19 11:50:45Z shlomy $
+ * @version $Id: HyperSearchOperationNode.java 19386 2011-02-24 11:06:57Z kpouer $
  */
 public class HyperSearchOperationNode
 {
@@ -47,12 +47,14 @@ public class HyperSearchOperationNode
 	private final String searchString;
 	private List<DefaultMutableTreeNode> resultNodes;
 	private SearchMatcher searchMatcher;
+	private String noWordSep;
 	
 	//{{{ HyperSearchOperationNode constructor
 	public HyperSearchOperationNode(String searchString, SearchMatcher searchMatcher)
 	{
 		this.searchString = searchString;
 		this.searchMatcher = searchMatcher;
+		noWordSep = searchMatcher.getNoWordSep();
 	}//}}}
 	
 	//{{{ toString() method
@@ -224,6 +226,10 @@ public class HyperSearchOperationNode
 	//{{{ getSearchMatcher() method
 	public SearchMatcher getSearchMatcher()
 	{
+		// The searchMatcher has to remember the noWordSep property that was used
+		// because in case of HyperSearchOperationNode, the same SearchMatcher
+		// is used for several Buffers that can be of different edit modes.
+		searchMatcher.setNoWordSep(noWordSep);
 		return searchMatcher;
 	}//}}}
 

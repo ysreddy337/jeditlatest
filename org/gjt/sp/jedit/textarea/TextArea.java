@@ -24,7 +24,6 @@
 package org.gjt.sp.jedit.textarea;
 
 //{{{ Imports
-
 import java.util.EventObject;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -38,6 +37,7 @@ import java.awt.im.InputMethodRequests;
 
 import javax.swing.plaf.metal.MetalLookAndFeel;
 import javax.swing.text.Segment;
+import javax.swing.text.TabExpander;
 
 import org.gjt.sp.jedit.Debug;
 import org.gjt.sp.jedit.IPropertyManager;
@@ -56,6 +56,7 @@ import org.gjt.sp.jedit.syntax.Token;
 import org.gjt.sp.util.Log;
 import org.gjt.sp.util.StandardUtilities;
 import org.gjt.sp.util.ThreadUtilities;
+//}}}
 
 /** Abstract TextArea component.
  *
@@ -66,7 +67,7 @@ import org.gjt.sp.util.ThreadUtilities;
  *
  * @author Slava Pestov
  * @author kpouer (rafactoring into standalone text area)
- * @version $Id: TextArea.java 19935 2011-09-06 21:03:24Z ezust $
+ * @version $Id: TextArea.java 20559 2011-12-07 04:09:57Z ezust $
  */
 public abstract class TextArea extends JComponent
 {
@@ -745,7 +746,7 @@ public abstract class TextArea extends JComponent
 			// it was not possible to see the second (or next)
 			// subregion of a line
 			ChunkCache.LineInfo[] infos = chunkCache
-			.getLineInfosForPhysicalLine(line);
+				.getLineInfosForPhysicalLine(line);
 			int subregion = ChunkCache.getSubregionOfOffset(
 				offset,infos);
 			setFirstPhysicalLine(line,subregion);
@@ -978,8 +979,7 @@ public abstract class TextArea extends JComponent
 	 */
 	public int xyToOffset(int x, int y, boolean round)
 	{
-		FontMetrics fm = painter.getFontMetrics();
-		int height = fm.getHeight();
+		int height = painter.getLineHeight();
 		int line = y / height;
 
 		if(line < 0 || line >= visibleLines)
@@ -1066,9 +1066,7 @@ public abstract class TextArea extends JComponent
 		if(screenLine == -1)
 			return null;
 
-		FontMetrics fm = painter.getFontMetrics();
-
-		retVal.y = screenLine * fm.getHeight();
+		retVal.y = screenLine * painter.getLineHeight();
 
 		ChunkCache.LineInfo info = chunkCache.getLineInfo(screenLine);
 
@@ -1104,9 +1102,8 @@ public abstract class TextArea extends JComponent
 		if(chunkCache.needFullRepaint())
 			end = visibleLines;
 
-		FontMetrics fm = painter.getFontMetrics();
-		int y = start * fm.getHeight();
-		int height = (end - start + 1) * fm.getHeight();
+		int y = start * painter.getLineHeight();
+		int height = (end - start + 1) * painter.getLineHeight();
 		painter.repaint(0,y,painter.getWidth(),height);
 		gutter.repaint(0,y,gutter.getWidth(),height);
 	} //}}}
@@ -1321,6 +1318,60 @@ public abstract class TextArea extends JComponent
 	{
 		buffer.getLineText(lineIndex,segment);
 	} //}}}
+
+	//{{{ getVisibleLineText() methods
+	/**
+	 * Returns the visible part of the given line
+	 * @param screenLine the screenLine
+	 * @return the visible text
+	 * @since 4.5pre1
+	 */
+	public String getVisibleLineText(int screenLine)
+	{
+		int offset = -getHorizontalOffset();
+		ChunkCache.LineInfo lineInfo = chunkCache.getLineInfo(screenLine);
+		int lineStartOffset = getLineStartOffset(lineInfo.physicalLine);
+		Point point = offsetToXY(lineStartOffset + lineInfo.offset);
+		int begin = xyToOffset(offset + point.x, point.y);
+		int end = xyToOffset(getPainter().getWidth(), point.y);
+		return buffer.getText(begin, end - begin);
+	}
+
+	/**
+	 * Returns the visible part of the given line
+	 * @param screenLine the screenLine
+	 * @param segment the segment into which the data will be stored.
+	 * @since 4.5pre1
+	 */
+	public void getVisibleLineText(int screenLine, Segment segment)
+	{
+		int offset = -getHorizontalOffset();
+		ChunkCache.LineInfo lineInfo = chunkCache.getLineInfo(screenLine);
+		int lineStartOffset = getLineStartOffset(lineInfo.physicalLine);
+		Point point = offsetToXY(lineStartOffset + lineInfo.offset);
+		int begin = xyToOffset(offset + point.x, point.y);
+		int end = xyToOffset(getPainter().getWidth(), point.y);
+		buffer.getText(begin, end - begin, segment);
+	}//}}}
+
+	/**
+	 * Returns the visible part of the given line in a CharSequence.
+	 * The buffer data are not copied. so this should be used in EDT
+	 * thread
+	 * @param screenLine the screenLine
+	 * @return the visible text
+	 * @since 4.5pre1
+	 */
+	public CharSequence getVisibleLineSegment(int screenLine)
+	{
+		int offset = -getHorizontalOffset();
+		ChunkCache.LineInfo lineInfo = chunkCache.getLineInfo(screenLine);
+		int lineStartOffset = getLineStartOffset(lineInfo.physicalLine);
+		Point point = offsetToXY(lineStartOffset + lineInfo.offset);
+		int begin = xyToOffset(offset + point.x, point.y);
+		int end = xyToOffset(getPainter().getWidth(), point.y);
+		return buffer.getSegment(begin, end - begin);
+	}
 
 	//{{{ setText() method
 	/**
@@ -2973,13 +3024,12 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 	 */
 	public void smartEnd(boolean select)
 	{
-		int pos = getCaretPosition();
-		int npos = 0;
 		switch(getInputHandler().getLastActionCount())
 		{
 		case 1:
+			int pos = getCaretPosition();
 			goToEndOfCode(select);
-			npos = getCaretPosition();
+			int npos = getCaretPosition();
 			if (npos == pos) goToEndOfWhiteSpace(select);
 			break;
 		case 2:
@@ -3044,7 +3094,6 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 	{
 		int line = getCaretLine();
 
-		// @todo - Should tokenHandler be an TextArea instance variable?
 		DefaultTokenHandler tokenHandler = new DefaultTokenHandler();
 		buffer.markTokens(line,tokenHandler);
 		Token token = tokenHandler.getTokens();
@@ -3869,6 +3918,7 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 	/**
 	 * Like {@link DisplayManager#collapseFold(int)}, but
 	 * also moves the caret to the first line of the fold.
+	 * @param line the physical line index of the fold that we want to collapse
 	 * @since jEdit 4.3pre7
 	 */
 	public void collapseFold(int line)
@@ -3974,7 +4024,7 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 			getToolkit().beep();
 			return;
 		}
-		if(!buffer.getStringProperty("folding").equals("explicit"))
+		if(!"explicit".equals(buffer.getStringProperty("folding")))
 		{
 			throw new TextAreaException("folding-not-explicit");
 		}
@@ -4382,6 +4432,11 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 			getToolkit().beep();
 		else
 		{
+			if (buffer.isElectricKey('\n', caretLine))
+			{
+				buffer.indentLine(caretLine, true);
+			}
+			
 			try
 			{
 				buffer.beginCompoundEdit();
@@ -4422,16 +4477,31 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 	//{{{ indentSelectedLines() method
 	/**
 	 * Indents all selected lines.
-	 * @since jEdit 3.1pre3
+ 	 * @since jEdit 3.1pre3
+ 	 */
+ 	public void indentSelectedLines()
+ 	{
+ 		if(!buffer.isEditable())
+ 			getToolkit().beep();
+ 		else
+ 		{
+			buffer.indentLines(getSelectedLines());
+			selectNone();
+ 		}
+ 	} //}}}
+ 	
+	//{{{ turnOnElasticTabstops() method
+	/**
+	 * Turn ON elastic tab stops.
 	 */
-	public void indentSelectedLines()
+	public void turnOnElasticTabstops()
 	{
 		if(!buffer.isEditable())
 			getToolkit().beep();
 		else
-		{
-			buffer.indentLines(getSelectedLines());
-			selectNone();
+		{	
+			buffer.indentUsingElasticTabstops();
+			buffer.elasticTabstopsOn = true;
 		}
 	} //}}}
 
@@ -4617,7 +4687,7 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 	{
 		getInputHandler().processKeyEvent(evt, 1 /* source=TEXTAREA (1) */, false);
 		if(!evt.isConsumed())
-			super.processKeyEvent(evt);
+			super.processKeyEvent(evt);	
 
 	} //}}}
 
@@ -4686,7 +4756,24 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 	{
 		if(buffer == null)
 			return;
-
+		
+		if(buffer.getBooleanProperty("elasticTabstops"))
+		{
+			//call this only if it was previously off
+			if(!buffer.elasticTabstopsOn)
+			{	
+				turnOnElasticTabstops();
+			}	
+			if(buffer.getColumnBlock()!=null)
+			{	
+				buffer.getColumnBlock().setTabSizeDirtyStatus(true, true);
+			}	
+		}
+		else
+		{
+			buffer.elasticTabstopsOn = false;
+		}
+		
 		int _tabSize = buffer.getTabSize();
 		char[] foo = new char[_tabSize];
 		for(int i = 0; i < foo.length; i++)
@@ -4700,8 +4787,8 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 
 		String oldWrap = wrap;
 		wrap = buffer.getStringProperty("wrap");
-		hardWrap = wrap.equals("hard");
-		softWrap = wrap.equals("soft");
+		hardWrap = "hard".equals(wrap);
+		softWrap = "soft".equals(wrap);
 		boolean oldWrapToWidth = wrapToWidth;
 		int oldWrapMargin = wrapMargin;
 		setMaxLineLength(buffer.getIntegerProperty("maxLineLen",0));
@@ -4716,7 +4803,6 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 			displayManager.invalidateScreenLineCounts();
 			displayManager.notifyScreenLineChanges();
 		}
-
 		chunkCache.invalidateAll();
 		gutter.repaint();
 		painter.repaint();
@@ -4752,25 +4838,6 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 			return s.start;
 		else
 			return caret;
-	} //}}}
-
-	//{{{ getMarkLine() method
-	/**
-	 * @deprecated Do not use.
-	 */
-	@Deprecated
-	public final int getMarkLine()
-	{
-		if(getSelectionCount() != 1)
-			return caretLine;
-
-		Selection s = getSelection(0);
-		if(s.start == caret)
-			return s.endLine;
-		else if(s.end == caret)
-			return s.startLine;
-		else
-			return caretLine;
 	} //}}}
 
 	//{{{ Package-private members
@@ -4865,7 +4932,7 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 		if(painter == null)
 			return;
 		int height = painter.getHeight();
-		int lineHeight = painter.getFontMetrics().getHeight();
+		int lineHeight = painter.getLineHeight();
 		if(lineHeight == 0)
 			visibleLines = 0;
 		else if(height <= 0)
@@ -4939,6 +5006,7 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 
 			Runnable runnable = new Runnable()
 			{
+				@Override
 				public void run()
 				{
 					vertical.setValues(firstLine,visible,0,lineCount);
@@ -4984,16 +5052,19 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 			caretTimer.restart();
 
 			if(!displayManager.isLineVisible(caretLine))
-			{
-				if(caretLine < displayManager.getFirstVisibleLine()
-					|| caretLine > displayManager.getLastVisibleLine())
+			{			
+				// If we've jumped outside of a narrowed display, just reset all
+				// folds to their default level, so that we don't get disconnected
+				// islands of visible lines.
+				if(displayManager.isOutsideNarrowing(caretLine))
 				{
 					int collapseFolds = buffer.getIntegerProperty(
 						"collapseFolds",0);
 					if(collapseFolds != 0)
 					{
-						displayManager.expandFolds(collapseFolds);
-						displayManager.expandFold(caretLine,false);
+						displayManager.expandFolds(collapseFolds, false);
+						displayManager.expandFold(caretLine, false);
+						foldStructureChanged();
 					}
 					else
 						displayManager.expandAllFolds();
@@ -5082,6 +5153,7 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 	private final MutableCaretEvent caretEvent;
 
 	private boolean caretBlinks;
+	private final ElasticTabstopsTabExpander elasticTabstopsExpander = new ElasticTabstopsTabExpander(this);
 	protected InputHandlerProvider inputHandlerProvider;
 
 	private InputMethodSupport inputMethodSupport;
@@ -5691,9 +5763,8 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 		if(getSelectionCount() != 0)
 		{
 			Selection[] selections = getSelection();
-			for(int i = 0; i < selections.length; i++)
+			for (Selection s : selections)
 			{
-				Selection s = selections[i];
 				if(s instanceof Selection.Rect)
 				{
 					Selection.Rect r = (Selection.Rect)s;
@@ -5813,11 +5884,21 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 			{
 				foo[i] = ' ';
 			}
-			wrapToWidth = false;
-			wrapMargin = (int)painter.getFont().getStringBounds(
+			int maxRenderedLineLen = (int)painter.getFont().getStringBounds(
 				foo,0,foo.length,
 				painter.getFontRenderContext())
 				.getWidth();
+
+			if (softWrap && painter.getWidth() < maxRenderedLineLen)
+			{
+				wrapToWidth = true;
+				wrapMargin = painter.getWidth() - charWidth * 3;
+			}
+			else
+			{
+				wrapToWidth = false;
+				wrapMargin = maxRenderedLineLen;
+			}
 		}
 	} //}}}
 
@@ -6083,7 +6164,7 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 			if (caretPos != null)
 			{
 				// Open the context menu below the caret
-				int charHeight = getPainter().getFontMetrics().getHeight();
+				int charHeight = getPainter().getLineHeight();
 				showPopupMenu(popup,
 					painter,caretPos.x,caretPos.y + charHeight,true);
 			}
@@ -6170,6 +6251,7 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 	private static class CaretBlinker implements ActionListener
 	{
 		//{{{ actionPerformed() method
+		@Override
 		public void actionPerformed(ActionEvent evt)
 		{
 			if(focusedComponent != null && focusedComponent.hasFocus())
@@ -6205,6 +6287,7 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 	private class AdjustHandler implements AdjustmentListener
 	{
 		//{{{ adjustmentValueChanged() method
+		@Override
 		public void adjustmentValueChanged(AdjustmentEvent evt)
 		{
 			if(!scrollBarsInitialized)
@@ -6221,6 +6304,7 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 	private class FocusHandler implements FocusListener
 	{
 		//{{{ focusGained() method
+		@Override
 		public void focusGained(FocusEvent evt)
 		{
 			if(bufferChanging)
@@ -6240,6 +6324,7 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 		} //}}}
 
 		//{{{ focusLost() method
+		@Override
 		public void focusLost(FocusEvent evt)
 		{
 			if(!isShowing())
@@ -6260,6 +6345,7 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 	//{{{ MouseWheelHandler class
 	private class MouseWheelHandler implements MouseWheelListener
 	{
+		@Override
 		public void mouseWheelMoved(MouseWheelEvent e)
 		{
 			/****************************************************
@@ -6349,6 +6435,7 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 
 		structureTimer = new Timer(100,new ActionListener()
 		{
+			@Override
 			public void actionPerformed(ActionEvent evt)
 			{
 				if(focusedComponent != null)
@@ -6358,4 +6445,16 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 		structureTimer.setInitialDelay(100);
 		structureTimer.setRepeats(false);
 	} //}}}
+
+	public TabExpander getTabExpander() 
+	{
+		if(buffer.getBooleanProperty("elasticTabstops"))
+		{
+			return elasticTabstopsExpander;
+		}
+		else
+		{
+			return painter;
+		}
+	}
 }

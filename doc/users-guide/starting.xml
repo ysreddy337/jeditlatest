@@ -87,7 +87,7 @@
             <informaltable>
                 <tgroup cols="2">
                     <colspec colnum="1" colwidth="1.5in" />
-                    <colspec colwidth="*"/>
+                    <colspec colwidth="1*"/>
 
                     <thead>
                         <row>
@@ -123,12 +123,20 @@
                         </row>
 
                         <row>
+                            <entry><userinput>-nosplash</userinput></entry>
+
+                            <entry>Don't show the splash screen on startup.
+                            </entry>
+                        </row>
+
+                        <row>
                             <entry><userinput>--</userinput></entry>
 
                             <entry>Specifies the end of command-line processing.
                             Further parameters are treated as file names, even if
                             they begin with a dash.</entry>
                         </row>
+
                     </tbody>
                 </tgroup>
             </informaltable>
@@ -140,7 +148,7 @@
             <informaltable>
                 <tgroup cols="2">
                     <colspec colnum="1" colwidth="1.5in" />
-                    <colspec colwidth="*"/>
+                    <colspec colwidth="1*"/>
 
                     <thead>
                         <row>
@@ -244,7 +252,7 @@
             <informaltable>
                 <tgroup cols="2">
                     <colspec colnum="1" colwidth="1.5in" />
-                    <colspec colwidth="*"/>
+                    <colspec colwidth="1*"/>
 
                     <thead>
                         <row>

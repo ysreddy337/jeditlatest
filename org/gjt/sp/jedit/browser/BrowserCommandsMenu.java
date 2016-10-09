@@ -24,8 +24,10 @@
 package org.gjt.sp.jedit.browser;
 
 //{{{ Imports
+import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
+import java.util.List;
 import javax.swing.*;
 
 import org.gjt.sp.jedit.io.*;
@@ -34,7 +36,7 @@ import org.gjt.sp.jedit.menu.MenuItemTextComparator;
 //}}}
 
 /**
- * @version $Id: BrowserCommandsMenu.java 17393 2010-02-27 12:13:39Z k_satoda $
+ * @version $Id: BrowserCommandsMenu.java 20057 2011-10-08 23:54:23Z ezust $
  * @author Slava Pestov and Jason Ginchereau
  */
 public class BrowserCommandsMenu extends JPopupMenu
@@ -102,6 +104,8 @@ public class BrowserCommandsMenu extends JPopupMenu
 				|| browser.getMode() == VFSBrowser.BROWSER_DIALOG))
 			{
 				add(createMenuItem("open"));
+				add(GUIUtilities.loadMenuItem(VFSBrowser.getActionContext(),
+					"vfs.browser.open-desktop", true));
 				add(GUIUtilities.loadMenu(
 					VFSBrowser.getActionContext(),
 					"vfs.browser.open-in"));
@@ -121,10 +125,10 @@ public class BrowserCommandsMenu extends JPopupMenu
 
 			add(createMenuItem("copy-path"));
 			add(createMenuItem("paste"));
-			
-			if((files.length == 1) || (browser.getSelectedFiles().length != 0)) 
+
+			if((files.length == 1) || (browser.getSelectedFiles().length != 0))
 		   		add(createMenuItem("properties"));
-			
+
 			addSeparator();
 		}
 
@@ -158,6 +162,17 @@ public class BrowserCommandsMenu extends JPopupMenu
 			addSeparator();
 			add(createEncodingMenu());
 		}
+		JMenu customMenu = createCustomMenu();
+		if (customMenu != null)
+		{
+			addSeparator();
+			Component[] menuComponents = customMenu.getMenuComponents();
+			for (Component menuComponent : menuComponents)
+			{
+				add((JMenuItem) menuComponent);
+			}
+		}
+
 		addSeparator();
 		add(createPluginMenu(browser));
 		update();
@@ -276,16 +291,28 @@ public class BrowserCommandsMenu extends JPopupMenu
 		return encodingMenu;
 	} //}}}
 
+	//{{{ createCustomMenu() method
+	private JMenu createCustomMenu()
+	{
+		if (jEdit.getProperty("browser.custom.context", "").length() != 0)
+		{
+			JMenu custom = GUIUtilities.loadMenu(VFSBrowser.getActionContext(),
+				"browser.custom.context");
+			return custom;
+		}
+		return null;
+	} //}}}
+
 	//{{{ createPluginsMenu() method
 	private JMenu createPluginMenu(VFSBrowser browser)
 	{
 		JMenu pluginMenu = new JMenu(jEdit.getProperty(
 			"vfs.browser.plugins.label"));
 		return (JMenu)browser.createPluginsMenu(pluginMenu,false);
-		
+
 	} //}}}
 
-	
+
 	//}}}
 
 	//{{{ ActionHandler class

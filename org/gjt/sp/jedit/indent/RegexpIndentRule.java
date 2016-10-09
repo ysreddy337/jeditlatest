@@ -36,7 +36,7 @@ import org.gjt.sp.jedit.syntax.TokenMarker;
 
 /**
  * @author Slava Pestov
- * @version $Id: RegexpIndentRule.java 12504 2008-04-22 23:12:43Z ezust $
+ * @version $Id: RegexpIndentRule.java 18919 2010-11-04 10:52:55Z kpouer $
  */
 public class RegexpIndentRule implements IndentRule
 {
@@ -82,19 +82,6 @@ public class RegexpIndentRule implements IndentRule
 			if (collapse)
 				indentActions.add(IndentAction.PrevPrevCollapse);
 		}
-	} //}}}
-
-	//{{{ isMatch() method
-	/**
-	 * @deprecated
-	 *   Do not use this. This is here only for compatibility.
-	 */
-	@Deprecated
-	public boolean isMatch(String line)
-	{
-		Matcher m = regexp.matcher(line);
-//		return regexp.isMatch(line);
-		return m.matches();
 	} //}}}
 
 	//{{{ toString() method

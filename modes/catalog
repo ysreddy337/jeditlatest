@@ -15,15 +15,15 @@
 
 <MODE NAME="ada95"		FILE="ada95.xml" />
 
-<MODE NAME="ant"		FILE="ant.xml" 
-				FILE_NAME_GLOB="*.xml" 
+<MODE NAME="ant"		FILE="ant.xml"
+				FILE_NAME_GLOB="*.xml"
 				FIRST_LINE_GLOB="&lt;project*&gt;" />
 
 <MODE NAME="antlr"		FILE="antlr.xml"
 				FILE_NAME_GLOB="*.g" />
 
 <MODE NAME="apacheconf"		FILE="apacheconf.xml"
-				FILE_NAME_GLOB="*httpd.conf" />
+				FILE_NAME_GLOB="{/etc/apache2/{*.conf,{conf.d,{mods,sites}-{available,enabled}}/*},*httpd*.conf}" />
 
 <MODE NAME="apdl"		FILE="apdl.xml"
 				FILE_NAME_GLOB="*.{ans,inp,mak,mac}" />
@@ -108,8 +108,14 @@
 <MODE NAME="cobol"		FILE="cobol.xml"
 				FILE_NAME_GLOB="*.cbl" />
 
+<MODE NAME="coffeescript"	FILE="coffeescript.xml"
+				FILE_NAME_GLOB="*.coffee" />
+
 <MODE NAME="coldfusion"		FILE="coldfusion.xml"
 				FILE_NAME_GLOB="*.{cfm,dbm,cfc}" />
+
+<MODE NAME='cplex-lp'  FILE='cplexlp.xml'
+					FILE_NAME_GLOB='*.lp'  />
 
 <MODE NAME="c++"		FILE="cplusplus.xml"
 				FILE_NAME_GLOB="*.{cc,cpp,h,hh,hpp,cxx}" />
@@ -144,7 +150,7 @@
 				FILE_NAME_GLOB="*.epl"/>
 
 <MODE NAME="erlang"		FILE="erlang.xml"
-				FILE_NAME_GLOB="*.erl"/>
+				FILE_NAME_GLOB="*.{erl,hrl}"/>
 
 <MODE NAME="eiffel"		FILE="eiffel.xml"
 				FILE_NAME_GLOB="*.e" />
@@ -154,6 +160,9 @@
 
 <MODE NAME="factor"		FILE="factor.xml"
 				FILE_NAME_GLOB="*.factor"/>
+
+<MODE NAME="jflex"		FILE="jflex.xml"
+				FILE_NAME_GLOB="*.flex"/>
 
 <MODE NAME="forth"		FILE="forth.xml"
 				FILE_NAME_GLOB="*.f" />
@@ -181,8 +190,11 @@
 <MODE NAME="go"			FILE="go.xml"
 				FILE_NAME_GLOB="*.go" />
 
+<MODE NAME="gradle"		FILE="gradle.xml"
+				FILE_NAME_GLOB="*.{gradle}" />
+
 <MODE NAME="groovy"		FILE="groovy.xml"
-				FILE_NAME_GLOB="*.{gant,gradle,groovy,grv}"/>
+				FILE_NAME_GLOB="*.{gant,groovy,grv}"/>
 
 <MODE NAME="gsp"			FILE="jsp.xml"
 				FILE_NAME_GLOB="*.{gsp}" />
@@ -250,7 +262,7 @@
 <MODE NAME="jcl"		FILE="jcl.xml"
 				FILE_NAME_GLOB="*.jcl" />
 
-<MODE NAME="jedit-actions"	FILE="jedit-actions.xml" 
+<MODE NAME="jedit-actions"	FILE="jedit-actions.xml"
 				FILE_NAME_GLOB="actions.xml"/>
 
 <MODE NAME="jhtml"		FILE="jhtml.xml"
@@ -271,6 +283,9 @@
 <MODE NAME="latex"		FILE="latex.xml"
 				FILE_NAME_GLOB="*.{tex,sty,ltx}" />
 
+<MODE NAME="lex"		FILE="lex.xml"
+				FILE_NAME_GLOB="*.l" />
+
 <MODE NAME="lilypond"		FILE="lilypond.xml"
 				FILE_NAME_GLOB="*.{ly,ily}" />
 
@@ -289,6 +304,9 @@
 <MODE NAME="lua"		FILE="lua.xml"
 				FILE_NAME_GLOB="*.lua" />
 
+<MODE NAME="macroscheduler"		FILE="macroscheduler.xml"
+        FILE_NAME_GLOB="*.scp" />
+
 <MODE NAME="mail"		FILE="mail.xml" />
 
 <MODE NAME="makefile"		FILE="makefile.xml"
@@ -298,7 +316,7 @@
 				FILE_NAME_GLOB="*.{mpl,mws}" />
 
 <MODE NAME="maven"		FILE="maven.xml"
-				FILE_NAME_GLOB="pom.xml"/>			
+				FILE_NAME_GLOB="pom.xml"/>
 
 <MODE NAME="ml"			FILE="ml.xml"
 				FILE_NAME_GLOB="*.{sml,ml}" />
@@ -341,6 +359,9 @@
 <MODE NAME="omnimark"		FILE="omnimark.xml"
 				FILE_NAME_GLOB="*.x{om,in}" />
 
+<MODE NAME="outline"		FILE="outline.xml"
+				FILE_NAME_GLOB="*.{outline}" />
+
 <MODE NAME="pascal"		FILE="pascal.xml"
 				FILE_NAME_GLOB="*.{pas,dpr,dpk}" />
 
@@ -353,15 +374,18 @@
 
 <MODE NAME="php"		FILE="php.xml"
 				FILE_NAME_GLOB="*.{php3,php4,php,phtml,inc}"
-				FIRST_LINE_GLOB="{&lt;?php*,#!/*php*}" />
+				FIRST_LINE_GLOB="{&lt;\?php*,#!/*php*}" />
 
 <MODE NAME="pike"		FILE="pike.xml"
 				FILE_NAME_GLOB="*.{pike,pmod}" />
 
 <MODE NAME="plaintex"		FILE="plaintex.xml" />
 
-<MODE NAME="pl-sql"		FILE="pl-sql.xml"
-				FILE_NAME_GLOB="*.pls" />
+<MODE NAME="pl-sql"		FILE="osql.xml"
+                           FILE_NAME_GLOB="*.{pls,sql}" />
+
+<!-- Older version of pl-sql mode not currently used -->
+<MODE NAME="pl-sql9"		FILE="pl-sql.xml" />
 
 <MODE NAME="pl1"		FILE="pl1.xml"
 				FILE_NAME_GLOB="*.pl[i1]" />
@@ -379,7 +403,7 @@
 				FILE_NAME_GLOB="*.{ssc,stm}" />
 
 <MODE NAME="powershell"		FILE="powershell.xml"
-				FILE_NAME_GLOB="*.ps1" />
+				FILE_NAME_GLOB="*.{ps1,psm1,psd1}" />
 
 <MODE NAME="prolog"		FILE="prolog.xml"
 				FILE_NAME_GLOB="*.pro" />
@@ -501,7 +525,7 @@
 
 <MODE NAME="stata"     FILE="stata.xml"
 				FILE_NAME_GLOB="*.{do,ado,mata}" />
-				
+
 <MODE NAME="svn-commit"		FILE="svn-commit.xml"
 				FILE_NAME_GLOB="svn-commit*.tmp" />
 
@@ -524,15 +548,14 @@
      because filename globs are checked in reverse order -->
 <MODE NAME="rfc"		FILE="rfc.xml"
 				FILE_NAME_GLOB="rfc*.txt" />
-			
-<MODE NAME="tld"		FILE="tld.xml" 
+
+<MODE NAME="tld"		FILE="tld.xml"
 				FILE_NAME_GLOB="*.tld"/>
 
 <MODE NAME="tsp"		FILE="tsp.xml"
 				FILE_NAME_GLOB="*.tsp" />
 
-<MODE NAME="transact-sql"	FILE="tsql.xml"
-				FILE_NAME_GLOB="*.sql" />
+<MODE NAME="transact-sql"	FILE="tsql.xml" />
 
 <MODE NAME="template-toolkit"	FILE="tthtml.xml"
 				FILE_NAME_GLOB="*.tt{html,css,js}" />
@@ -548,6 +571,9 @@
 
 <MODE NAME="uscript"		FILE="uscript.xml"
 				FILE_NAME_GLOB="*.uc" />
+				
+<MODE NAME="vala"		FILE="vala.xml"
+				FILE_NAME_GLOB="*.vala" />
 
 <MODE NAME="vbscript"		FILE="vbscript.xml"
 				FILE_NAME_GLOB="*.{vbs,bas,cls}" />

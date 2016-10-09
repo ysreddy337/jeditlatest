@@ -37,7 +37,7 @@ import org.gjt.sp.util.StandardUtilities;
  * warts in the AWT key event API.
  *
  * @author Slava Pestov
- * @version $Id: KeyEventTranslator.java 17816 2010-05-12 15:00:13Z k_satoda $
+ * @version $Id: KeyEventTranslator.java 20108 2011-10-18 12:16:38Z evanpw $
  */
 public class KeyEventTranslator
 {
@@ -197,21 +197,6 @@ public class KeyEventTranslator
 			return returnValue;
 		else
 			return trans;
-	}
-
-	/**
-	 * Pass this an event from {@link
-	 * KeyEventWorkaround#processKeyEvent(java.awt.event.KeyEvent)}.
-	 * @param evt the KeyEvent to translate
-	 * @since jEdit 4.2pre3
-	 * @deprecated
-	 *   This gives completely same result with translateKeyEvent()
-	 *   since jEdit 4.4pre1.
-	 */
-	@Deprecated
-	public static Key translateKeyEvent2(KeyEvent evt)
-	{
-		return translateKeyEvent(evt);
 	} //}}}
 
 	//{{{ parseKey() method
@@ -435,7 +420,7 @@ public class KeyEventTranslator
 		if(buf.indexOf(String.valueOf(ch)) == -1)
 			buf.append(ch);
 		return buf;
-	} //}}}
+	}
 
 	static
 	{
@@ -521,12 +506,6 @@ public class KeyEventTranslator
 		public boolean isFromGlobalContext()
 		{
 			return isFromGlobalContext;
-		}
-
-		@Deprecated
-		public boolean isPhantom()
-		{
-			return false;
 		}
 	} //}}}
 }

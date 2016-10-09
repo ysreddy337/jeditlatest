@@ -38,9 +38,9 @@
 	<SERVICE CLASS="org.gjt.sp.jedit.io.Encoding" NAME="UTF-8Y">
 		new EncodingWithBOM("UTF-8");
 	</SERVICE>
-	<!-- Supported by Java SE 6.
-		The followings are workarounds (and used only) for older
-		environments. -->
+	<!-- Supported by Oracle Java SE 6.
+		The followings are workarounds (and used only) for other
+		environments with fewer set of encodings. -->
 	<SERVICE CLASS="org.gjt.sp.jedit.io.Encoding" NAME="x-UTF-16LE-BOM">
 		new EncodingWithBOM("UTF-16LE");
 	</SERVICE>
@@ -78,48 +78,48 @@
        import org.gjt.sp.jedit.gui.statusbar.*;
        new ModeWidgetFactory();
 	</SERVICE>
-	
+
 	<SERVICE CLASS="org.gjt.sp.jedit.gui.statusbar.StatusWidget" NAME="fold">
 		import org.gjt.sp.jedit.gui.statusbar.*;
 		new FoldWidgetFactory();
 	</SERVICE>
-	
+
 	<SERVICE CLASS="org.gjt.sp.jedit.gui.statusbar.StatusWidget" NAME="encoding">
 		import org.gjt.sp.jedit.gui.statusbar.*;
 		new EncodingWidgetFactory();
 	</SERVICE>
-	
+
 	<SERVICE CLASS="org.gjt.sp.jedit.gui.statusbar.StatusWidget" NAME="wrap">
 		import org.gjt.sp.jedit.gui.statusbar.*;
 		new WrapWidgetFactory();
 	</SERVICE>
-	
+
 	<SERVICE CLASS="org.gjt.sp.jedit.gui.statusbar.StatusWidget" NAME="multiSelect">
 		import org.gjt.sp.jedit.gui.statusbar.*;
 		new MultiSelectWidgetFactory();
 	</SERVICE>
-	
+
 	<SERVICE CLASS="org.gjt.sp.jedit.gui.statusbar.StatusWidget" NAME="rectSelect">
 		import org.gjt.sp.jedit.gui.statusbar.*;
 		new RectSelectWidgetFactory();
 	</SERVICE>
-	
+
 	<SERVICE CLASS="org.gjt.sp.jedit.gui.statusbar.StatusWidget" NAME="overwrite">
 		import org.gjt.sp.jedit.gui.statusbar.*;
 		new OverwriteWidgetFactory();
 	</SERVICE>
-	
+
 	<SERVICE CLASS="org.gjt.sp.jedit.gui.statusbar.StatusWidget" NAME="lineSep">
 		import org.gjt.sp.jedit.gui.statusbar.*;
 		new LineSepWidgetFactory();
 	</SERVICE>
-	
-		
+
+
 	<SERVICE CLASS="org.gjt.sp.jedit.gui.statusbar.StatusWidget" NAME="memory-status">
 		import org.gjt.sp.jedit.gui.statusbar.*;
 		new MemoryStatusWidgetFactory();
 	</SERVICE>
-	
+
 	<SERVICE CLASS="org.gjt.sp.jedit.gui.statusbar.StatusWidget" NAME="clock">
 		import org.gjt.sp.jedit.gui.statusbar.*;
 		new ClockWidgetFactory();
@@ -138,9 +138,17 @@
 		import org.gjt.sp.jedit.gui.statusbar.*;
 		new SelectionLengthWidgetFactory();
 	</SERVICE>
+	<SERVICE CLASS="org.gjt.sp.jedit.gui.statusbar.StatusWidget" NAME="last-modified">
+		import org.gjt.sp.jedit.gui.statusbar.*;
+		new LastModifiedWidgetFactory();
+	</SERVICE>
+	<SERVICE CLASS="org.gjt.sp.jedit.gui.statusbar.StatusWidget" NAME="task-monitor">
+		import org.gjt.sp.jedit.gui.statusbar.*;
+		new TaskMonitorWidgetFactory();
+	</SERVICE>
 	<!-- }}} -->
 	<!--jEdit.setProperty("view.status"," mode , fold , encoding ) wrap multiSelect rectSelect overwrite lineSep memory-status clock")-->
-	
+
 	<!-- Docking framework -->
 	<SERVICE CLASS="org.gjt.sp.jedit.gui.DockingFrameworkProvider" NAME="Original">
 		new org.gjt.sp.jedit.gui.DockableWindowManagerProvider();
@@ -152,5 +160,9 @@
 
 	<SERVICE CLASS="org.gjt.sp.jedit.datatransfer.JEditTransferableService" NAME="application/x-java-jEdit-rich-text">
 		new org.gjt.sp.jedit.datatransfer.RichJEditTextTransferableService();
+	</SERVICE>
+
+	<SERVICE CLASS="org.gjt.sp.jedit.gui.tray.JEditTrayIcon" NAME="swing">
+		new org.gjt.sp.jedit.gui.tray.JEditSwingTrayIcon();
 	</SERVICE>
 </SERVICES>

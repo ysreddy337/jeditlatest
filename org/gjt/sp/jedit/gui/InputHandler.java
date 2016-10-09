@@ -46,7 +46,7 @@ import java.awt.*;
  * to the implementations of this class to do so.
  *
  * @author Slava Pestov
- * @version $Id: InputHandler.java 12942 2008-06-27 08:33:55Z kpouer $
+ * @version $Id: InputHandler.java 18919 2010-11-04 10:52:55Z kpouer $
  * @see org.gjt.sp.jedit.gui.DefaultInputHandler
  */
 public abstract class InputHandler extends AbstractInputHandler<EditAction>
@@ -291,16 +291,6 @@ public abstract class InputHandler extends AbstractInputHandler<EditAction>
 	public void readNextChar(String msg, String code)
 	{
 		view.getStatus().setMessage(msg);
-		readNextChar = code;
-	} //}}}
-
-	//{{{ readNextChar() method
-	/**
-	 * @deprecated Use the other form of this method instead
-	 */
-	@Deprecated
-	public void readNextChar(String code)
-	{
 		readNextChar = code;
 	} //}}}
 

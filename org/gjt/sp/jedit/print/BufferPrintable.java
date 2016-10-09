@@ -40,7 +40,7 @@ import org.gjt.sp.util.*;
 //}}}
 
 /**
- * @version $Id: BufferPrintable.java 12504 2008-04-22 23:12:43Z ezust $
+ * @version $Id: BufferPrintable.java 18832 2010-10-23 09:54:46Z kpouer $
  */
 class BufferPrintable implements Printable
 {
@@ -299,7 +299,7 @@ print_loop:	for(;;)
 			lineList.clear();
 
 			tokenHandler.init(styles,frc,e,lineList,
-				(float)(pageWidth - lineNumberWidth));
+				(float)(pageWidth - lineNumberWidth), -1);
 
 			buffer.markTokens(currentPhysicalLine,tokenHandler);
 			if(lineList.isEmpty())
@@ -325,9 +325,10 @@ print_loop:	for(;;)
 				Chunk chunks = lineList.get(i);
 				if(chunks != null && actuallyPaint)
 				{
+					FontMetrics metrics = gfx.getFontMetrics();
 					Chunk.paintChunkBackgrounds(chunks,gfx,
 						(float)(pageX + lineNumberWidth),
-						(float)(pageY + y));
+						(float)(pageY + y), metrics.getHeight());
 					Chunk.paintChunkList(chunks,gfx,
 						(float)(pageX + lineNumberWidth),
 						(float)(pageY + y),glyphVector);

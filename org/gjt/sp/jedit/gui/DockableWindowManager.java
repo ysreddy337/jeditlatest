@@ -112,7 +112,7 @@ import org.gjt.sp.util.Log;
  * @author Slava Pestov
  * @author John Gellene (API documentation)
  * @author Shlomy Reinstein (refactoring into a base and an impl)
- * @version $Id: DockableWindowManager.java 18578 2010-09-21 19:59:41Z ezust $
+ * @version $Id: DockableWindowManager.java 20108 2011-10-18 12:16:38Z evanpw $
  * @since jEdit 2.6pre3
  *
  */
@@ -750,4 +750,5 @@ import org.gjt.sp.util.Log;
 		}
 	} // }}}
 
+	//}}}
 } // }}}

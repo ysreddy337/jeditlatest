@@ -25,6 +25,9 @@ package org.gjt.sp.jedit.textarea;
 
 //{{{ Imports
 import java.util.*;
+
+import javax.swing.text.TabExpander;
+
 import org.gjt.sp.jedit.buffer.JEditBuffer;
 import org.gjt.sp.jedit.Debug;
 import org.gjt.sp.jedit.syntax.*;
@@ -39,7 +42,7 @@ import org.gjt.sp.util.Log;
  * The array is resized when the TextArea geometry changes  
  *
  * @author Slava Pestov
- * @version $Id: ChunkCache.java 16329 2009-10-13 12:23:45Z kpouer $
+ * @version $Id: ChunkCache.java 18774 2010-10-14 20:26:12Z shlomy $
  */
 class ChunkCache
 {
@@ -777,12 +780,12 @@ class ChunkCache
 	private void lineToChunkList(int physicalLine, List<Chunk> out)
 	{
 		TextAreaPainter painter = textArea.getPainter();
-
+		TabExpander expander= textArea.getTabExpander();
 		tokenHandler.init(painter.getStyles(),
 			painter.getFontRenderContext(),
-			painter,out,
+			expander,out,
 			textArea.softWrap
-			? textArea.wrapMargin : 0.0f);
+			? textArea.wrapMargin : 0.0f, buffer.getLineStartOffset(physicalLine));
 		buffer.markTokens(physicalLine,tokenHandler);
 	} //}}}
 

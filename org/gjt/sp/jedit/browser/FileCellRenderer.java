@@ -30,13 +30,15 @@ import java.awt.font.*;
 import javax.swing.*;
 import javax.swing.border.*;
 import javax.swing.table.*;
+
+import org.gjt.sp.jedit.io.FavoritesVFS;
 import org.gjt.sp.jedit.io.VFSFile;
 import org.gjt.sp.jedit.*;
 //}}}
 
 /**
  * Local filesystem VFS.
- * @version $Id: FileCellRenderer.java 12504 2008-04-22 23:12:43Z ezust $
+ * @version $Id: FileCellRenderer.java 19866 2011-08-29 16:09:14Z kpouer $
  */
 public class FileCellRenderer extends DefaultTableCellRenderer
 {
@@ -91,7 +93,15 @@ public class FileCellRenderer extends DefaultTableCellRenderer
 				setIcon(showIcons
 					? getIconForFile(file,entry.expanded,
 					openBuffer) : null);
-				setText(file.getName());
+				if (file instanceof FavoritesVFS.Favorite)
+				{
+					FavoritesVFS.Favorite favorite = (FavoritesVFS.Favorite) file;
+					setText(favorite.getLabel());
+				}
+				else
+				{
+					setText(file.getName());
+				}
 
 				int state;
 				if(file.getType() == VFSFile.FILE)

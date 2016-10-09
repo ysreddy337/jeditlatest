@@ -50,7 +50,7 @@ import org.gjt.sp.util.Log;
  * </ul>
  *
  * @author Slava Pestov
- * @version $Id: BeanShell.java 18327 2010-08-11 15:00:49Z kpouer $
+ * @version $Id: BeanShell.java 19394 2011-02-24 13:24:54Z kpouer $
  */
 public class BeanShell
 {
@@ -442,60 +442,6 @@ public class BeanShell
 	{
 		return bsh.getNameSpace();
 	} //}}}
-
-	//{{{ Deprecated functions
-
-	//{{{ runScript() method
-	/**
-	 * @deprecated The <code>rethrowBshErrors</code> parameter is now
-	 * obsolete; call <code>_runScript()</code> or <code>runScript()</code>
-	 * instead.
-	 */
-	@Deprecated
-	public static void runScript(View view, String path,
-		boolean ownNamespace, boolean rethrowBshErrors)
-	{
-		runScript(view,path,null,ownNamespace);
-	} //}}}
-
-	//{{{ runScript() method
-	/**
-	 * @deprecated The <code>rethrowBshErrors</code> parameter is now
-	 * obsolete; call <code>_runScript()</code> or <code>runScript()</code>
-	 * instead.
-	 */
-	@Deprecated
-	public static void runScript(View view, String path, Reader in,
-		boolean ownNamespace, boolean rethrowBshErrors)
-	{
-		runScript(view,path,in,ownNamespace);
-	} //}}}
-
-	//{{{ eval() method
-	/**
-	 * @deprecated The <code>rethrowBshErrors</code> parameter is now
-	 * obsolete; call <code>_eval()</code> or <code>eval()</code> instead.
-	 */
-	@Deprecated
-	public static Object eval(View view, String command,
-		boolean rethrowBshErrors)
-	{
-		return bsh.eval(view,command);
-	} //}}}
-
-	//{{{ eval() method
-	/**
-	 * @deprecated The <code>rethrowBshErrors</code> parameter is now
-	 * obsolete; call <code>_eval()</code> or <code>eval()</code> instead.
-	 */
-	@Deprecated
-	public static Object eval(View view, NameSpace namespace,
-		String command, boolean rethrowBshErrors)
-	{
-		return eval(view,namespace,command);
-	} //}}}
-
-	//}}}
 
 	//{{{ Package-private members
 

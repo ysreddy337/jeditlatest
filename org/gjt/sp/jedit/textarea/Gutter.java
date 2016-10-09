@@ -30,6 +30,7 @@ import javax.swing.*;
 import javax.swing.border.*;
 import javax.swing.event.*;
 
+import org.gjt.sp.jedit.Registers;
 import org.gjt.sp.jedit.buffer.BufferAdapter;
 import org.gjt.sp.jedit.buffer.BufferListener;
 import org.gjt.sp.jedit.buffer.JEditBuffer;
@@ -49,7 +50,7 @@ import org.gjt.sp.util.Log;
  * @see TextArea
  *
  * @author Mike Dillon and Slava Pestov
- * @version $Id: Gutter.java 18110 2010-06-18 19:21:38Z shlomy $
+ * @version $Id: Gutter.java 20408 2011-11-22 19:45:48Z ezust $
  */
 public class Gutter extends JComponent implements SwingConstants
 {
@@ -161,8 +162,7 @@ public class Gutter extends JComponent implements SwingConstants
 		if (textArea.getBuffer().isLoading())
 			return;
 
-		int lineHeight = textArea.getPainter().getFontMetrics()
-			.getHeight();
+		int lineHeight = textArea.getPainter().getLineHeight();
 
 		if(lineHeight == 0)
 			return;
@@ -176,7 +176,7 @@ public class Gutter extends JComponent implements SwingConstants
 			Log.log(Log.ERROR,this,"     lastLine=" + lastLine);
 			Log.log(Log.ERROR,this,"     visibleLines=" + textArea.getVisibleLines());
 			Log.log(Log.ERROR,this,"     height=" + getHeight());
-			Log.log(Log.ERROR,this,"     painter.height=" + textArea.getPainter().getHeight());
+			Log.log(Log.ERROR,this,"     painter.height=" + lineHeight);
 			Log.log(Log.ERROR,this,"     clip.y=" + clip.y);
 			Log.log(Log.ERROR,this,"     clip.height=" + clip.height);
 			Log.log(Log.ERROR,this,"     lineHeight=" + lineHeight);
@@ -720,7 +720,7 @@ public class Gutter extends JComponent implements SwingConstants
 			return;
 
 		FontMetrics textAreaFm = textArea.getPainter().getFontMetrics();
-		int lineHeight = textAreaFm.getHeight();
+		int lineHeight = textArea.getPainter().getLineHeight();
 		int baseline = textAreaFm.getAscent();
 
 		ChunkCache.LineInfo info = textArea.chunkCache.getLineInfo(line);
@@ -883,6 +883,7 @@ public class Gutter extends JComponent implements SwingConstants
 		MouseActionsProvider mouseActions;
 		boolean drag;
 		int toolTipInitialDelay, toolTipReshowDelay;
+		int selectionStart;
 		boolean selectLines;
 		int selAnchorLine;
 		GutterPopupHandler selectionPopupHandler;
@@ -918,8 +919,7 @@ public class Gutter extends JComponent implements SwingConstants
 					(! outsideGutter) &&
 					(e.getX() > FOLD_MARKER_SIZE))
 				{
-					int screenLine = e.getY() / textArea.getPainter()
-						.getFontMetrics().getHeight();
+					int screenLine = e.getY() / textArea.getPainter().getLineHeight();
 					int line = textArea.chunkCache.getLineInfo(screenLine)
 						.physicalLine;
 					if (line >= 0)
@@ -937,8 +937,7 @@ public class Gutter extends JComponent implements SwingConstants
 			{
 				JEditBuffer buffer = textArea.getBuffer();
 
-				int screenLine = e.getY() / textArea.getPainter()
-					.getFontMetrics().getHeight();
+				int screenLine = e.getY() / textArea.getPainter().getLineHeight();
 
 				int line = textArea.chunkCache.getLineInfo(screenLine)
 					.physicalLine;
@@ -948,9 +947,9 @@ public class Gutter extends JComponent implements SwingConstants
 
 				if (e.getX() >= FOLD_MARKER_SIZE)
 				{
+					selectionStart = textArea.getLineStartOffset(line);
 					Selection s = new Selection.Range(
-						textArea.getLineStartOffset(line),
-						getFoldEndOffset(line));
+						selectionStart, getFoldEndOffset(line));
 					if(textArea.isMultipleSelectionEnabled())
 						textArea.addToSelection(s);
 					else
@@ -1064,8 +1063,7 @@ public class Gutter extends JComponent implements SwingConstants
 			}
 			else if(selectLines)
 			{
-				int screenLine = e.getY() / textArea.getPainter()
-					.getFontMetrics().getHeight();
+				int screenLine = e.getY() / textArea.getPainter().getLineHeight();
 				int line;
 				if(e.getY() < 0)
 				{
@@ -1126,6 +1124,12 @@ public class Gutter extends JComponent implements SwingConstants
 			{
 				e.translatePoint(-getWidth(),0);
 				textArea.mouseHandler.mouseReleased(e);
+			}
+			if (selectLines)
+			{
+				Selection sel = textArea.getSelectionAtOffset(selectionStart);
+				if(sel != null)
+					Registers.setRegister('%', textArea.getSelectedText(sel));
 			}
 
 			drag = false;

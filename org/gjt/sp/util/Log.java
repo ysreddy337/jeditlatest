@@ -56,7 +56,7 @@ import static java.text.DateFormat.MEDIUM;
  * This class can also optionally redirect standard output and error to the log.
  *
  * @author Slava Pestov
- * @version $Id: Log.java 18221 2010-07-19 16:19:45Z daleanson $
+ * @version $Id: Log.java 19450 2011-03-14 21:23:20Z shlomy $
  */
 public class Log
 {
@@ -129,7 +129,8 @@ public class Log
 		log(MESSAGE,Log.class,"When reporting bugs, please"
 			+ " include the following information:");
 		String[] props = {
-			"java.version", "java.vm.version", "java.runtime.version",
+			"java.version", "java.vm.version", "java.vm.name",
+			"java.runtime.version", "java.runtime.name",
 			"java.vendor", "java.compiler", "os.name", "os.version",
 			"os.arch", "user.home", "java.home",
 			"java.class.path",

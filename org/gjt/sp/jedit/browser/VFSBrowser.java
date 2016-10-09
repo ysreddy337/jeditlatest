@@ -33,6 +33,7 @@ import java.awt.*;
 import java.io.File;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 import org.gjt.sp.jedit.io.*;
 import org.gjt.sp.jedit.gui.*;
@@ -40,7 +41,7 @@ import org.gjt.sp.jedit.msg.*;
 import org.gjt.sp.jedit.search.*;
 import org.gjt.sp.jedit.*;
 import org.gjt.sp.jedit.buffer.JEditBuffer;
-import org.gjt.sp.util.Log;
+import org.gjt.sp.util.*;
 import org.gjt.sp.jedit.menu.MenuItemTextComparator;
 //}}}
 
@@ -50,7 +51,7 @@ import org.gjt.sp.jedit.menu.MenuItemTextComparator;
  * VFSFileChooserDialog.
  * 
  * @author Slava Pestov
- * @version $Id: VFSBrowser.java 19856 2011-08-28 16:20:45Z ezust $
+ * @version $Id: VFSBrowser.java 19949 2011-09-10 08:37:05Z kpouer $
  */
 public class VFSBrowser extends JPanel implements DefaultFocusComponent,
 	DockableWindow
@@ -253,7 +254,6 @@ public class VFSBrowser extends JPanel implements DefaultFocusComponent,
 		filterEditor.setSelectAllOnFocus(true);
 		filterEditor.addActionListener(actionHandler);
 		filterField.setName("filter-field");
-		String filter;
 		if (mode == BROWSER)
 		{
 			DockableWindowManager dwm = view.getDockableWindowManager();
@@ -276,6 +276,7 @@ public class VFSBrowser extends JPanel implements DefaultFocusComponent,
 			});
 		}
 
+		String filter;
 		if(mode == BROWSER || !jEdit.getBooleanProperty(
 			"vfs.browser.currentBufferFilter"))
 		{
@@ -356,9 +357,9 @@ public class VFSBrowser extends JPanel implements DefaultFocusComponent,
 			else if("buffer".equals(defaultPath))
 			{
 				Buffer buffer = view.getBuffer();
-                boolean browseable = (buffer.getVFS().getCapabilities() & VFS.BROWSE_CAP) != 0;
-                if (browseable)
-			    	path = buffer.getDirectory();
+				boolean browseable = (buffer.getVFS().getCapabilities() & VFS.BROWSE_CAP) != 0;
+				if (browseable)
+					path = buffer.getDirectory();
 			}
 			else if("last".equals(defaultPath))
 			{
@@ -371,7 +372,7 @@ public class VFSBrowser extends JPanel implements DefaultFocusComponent,
 			else if("favorites".equals(defaultPath))
 				path = "favorites:";
 
-            if (path == null || path.isEmpty())
+			if (path == null || path.isEmpty())
 			{
 				// unknown value??!!!
 				path = userHome;
@@ -380,8 +381,9 @@ public class VFSBrowser extends JPanel implements DefaultFocusComponent,
 
 		final String _path = path;
 
-		SwingUtilities.invokeLater(new Runnable()
+		ThreadUtilities.runInDispatchThread(new Runnable()
 		{
+			@Override
 			public void run()
 			{
 				setDirectory(_path);
@@ -390,6 +392,7 @@ public class VFSBrowser extends JPanel implements DefaultFocusComponent,
 	} //}}}
 
 	//{{{ focusOnDefaultComponent() method
+	@Override
 	public void focusOnDefaultComponent()
 	{
 		// pathField.requestFocus();		
@@ -504,28 +507,6 @@ public class VFSBrowser extends JPanel implements DefaultFocusComponent,
 		this.showHiddenFiles = showHiddenFiles;
 	} //}}}
 
-	//{{{ getFilenameFilter() method
-	/**
-	 * Returns the file name filter glob.
-	 * @since jEdit 3.2pre2
-	 * @deprecated Use {@link #getVFSFileFilter()} instead. This method
-	 *             might return wrong information since jEdit 4.3pre6.
-	 */
-	@Deprecated
-	public String getFilenameFilter()
-	{
-		if(filterCheckbox.isSelected())
-		{
-			String filter = filterField.getSelectedItem().toString();
-			if(filter.length() == 0)
-				return "*";
-			else
-				return filter;
-		}
-		else
-			return "*";
-	} //}}}
-
 	//{{{ getVFSFileFilter() method
 	/**
 	 * Returns the currently active VFSFileFilter.
@@ -633,13 +614,8 @@ public class VFSBrowser extends JPanel implements DefaultFocusComponent,
 
 		historyStack.push(path);
 		browserView.saveExpansionState();
-		Runnable delayedAWTRequest = new Runnable()
-		{
-			public void run()
-			{
-				endRequest();
-			}
-		};
+
+		Runnable delayedAWTRequest = new DelayedEndRequest();
 		browserView.loadDirectory(null,path,true, delayedAWTRequest);
 		this.path = path;
 	} //}}}
@@ -716,28 +692,84 @@ public class VFSBrowser extends JPanel implements DefaultFocusComponent,
 		if(!startRequest())
 			return;
 
+		final CountDownLatch latch = new CountDownLatch(files.length);
 		for(int i = 0; i < files.length; i++)
 		{
 			Object session = vfs.createVFSSession(files[i].getDeletePath(),this);
 			if(session == null)
+			{
+				latch.countDown();
 				continue;
+			}
 
-			VFSManager.runInWorkThread(new BrowserIORequest(
-				BrowserIORequest.DELETE,this,
-				session,vfs,files[i].getDeletePath(),
-				null,null));
+			final Task task = new DeleteBrowserTask(this, session, vfs, files[i].getDeletePath());
+			TaskManager.instance.addTaskListener(new TaskAdapter()
+			{
+				@Override
+				public void done(Task t)
+				{
+					if (task == t)
+					{
+						latch.countDown();
+						TaskManager.instance.removeTaskListener(this);
+					}
+				}
+			});
+			ThreadUtilities.runInBackground(task);
 		}
 
-		VFSManager.runInAWTThread(new Runnable()
+		try
 		{
-			public void run()
-			{
-				endRequest();
-			}
-		});
+			latch.await();
+		}
+		catch (InterruptedException e)
+		{
+			Log.log(Log.ERROR, this, e, e);
+		}
+
+		Runnable delayedAWTRequest = new DelayedEndRequest();
+		EventQueue.invokeLater(delayedAWTRequest);
 	} //}}}
 
-	//{{{ rename() method
+	//{{{ rename() methods
+	/**
+	 * Rename a file.
+	 * It will prompt for the new name.
+	 * @param from the file to rename
+	 * @since jEdit 4.5pre1
+	 */
+	public void rename(VFSFile from)
+	{
+		String filename;
+		if (from instanceof FavoritesVFS.Favorite)
+		{
+			FavoritesVFS.Favorite favorite = (FavoritesVFS.Favorite) from;
+			filename = favorite.getLabel();
+		}
+		else
+		{
+			filename = from.getName();
+		}
+		String[] args = { filename };
+		String to = GUIUtilities.input(this,"vfs.browser.rename",
+			args,filename);
+		if (to == null)
+			return;
+		rename(from.getVFS(), from.getPath(), to);
+	}
+
+	/**
+	 * Rename a file.
+	 * It will prompt for the new name.
+	 * @param from the file to rename
+	 * @param from to the target name
+	 * @since jEdit 4.5pre1
+	 */
+	public void rename(VFSFile from, String to)
+	{
+		rename(from.getVFS(), from.getPath(), to);
+	}
+
 	public void rename(String from)
 	{
 		VFS vfs = VFSManager.getVFSForPath(from);
@@ -746,13 +778,33 @@ public class VFSBrowser extends JPanel implements DefaultFocusComponent,
 		String[] args = { filename };
 		String to = GUIUtilities.input(this,"vfs.browser.rename",
 			args,filename);
+		if (to == null)
+			return;
+		rename(from, to);
+	}
+
+	/**
+	 * Rename a file
+	 * @param vfs the VFS. It may be strange to give the VFS, but in
+	 * case of FavoriteVFS we cannot know that it is favorite.
+	 * @param from the full path name of the file to be renamed
+	 * @param newname the new name (only filename, not full path)
+	 * @since jEdit 4.5pre1
+	 */
+	private void rename(VFS vfs, String from, String newname)
+	{
+		String filename = vfs.getFileName(from);
+		String to = newname;
+
 		if(to == null)
 			return;
 
-		to = MiscUtilities.constructPath(vfs.getParentOfPath(from),to);
-
-		if (to.equals(from))
-			return;
+		if (!(vfs instanceof FavoritesVFS))
+		{
+			if (filename.equals(newname))
+				return;
+			to = MiscUtilities.constructPath(vfs.getParentOfPath(from),to);
+		}
 
 		Object session = vfs.createVFSSession(from,this);
 		if(session == null)
@@ -761,51 +813,21 @@ public class VFSBrowser extends JPanel implements DefaultFocusComponent,
 		if(!startRequest())
 			return;
 
-		VFSManager.runInWorkThread(new BrowserIORequest(
-			BrowserIORequest.RENAME,this,
-			session,vfs,from,to,null));
+		Runnable delayedAWTRequest = new DelayedEndRequest();
+		Task renameTask = new RenameBrowserTask(this, session, vfs, from, to, delayedAWTRequest);
+		ThreadUtilities.runInBackground(renameTask);
+	}
 
-		VFSManager.runInAWTThread(new Runnable()
-		{
-			public void run()
-			{
-				endRequest();
-			}
-		});
-	} //}}}
-
-	//{{{ rename() method
+	/**
+	 * Rename a file
+	 * @param from the full path name of the file to be renamed
+	 * @param newname the new name (only filename, not full path)
+	 */
 	public void rename(String from, String newname)
 	{
 		VFS vfs = VFSManager.getVFSForPath(from);
-
-		String filename = vfs.getFileName(from);
-		String to = newname;
-		
-		if(to == null || filename.equals(newname))
-			return;
-
-		to = MiscUtilities.constructPath(vfs.getParentOfPath(from),to);
-
-		Object session = vfs.createVFSSession(from,this);
-		if(session == null)
-			return;
-
-		if(!startRequest())
-			return;
-
-		VFSManager.runInWorkThread(new BrowserIORequest(
-			BrowserIORequest.RENAME,this,
-			session,vfs,from,to,null));
-
-		VFSManager.runInAWTThread(new Runnable()
-		{
-			public void run()
-			{
-				endRequest();
-			}
-		});
-	} //}}}		
+		rename(vfs, from, newname);
+	} //}}}
 
 	//{{{ mkdir() method
 	public void mkdir()
@@ -841,12 +863,9 @@ public class VFSBrowser extends JPanel implements DefaultFocusComponent,
 		if(!startRequest())
 			return;
 
-		VFSManager.runInWorkThread(new BrowserIORequest(
-			BrowserIORequest.MKDIR,this,
-			session,vfs,newDirectory,null,null));
-
-		VFSManager.runInAWTThread(new Runnable()
+		Runnable runnable = new Runnable()
 		{
+			@Override
 			public void run()
 			{
 				endRequest();
@@ -864,7 +883,9 @@ public class VFSBrowser extends JPanel implements DefaultFocusComponent,
 					}
 				}
 			}
-		});
+		};
+		Task mkdirTask = new MkDirBrowserTask(this, session, vfs, newDirectory, runnable);
+		ThreadUtilities.runInBackground(mkdirTask);
 	} //}}}
 
 	//{{{ newFile() method
@@ -1013,6 +1034,8 @@ public class VFSBrowser extends JPanel implements DefaultFocusComponent,
 			setFilenameFilter(null);
 
 		setDirectory(MiscUtilities.getParentOfPath(path));
+		// Do not change this until all VFS Browser tasks are
+		// done in ThreadUtilities
 		VFSManager.runInAWTThread(new Runnable()
 		{
 			public void run()
@@ -1025,7 +1048,6 @@ public class VFSBrowser extends JPanel implements DefaultFocusComponent,
 	//{{{ createPluginsMenu() method
 	public JComponent createPluginsMenu(JComponent pluginMenu, boolean showManagerOptions)
 	{
-		ActionHandler actionHandler = new ActionHandler();
 		if(showManagerOptions && getMode() == BROWSER)
 		{
 			pluginMenu.add(GUIUtilities.loadMenuItem("plugin-manager",false));
@@ -1040,22 +1062,6 @@ public class VFSBrowser extends JPanel implements DefaultFocusComponent,
 			/* we're in a modal dialog */;
 
 		List<JMenuItem> vec = new ArrayList<JMenuItem>();
-
-		//{{{ old API
-		Enumeration<VFS> e = VFSManager.getFilesystems();
-
-		while(e.hasMoreElements())
-		{
-			VFS vfs = e.nextElement();
-			if((vfs.getCapabilities() & VFS.BROWSE_CAP) == 0)
-				continue;
-
-			JMenuItem menuItem = new JMenuItem(jEdit.getProperty(
-					"vfs." + vfs.getName() + ".label"));
-			menuItem.setActionCommand(vfs.getName());
-			menuItem.addActionListener(actionHandler);
-			vec.add(menuItem);
-		} //}}}
 
 		//{{{ new API
 		EditPlugin[] plugins = jEdit.getPlugins();
@@ -1209,16 +1215,20 @@ check_selected: for(int i = 0; i < selectedFiles.length; i++)
 	//{{{ dispose() method
 	/** Disposes the browser, regardless of whether it is a dialog or a dockable
 	*/
-	public void dispose() {	
-		if (this.mode == BROWSER) {
+	public void dispose()
+	{
+		if (mode == BROWSER)
+		{
 			view.getDockableWindowManager().hideDockableWindow(NAME);			
 		}
-		else {
+		else
+		{
 			GUIUtilities.getParentDialog(this).dispose();
 		}	
 	}//}}}
 
 	//{{{ move() method
+	@Override
 	public void move(String newPosition)
 	{
 		boolean horz = mode != BROWSER
@@ -1556,6 +1566,8 @@ check_selected: for(int i = 0; i < selectedFiles.length; i++)
 			}
 			finally
 			{
+				// Do not change this until all VFS Browser tasks are
+				// done in ThreadUtilities
 				VFSManager.runInAWTThread(new Runnable()
 				{
 					public void run()
@@ -1574,6 +1586,7 @@ check_selected: for(int i = 0; i < selectedFiles.length; i++)
 	//{{{ ActionHandler class
 	class ActionHandler implements ActionListener, ItemListener
 	{
+		@Override
 		public void actionPerformed(ActionEvent evt)
 		{
 			if (isProcessingEvent)
@@ -1621,6 +1634,7 @@ check_selected: for(int i = 0; i < selectedFiles.length; i++)
 			}
 		}
 
+		@Override
 		public void itemStateChanged(ItemEvent e)
 		{
 			if (isProcessingEvent)
@@ -1657,9 +1671,9 @@ check_selected: for(int i = 0; i < selectedFiles.length; i++)
 		 */
 		private void resetLater()
 		{
-			SwingUtilities.invokeLater(
-				new Runnable()
+			ThreadUtilities.runInDispatchThread(new Runnable()
 				{
+					@Override
 					public void run()
 					{
 						isProcessingEvent = false;
@@ -1840,8 +1854,8 @@ check_selected: for(int i = 0; i < selectedFiles.length; i++)
 					sortIgnoreCase));
 				for(int i = 0; i < favorites.length; i++)
 				{
-					VFSFile favorite = favorites[i];
-					mi = new JMenuItem(favorite.getPath());
+					FavoritesVFS.Favorite favorite = (FavoritesVFS.Favorite) favorites[i];
+					mi = new JMenuItem(favorite.getLabel());
 					mi.setIcon(FileCellRenderer
 						.getIconForFile(
 						favorite,false));
@@ -1859,6 +1873,7 @@ check_selected: for(int i = 0; i < selectedFiles.length; i++)
 		//{{{ ActionHandler class
 		class ActionHandler implements ActionListener
 		{
+			@Override
 			public void actionPerformed(ActionEvent evt)
 			{
 				String actionCommand = evt.getActionCommand();
@@ -2002,6 +2017,7 @@ check_selected: for(int i = 0; i < selectedFiles.length; i++)
 			super(key);
 		}
 
+		@Override
 		public Object getItem()
 		{
 			if (current == null)
@@ -2017,6 +2033,7 @@ check_selected: for(int i = 0; i < selectedFiles.length; i++)
 			return current;
 		}
 
+		@Override
 		public void setItem(Object item)
 		{
 			if (item == current)
@@ -2072,6 +2089,7 @@ check_selected: for(int i = 0; i < selectedFiles.length; i++)
 			}
 		}
 
+		@Override
 		public Component getEditorComponent()
 		{
 			return this;
@@ -2102,23 +2120,35 @@ check_selected: for(int i = 0; i < selectedFiles.length; i++)
 	//{{{ DirectoriesOnlyFilter class
 	public static class DirectoriesOnlyFilter implements VFSFileFilter
 	{
-
+		@Override
 		public boolean accept(VFSFile file)
 		{
 			return file.getType() == VFSFile.DIRECTORY
 				|| file.getType() == VFSFile.FILESYSTEM;
 		}
 
+		@Override
 		public boolean accept(String url)
 		{
 			return false;
 		}
 
+		@Override
 		public String getDescription()
 		{
 			return jEdit.getProperty("vfs.browser.file_filter.dir_only");
 		}
 
+	} //}}}
+
+	//{{{ DelayedEndRequest class
+	private class DelayedEndRequest implements Runnable
+	{
+		@Override
+		public void run()
+		{
+			endRequest();
+		}
 	} //}}}
 
 	//}}}

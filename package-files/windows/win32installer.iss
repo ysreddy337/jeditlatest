@@ -24,13 +24,13 @@ ChangesEnvironment=true
 DefaultDirName={pf}\jEdit
 DefaultGroupName=jEdit
 FlatComponentsList=false
-LicenseFile=@dist.dir.possibly.for.wine@\doc\COPYING.txt
+LicenseFile=@dist.dir.for.innosetup@\doc\COPYING.txt
 OutputBaseFilename=@win.filename@
-OutputDir=@dist.dir.possibly.for.wine@
-SetupIconFile=@base.dir.possibly.for.wine@\icons\jedit.ico
+OutputDir=@dist.dir.for.innosetup@
+SetupIconFile=@base.dir.for.innosetup@\icons\jedit.ico
 ShowTasksTreeLines=true
 SolidCompression=true
-SourceDir=@dist.dir.possibly.for.wine@
+SourceDir=@dist.dir.for.innosetup@
 TimeStampsInUTC=true
 UninstallDisplayIcon={app}\jedit.exe
 UninstallDisplayName=jEdit @jedit.version@
@@ -39,8 +39,8 @@ VersionInfoCopyright=Copyright © 1998-@current.year@ Contributors
 VersionInfoDescription=Programmer's Text Editor
 VersionInfoTextVersion=@jedit.version@
 VersionInfoVersion=@jedit.build.number@
-WizardImageFile=@base.dir.possibly.for.wine@\icons\WindowsInstallerImage.bmp
-WizardSmallImageFile=@base.dir.possibly.for.wine@\icons\WindowsInstallerSmallImage.bmp
+WizardImageFile=@base.dir.for.innosetup@\icons\WindowsInstallerImage.bmp
+WizardSmallImageFile=@base.dir.for.innosetup@\icons\WindowsInstallerSmallImage.bmp
 
 [Components]
 Name: main; Description: jEdit - Programmer's Text Editor; Flags: fixed; Types: custom compact full
@@ -55,7 +55,6 @@ Name: autostartserver; Description: {cm:AutostartJEditServer}; GroupDescription:
 [Files]
 Source: @jar.filename@; DestDir: {app}; Flags: ignoreversion sortfilesbyextension sortfilesbyname; Components: main
 Source: jedit.exe; DestDir: {app}; Flags: ignoreversion sortfilesbyextension sortfilesbyname; AfterInstall: updatePATHVariable; Components: main
-Source: classes\package-files\windows\jedit.l4j.ini; DestDir: {app}; Flags: ignoreversion sortfilesbyextension sortfilesbyname; Components: main
 Source: classes\package-files\windows\jEdit.url; DestDir: {app}; Flags: ignoreversion sortfilesbyextension sortfilesbyname; Components: main
 Source: doc\*; DestDir: {app}\doc; Excludes: \doc\api\*; Flags: ignoreversion recursesubdirs createallsubdirs sortfilesbyextension sortfilesbyname; Components: main
 Source: doc\api\*; DestDir: {app}\doc\api; Flags: ignoreversion recursesubdirs createallsubdirs sortfilesbyextension sortfilesbyname; Components: apidoc

@@ -30,7 +30,7 @@ import org.gjt.sp.jedit.syntax.TokenMarker;
 
 /**
  * @author Slava Pestov
- * @version $Id: BracketIndentRule.java 12504 2008-04-22 23:12:43Z ezust $
+ * @version $Id: BracketIndentRule.java 18919 2010-11-04 10:52:55Z kpouer $
  */
 public abstract class BracketIndentRule implements IndentRule
 {
@@ -46,47 +46,6 @@ public abstract class BracketIndentRule implements IndentRule
 	{
 		int openCount;
 		int closeCount;
-	} //}}}
-
-	//{{{ getBrackets() method
-	/**
-	 * @deprecated
-	 *   Use {@link #getBrackets(JEditBuffer,int,int,int)} instead.
-	 *   Brackets in comments or literals should be ignored for indent.
-	 *   But it can't be done without syntax parsing of a buffer.
-	 */
-	@Deprecated
-	public Brackets getBrackets(String line)
-	{
-		Brackets brackets = new Brackets();
-
-		for(int i = 0; i < line.length(); i++)
-		{
-			char ch = line.charAt(i);
-			if(ch == openBracket)
-			{
-				/* Don't increase indent when we see
-				an explicit fold. */
-				if(line.length() - i >= 3)
-				{
-					if(line.substring(i,i+3).equals("{{{")) /* }}} */
-					{
-						i += 2;
-						continue;
-					}
-				}
-				brackets.openCount++;
-			}
-			else if(ch == closeBracket)
-			{
-				if(brackets.openCount != 0)
-					brackets.openCount--;
-				else
-					brackets.closeCount++;
-			}
-		}
-
-		return brackets;
 	} //}}}
 
 	//{{{ getBrackets() method

@@ -33,7 +33,7 @@ import java.awt.*;
 /** Standalone TextArea MouseHandler.
  *
  * @author Matthieu Casanova
- * @version $Id: TextAreaMouseHandler.java 18557 2010-09-14 08:05:17Z kpouer $
+ * @version $Id: TextAreaMouseHandler.java 19363 2011-02-14 11:59:42Z kpouer $
  */
 public class TextAreaMouseHandler extends MouseInputAdapter
 {
@@ -164,8 +164,7 @@ public class TextAreaMouseHandler extends MouseInputAdapter
 		    textArea.isRectangularSelectionEnabled())
 			&& textArea.isEditable())
 		{
-			int screenLine = (evt.getY() / textArea.getPainter()
-				.getFontMetrics().getHeight());
+			int screenLine = (evt.getY() / textArea.getPainter().getLineHeight());
 			if(screenLine > textArea.getLastScreenLine())
 				screenLine = textArea.getLastScreenLine();
 			ChunkCache.LineInfo info = textArea.chunkCache.getLineInfo(screenLine);
@@ -183,9 +182,8 @@ public class TextAreaMouseHandler extends MouseInputAdapter
 
 		if(evt.isShiftDown())
 		{
-			// XXX: getMarkPosition() deprecated!
 			textArea.resizeSelection(
-				textArea.getMarkPosition(),dragStart,extraEndVirt,
+				getSelectionPivotCaret(),dragStart,extraEndVirt,
 				textArea.isRectangularSelectionEnabled()
 				|| (control && ctrlForRectangularSelection));
 
@@ -193,8 +191,8 @@ public class TextAreaMouseHandler extends MouseInputAdapter
 				textArea.moveCaretPosition(dragStart,false);
 
 			// so that shift-click-drag works
-			dragStartLine = textArea.getMarkLine();
-			dragStart = textArea.getMarkPosition();
+			dragStartLine = getSelectionPivotLine();
+			dragStart = getSelectionPivotCaret();
 			dragStartOffset = dragStart
 				- textArea.getLineStartOffset(dragStartLine);
 
@@ -205,7 +203,11 @@ public class TextAreaMouseHandler extends MouseInputAdapter
 		}
 
 		if(!quickCopyDrag)
-			textArea.moveCaretPosition(dragStart,false);
+		{
+			Point p = textArea.offsetToXY(dragStart);
+			// defer scrolling until mouserelease if result is off-screen
+			textArea.moveCaretPosition(dragStart, (p.x < 0) ? textArea.NO_SCROLL : textArea.NORMAL_SCROLL);
+		}
 
 		if(!(textArea.isMultipleSelectionEnabled()
 			|| quickCopyDrag))
@@ -298,17 +300,12 @@ public class TextAreaMouseHandler extends MouseInputAdapter
 		TextAreaPainter painter = textArea.getPainter();
 		if(evt.getY() < 0)
 		{
-			int delta = Math.min(-1,evt.getY()
-				/ painter.getFontMetrics()
-				.getHeight());
+			int delta = Math.min(-1,evt.getY() / painter.getLineHeight());
 			textArea.setFirstLine(textArea.getFirstLine() + delta);
 		}
 		else if(evt.getY() >= painter.getHeight())
 		{
-			int delta = Math.max(1,(evt.getY()
-				- painter.getHeight()) /
-				painter.getFontMetrics()
-				.getHeight());
+			int delta = Math.max(1,(evt.getY() - painter.getHeight()) / painter.getLineHeight());
 			if(textArea.lastLinePartial)
 				delta--;
 			textArea.setFirstLine(textArea.getFirstLine() + delta);
@@ -382,8 +379,17 @@ public class TextAreaMouseHandler extends MouseInputAdapter
 		}
 		else
 		{
+			Point p = textArea.offsetToXY(dot);
 			if(dot != textArea.getCaretPosition())
-				textArea.moveCaretPosition(dot,false);
+			{
+				// defer scroll to mouserelease if result is offscreen left without dragging that direction
+				textArea.moveCaretPosition(dot, (p.x < 0 && x > 1) ? textArea.NO_SCROLL : textArea.NORMAL_SCROLL);
+			}
+			else if(p.x < 0 && x < 1)
+			{
+				// caret already offscreen left, user now attempting to drag left
+				textArea.scrollToCaret(false);
+			}
 			if(textArea.isRectangularSelectionEnabled()
 				&& extraEndVirt != 0)
 			{
@@ -573,6 +579,60 @@ public class TextAreaMouseHandler extends MouseInputAdapter
 		else
 			return (modifiers & InputEvent.BUTTON3_MASK) != 0;
 	} //}}}
+
+	//{{{ Private methods
+
+	//{{{ getSelectionPivotCaret() method
+	/*
+	 * Dynamically get the "pivot" point associated with a current
+	 * selection.  See inline comments for details.
+	 */
+	private int getSelectionPivotCaret()
+	{
+		int caret = textArea.caret;
+
+		Selection s = textArea.getSelectionAtOffset(textArea.caret);
+		if (s == null)
+			return caret;
+
+		// The mental model: an existing selection, and then a shift+click
+		// somewhere else.  What happens to the selection?  Because a selection
+		// exists, we need a "pivot" point.  If the caret is at the start of a
+		// selection, the end of the selection pivot point.  So, a click above
+		// the start of the caret will enlarge the selection, and a click below
+		// the end will reverse the selection around the pivot point: the text
+		// before the pivot will no longer be selected, and the text after it
+		// and up to the click will be newly selected.  Vice versa holds true
+		// when the caret is at the end of the selection.  If the caret is
+		// somewhere else, just give up, and let the user fix it.
+
+		caret = ( caret == s.start ? s.end   :
+		          caret == s.end   ? s.start :
+		          caret );
+
+		return caret;
+	} //}}}
+
+	//{{{ getSelectionPivotLine() method
+	/*
+	 * See getSelectionPivotCaret for an explanation of this function
+	 */
+	private int getSelectionPivotLine()
+	{
+		int c  = textArea.caret;
+		int cl = textArea.caretLine;
+
+		if(textArea.getSelectionCount() != 1)
+			return cl;
+
+		Selection s = textArea.getSelection(0);
+		cl = ( c == s.start ? s.endLine   :
+		       c == s.end   ? s.startLine :
+		       cl );
+
+		return cl;
+	} //}}}
+	//}}}
 
 	//{{{ Private members
 	protected final TextArea textArea;

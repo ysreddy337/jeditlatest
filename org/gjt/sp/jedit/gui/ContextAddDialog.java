@@ -46,10 +46,7 @@ import javax.swing.JScrollPane;
 import javax.swing.ListSelectionModel;
 import javax.swing.border.EmptyBorder;
 
-import org.gjt.sp.jedit.ActionSet;
-import org.gjt.sp.jedit.EditAction;
-import org.gjt.sp.jedit.GUIUtilities;
-import org.gjt.sp.jedit.jEdit;
+import org.gjt.sp.jedit.*;
 import org.gjt.sp.jedit.gui.AbstractContextOptionPane.MenuItem;
 //}}}
 
@@ -65,7 +62,7 @@ public class ContextAddDialog extends EnhancedDialog
 	private static final String CONTEXT_ADD_DIALOG_LAST_SELECTION = "contextAddDialog.lastSelection";
 
 	//{{{ ContextAddDialog constructor
-	public ContextAddDialog(Component comp)
+	public ContextAddDialog(Component comp, ActionContext actionContext)
 	{
 		super(GUIUtilities.getParentDialog(comp),
 		      jEdit.getProperty("options.context.add.title"),
@@ -100,7 +97,8 @@ public class ContextAddDialog extends EnhancedDialog
 
 		JPanel actionPanel = new JPanel(new BorderLayout(6,6));
 
-		ActionSet[] actionsList = jEdit.getActionSets();
+		ActionSet[] actionsList = actionContext.getActionSets();
+
 		Collection<ActionSet> actionSets = new TreeSet<ActionSet>();
 		String lastSelectionLabel = jEdit.getProperty(CONTEXT_ADD_DIALOG_LAST_SELECTION);
 		for (ActionSet actionSet : actionsList)
@@ -157,6 +155,7 @@ public class ContextAddDialog extends EnhancedDialog
 	} //}}}
 
 	//{{{ ok() method
+	@Override
 	public void ok()
 	{
 		isOK = true;
@@ -164,6 +163,7 @@ public class ContextAddDialog extends EnhancedDialog
 	} //}}}
 
 	//{{{ cancel() method
+	@Override
 	public void cancel()
 	{
 		dispose();
@@ -190,10 +190,12 @@ public class ContextAddDialog extends EnhancedDialog
 
 	//{{{ private members
 	private boolean isOK;
-	private JRadioButton separator, action;
-	private JComboBox combo;
-	private JList list;
-	private JButton ok, cancel;
+	private final JRadioButton separator;
+	private final JRadioButton action;
+	private final JComboBox combo;
+	private final JList list;
+	private final JButton ok;
+	private final JButton cancel;
 
 	//{{{ updateList() method
 	private void updateList()
@@ -224,6 +226,7 @@ public class ContextAddDialog extends EnhancedDialog
 	//{{{ ActionHandler class
 	class ActionHandler implements ActionListener
 	{
+		@Override
 		public void actionPerformed(ActionEvent evt)
 		{
 			Object source = evt.getSource();

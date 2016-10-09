@@ -33,7 +33,7 @@ import org.gjt.sp.jedit.TextUtilities;
  * for matching XML tags.
  *
  * @author Slava Pestov
- * @version $Id: StructureMatcher.java 15570 2009-06-25 00:43:57Z ezust $
+ * @version $Id: StructureMatcher.java 18808 2010-10-21 20:54:15Z daleanson $
  * @since jEdit 4.2pre3
  */
 public interface StructureMatcher
@@ -201,8 +201,8 @@ public interface StructureMatcher
 			int matchEndLine = textArea.getScreenLineOfOffset(
 				match.end);
 
-			FontMetrics fm = textArea.getPainter().getFontMetrics();
-			int height = fm.getHeight();
+			int fontHeight = textArea.getPainter().getFontHeight();
+			y += textArea.getPainter().getLineExtraSpacing();
 
 			int[] offsets = getOffsets(screenLine,match);
 			int x1 = offsets[0];
@@ -210,8 +210,8 @@ public interface StructureMatcher
 
 			gfx.setColor(textArea.getPainter().getStructureHighlightColor());
 
-			gfx.drawLine(x1,y,x1,y + height - 1);
-			gfx.drawLine(x2,y,x2,y + height - 1);
+			gfx.drawLine(x1,y,x1,y + fontHeight - 1);
+			gfx.drawLine(x2,y,x2,y + fontHeight - 1);
 
 			if(matchStartLine == screenLine || screenLine == 0)
 				gfx.drawLine(x1,y,x2,y);
@@ -229,8 +229,8 @@ public interface StructureMatcher
 
 			if(matchEndLine == screenLine)
 			{
-				gfx.drawLine(x1,y + height - 1,
-					x2,y + height - 1);
+				gfx.drawLine(x1,y + fontHeight - 1,
+					     x2,y + fontHeight - 1);
 			}
 		}
 

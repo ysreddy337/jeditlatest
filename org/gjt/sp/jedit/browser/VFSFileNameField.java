@@ -35,8 +35,8 @@ import org.gjt.sp.util.Log;
 
 /**
  * @author Slava Pestov
- * @version $Id: VFSFileNameField.java 19319 2011-02-01 04:38:55Z ezust $
- * @since jEdit 4.2pre1 (public since 4.4pre1)
+ * @version $Id: VFSFileNameField.java 19318 2011-02-01 04:22:08Z vanza $
+ * @since jEdit 4.2pre1 (public since 4.5pre1)
  */
 public class VFSFileNameField extends HistoryTextField
 {

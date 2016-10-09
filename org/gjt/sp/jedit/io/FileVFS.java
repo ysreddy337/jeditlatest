@@ -39,7 +39,7 @@ import org.gjt.sp.util.Log;
 /**
  * Local filesystem VFS.
  * @author Slava Pestov
- * @version $Id: FileVFS.java 17540 2010-03-27 01:09:11Z kpouer $
+ * @version $Id: FileVFS.java 19252 2011-01-22 21:27:03Z vanza $
  */
 public class FileVFS extends VFS
 {
@@ -212,11 +212,7 @@ public class FileVFS extends VFS
 		public static DateFormat DATE_FORMAT
 			= DateFormat.getInstance();
 
-		/**
-		 * @deprecated Call getModified() instead.
-		 */
-		@Deprecated
-		public long modified;
+		private long modified;
 
 		//{{{ LocalFile() class
 		public LocalFile(File file)
@@ -287,7 +283,7 @@ public class FileVFS extends VFS
 
 				icon = fsView.getSystemIcon(file);
 			}
-			return icon;  
+			return icon;
 		} //}}}
 
 		//{{{ getSymlinkPath() method
@@ -384,7 +380,7 @@ public class FileVFS extends VFS
 	{
 		if(path.equals("/") && OperatingSystem.isUnix())
 		{
-			return new VFS.DirectoryEntry(path,path,path,
+			return new VFSFile(path,path,path,
 				VFSFile.DIRECTORY,0L,false);
 		}
 
@@ -416,8 +412,8 @@ public class FileVFS extends VFS
 		if (!file.isDirectory())
 		{
 			retVal = file.delete();
-		} 
-		else 
+		}
+		else
 		{
 			retVal = recursiveDelete(file);
 		}
@@ -604,7 +600,7 @@ public class FileVFS extends VFS
 
 		if(OperatingSystem.isUnix())
 		{
-			String[] cmdarray = { "ls", "-ld", path };
+			String[] cmdarray = { "ls", "-lLd", path };
 
 			InputStreamReader isr = null;
 			BufferedReader reader = null;

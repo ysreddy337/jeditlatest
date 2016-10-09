@@ -79,7 +79,7 @@ import org.gjt.sp.util.Log;
  *
  * @author Slava Pestov
  * @author John Gellene (API documentation)
- * @version $Id: EditBus.java 18566 2010-09-15 09:07:34Z kpouer $
+ * @version $Id: EditBus.java 20015 2011-09-24 11:56:48Z kpouer $
  *
  * @since jEdit 2.2pre6
  */
@@ -171,24 +171,25 @@ public class EditBus
 		components.removeComponent(comp);
 	} //}}}
 
-	//{{{ getComponents() method
-	/**
-	 * Returns an array of all components connected to the bus.
-	 *
-	 * @deprecated Don't use this method. It now returns an empty array.
-	 */
-	@Deprecated
-	public static EBComponent[] getComponents()
-	{
-		return new EBComponent[0];
-	} //}}}
-
 	//{{{ send() method
 	/**
 	 * Sends a message to all components on the bus in turn.
 	 * The message is delivered to components in the AWT thread,
 	 * and this method will wait until all handlers receive the
 	 * message before returning.
+	 *
+	 * <p><b>NOTE:</b>
+	 * If the calling thread is not the AWT thread and the
+	 * thread is interrupted before or while the call of this
+	 * method, this method can return before completion of handlers.
+	 * However, the interruption state is set in this case, so the
+	 * caller can detect the interruption after the call. If you
+	 * really need the completion of handlers, you should make sure
+	 * the call is in the AWT thread or the calling thread is never
+	 * interrupted. If you don't care about the completion of
+	 * handlers, it is recommended to use
+	 * {@link #sendAsync(EBMessage)} instead.
+	 * </p>
 	 *
 	 * @param message The message
 	 */
@@ -208,17 +209,26 @@ public class EditBus
 		 * expects this method to not throw them. So we catch
 		 * them and log them instead.
 		 */
+		boolean interrupted = false;
 		try
 		{
 			EventQueue.invokeAndWait(sender);
 		}
 		catch (InterruptedException ie)
 		{
+			interrupted = true;
 			Log.log(Log.ERROR, EditBus.class, ie);
 		}
 		catch (InvocationTargetException ite)
 		{
 			Log.log(Log.ERROR, EditBus.class, ite);
+		}
+		finally
+		{
+			if (interrupted)
+			{
+				Thread.currentThread().interrupt();
+			}
 		}
 	} //}}}
 
@@ -291,6 +301,12 @@ public class EditBus
 						else
 							dispatch(emh, message);
 					}
+				}
+				catch (InvocationTargetException t)
+				{
+					Log.log(Log.ERROR,EditBus.class,"Exception"
+						+ " while sending message on EditBus:");
+					Log.log(Log.ERROR, EditBus.class, t.getCause());
 				}
 				catch(Throwable t)
 				{

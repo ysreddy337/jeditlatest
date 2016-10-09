@@ -43,7 +43,7 @@ import java.util.jar.Attributes.Name;
  * A class loader implementation that loads classes from JAR files. All
  * instances share the same set of classes.
  * @author Slava Pestov
- * @version $Id: JARClassLoader.java 17144 2010-01-30 00:32:11Z kpouer $
+ * @version $Id: JARClassLoader.java 18919 2010-11-04 10:52:55Z kpouer $
  */
 public class JARClassLoader extends ClassLoader
 {
@@ -222,24 +222,6 @@ public class JARClassLoader extends ClassLoader
 
 		return "jeditresource:/" + MiscUtilities.getFileName(
 			jar.getPath()) + '!' + name;
-	} //}}}
-
-	//{{{ getZipFile() method
-	/**
-	 * @deprecated Call <code>PluginJAR.getZipFile()</code> instead.
-	 */
-	@Deprecated
-	public ZipFile getZipFile()
-	{
-		try
-		{
-			return jar.getZipFile();
-		}
-		catch(IOException io)
-		{
-			Log.log(Log.ERROR,this,io);
-			return null;
-		}
 	} //}}}
 
 	//{{{ dump() method

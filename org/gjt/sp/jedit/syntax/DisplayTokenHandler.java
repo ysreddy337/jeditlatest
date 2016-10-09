@@ -30,7 +30,7 @@ import java.util.List;
 
 /**
  * Creates {@link Chunk} objects that can be painted on screen.
- * @version $Id: DisplayTokenHandler.java 18562 2010-09-14 17:22:54Z kpouer $
+ * @version $Id: DisplayTokenHandler.java 19480 2011-03-22 14:08:05Z kpouer $
  */
 public class DisplayTokenHandler extends DefaultTokenHandler
 {
@@ -49,11 +49,12 @@ public class DisplayTokenHandler extends DefaultTokenHandler
 	 * @param expander
 	 * @param out
 	 * @param wrapMargin
+	 * @param physicalLineOffset offset of the physical lines which these chunks belong to required for implementing elastic tabstops
 	 */
 	public void init(SyntaxStyle[] styles,
 		FontRenderContext fontRenderContext,
 		TabExpander expander, List<Chunk> out,
-		float wrapMargin)
+		float wrapMargin, int physicalLineOffset)
 	{
 		super.init();
 
@@ -62,6 +63,7 @@ public class DisplayTokenHandler extends DefaultTokenHandler
 		this.styles = styles;
 		this.fontRenderContext = fontRenderContext;
 		this.expander = expander;
+		this.physicalLineOffset = physicalLineOffset;
 
 		// SILLY: allow for anti-aliased characters' "fuzz"
 		if(wrapMargin != 0.0f)
@@ -97,6 +99,7 @@ public class DisplayTokenHandler extends DefaultTokenHandler
 	 * @param context The line context
 	 * @since jEdit 4.2pre3
 	 */
+	@Override
 	public void handleToken(Segment seg, byte id, int offset, int length,
 		TokenMarker.LineContext context)
 	{
@@ -115,7 +118,7 @@ public class DisplayTokenHandler extends DefaultTokenHandler
 
 			if(wrapMargin != 0.0f)
 			{
-				initChunk(chunk,seg);
+				initChunk(chunk,seg, physicalLineOffset);
 				x += chunk.width;
 
 				if(Character.isWhitespace(seg.array[
@@ -138,7 +141,7 @@ public class DisplayTokenHandler extends DefaultTokenHandler
 						Chunk nextLine = new Chunk(endOfWhitespace,
 							end.offset + end.length,
 							getParserRuleSet(context));
-						initChunk(nextLine,seg);
+						initChunk(nextLine,seg,  physicalLineOffset);
 
 						nextLine.next = end.next;
 						end.next = null;
@@ -167,6 +170,7 @@ public class DisplayTokenHandler extends DefaultTokenHandler
 	private FontRenderContext fontRenderContext;
 	private TabExpander expander;
 	private float x;
+	private int physicalLineOffset;
 
 	private List<Chunk> out;
 	private float wrapMargin;
@@ -187,9 +191,9 @@ public class DisplayTokenHandler extends DefaultTokenHandler
 	} //}}}
 
 	//{{{ initChunk() method
-	protected void initChunk(Chunk chunk, Segment seg)
+	protected void initChunk(Chunk chunk, Segment seg, int physicalLineOffset)
 	{
-		chunk.init(seg,expander,x,fontRenderContext);
+		chunk.init(seg,expander,x,fontRenderContext, physicalLineOffset);
 	} //}}}
 
 	//{{{ merge() method
@@ -214,7 +218,7 @@ public class DisplayTokenHandler extends DefaultTokenHandler
 			{
 				if(!chunk.initialized)
 				{
-					initChunk(chunk,seg);
+					initChunk(chunk,seg, physicalLineOffset);
 					if(wrapMargin == 0.0f)
 						x += chunk.width;
 				}
@@ -223,7 +227,7 @@ public class DisplayTokenHandler extends DefaultTokenHandler
 		}
 
 		if(!chunk.initialized)
-			initChunk(chunk,seg);
+			initChunk(chunk,seg, physicalLineOffset);
 
 		return first;
 	} //}}}

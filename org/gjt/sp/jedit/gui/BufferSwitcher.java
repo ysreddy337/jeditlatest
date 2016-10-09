@@ -26,12 +26,11 @@ import java.awt.event.*;
 import java.awt.*;
 import org.gjt.sp.jedit.*;
 import org.gjt.sp.jedit.bufferset.BufferSet;
-import org.gjt.sp.jedit.io.VFSManager;
 import org.gjt.sp.util.ThreadUtilities;
 //}}}
 
 /** BufferSwitcher class
-   @version $Id: BufferSwitcher.java 17534 2010-03-25 23:07:15Z kpouer $
+   @version $Id: BufferSwitcher.java 20016 2011-09-24 12:18:28Z kpouer $
 */
 public class BufferSwitcher extends JComboBox
 {
@@ -49,15 +48,18 @@ public class BufferSwitcher extends JComboBox
 		addActionListener(new ActionHandler());
 		addPopupMenuListener(new PopupMenuListener()
 		{
+			@Override
 			public void popupMenuWillBecomeVisible(
 				PopupMenuEvent e) {}
 
+			@Override
 			public void popupMenuWillBecomeInvisible(
 				PopupMenuEvent e)
 			{
 				editPane.getTextArea().requestFocus();
 			}
 
+			@Override
 			public void popupMenuCanceled(PopupMenuEvent e)
 			{
 				editPane.getTextArea().requestFocus();
@@ -75,6 +77,7 @@ public class BufferSwitcher extends JComboBox
 
 		Runnable runnable = new Runnable()
 		{
+			@Override
 			public void run()
 			{
 				updating = true;
@@ -90,6 +93,7 @@ public class BufferSwitcher extends JComboBox
 
 	class ActionHandler implements ActionListener
 	{
+		@Override
 		public void actionPerformed(ActionEvent evt)
 		{
 			if(!updating)

@@ -398,6 +398,7 @@ public class ManagePanel extends JPanel
 		} //}}}
 
 		//{{{ getColumnCount() method
+		@Override
 		public int getColumnCount()
 		{
 			return 5;
@@ -442,12 +443,14 @@ public class ManagePanel extends JPanel
 		} //}}}
 
 		//{{{ getRowCount() method
+		@Override
 		public int getRowCount()
 		{
 			return entries.size();
 		} //}}}
 
 		//{{{ getValueAt() method
+		@Override
 		public Object getValueAt(int rowIndex,int columnIndex)
 		{
 			Entry entry = entries.get(rowIndex);
@@ -639,6 +642,7 @@ public class ManagePanel extends JPanel
 			}
 			jEdit.removePluginJAR(jar,false);
 			jEdit.setBooleanProperty("plugin-blacklist."+MiscUtilities.getFileName(jar.getPath()),true);
+			jEdit.propertiesChanged();
 		} //}}}
 
 		//{{{ saveSelection() method
@@ -737,6 +741,7 @@ public class ManagePanel extends JPanel
 			addActionListener(this);
 		}
 
+		@Override
 		public void actionPerformed(ActionEvent evt)
 		{
 			jEdit.setBooleanProperty(
@@ -767,6 +772,7 @@ public class ManagePanel extends JPanel
 			setToolTipText("Choose a PluginSet, select/deselect plugins based on set.");
 		}
 
+		@Override
 		public void actionPerformed(ActionEvent e)
 		{
 			String path = jEdit.getProperty(PluginManager.PROPERTY_PLUGINSET,
@@ -835,6 +841,7 @@ public class ManagePanel extends JPanel
 
 		}
 
+		@Override
 		public void actionPerformed(ActionEvent e)
 		{
 			String path = jEdit.getProperty("plugin-manager.pluginset.path", jEdit.getSettingsDirectory() + File.separator);
@@ -875,6 +882,7 @@ public class ManagePanel extends JPanel
 			setEnabled(false);
 		}
 
+		@Override
 		public void actionPerformed(ActionEvent evt)
 		{
 			int[] selected = table.getSelectedRows();
@@ -958,6 +966,7 @@ public class ManagePanel extends JPanel
 			PluginManager.getInstance().pluginRemoved();
 		}
 
+		@Override
 		public void valueChanged(ListSelectionEvent e)
 		{
 			if (table.getSelectedRowCount() == 0)
@@ -976,6 +985,7 @@ public class ManagePanel extends JPanel
 			addActionListener(this);
 		}
 
+		@Override
 		public void actionPerformed(ActionEvent e)
 		{
 			PluginJAR[] pluginJARs = jEdit.getPluginJARs();
@@ -1096,11 +1106,13 @@ public class ManagePanel extends JPanel
 			setEnabled(false);
 		}
 
+		@Override
 		public void actionPerformed(ActionEvent evt)
 		{
 			new HelpViewer(docURL);
 		}
 
+		@Override
 		public void valueChanged(ListSelectionEvent e)
 		{
 			if (table.getSelectedRowCount() == 1)
@@ -1149,6 +1161,7 @@ public class ManagePanel extends JPanel
 			this.type = type;
 		}
 
+		@Override
 		public int compare(Entry e1, Entry e2)
 		{
 			if (type == NAME)
@@ -1224,6 +1237,7 @@ public class ManagePanel extends JPanel
 		//{{{ CleanupActionListener class
 		private class CleanupActionListener implements ActionListener
 		{
+			@Override
 			public void actionPerformed(ActionEvent e)
 			{
 
@@ -1271,6 +1285,7 @@ public class ManagePanel extends JPanel
 			this.command = command;
 		}
 
+		@Override
 		public void actionPerformed(ActionEvent evt)
 		{
 			switch (command)
@@ -1320,6 +1335,7 @@ public class ManagePanel extends JPanel
 	//{{{ TableSelectionListener class
 	private class TableSelectionListener implements ListSelectionListener
 	{
+		@Override
 		public void valueChanged(ListSelectionEvent e)
 		{
 			int row = table.getSelectedRow();

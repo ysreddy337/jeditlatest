@@ -86,47 +86,10 @@ import java.awt.event.*;
  * </ul>
  *
  * @author Slava Pestov
- * @version $Id: GUIUtilities.java 19158 2010-12-19 23:34:48Z ezust $
+ * @version $Id: GUIUtilities.java 21012 2012-01-29 19:08:10Z voituk $
  */
 public class GUIUtilities
 {
-	//{{{ Some predefined icons
-	/**
-	 * @deprecated Use <code>GUIUtilities.loadIcon("new.gif");</code>
-	 * instead.
-	 */
-	@Deprecated
-	public static Icon NEW_BUFFER_ICON;
-
-	/**
-	 * @deprecated Use <code>GUIUtilities.loadIcon("dirty.gif");</code>
-	 * instead.
-	 */
-	@Deprecated
-	public static Icon DIRTY_BUFFER_ICON;
-
-	/**
-	 * @deprecated Use <code>GUIUtilities.loadIcon("readonly.gif");</code>
-	 * instead.
-	 */
-	@Deprecated
-	public static Icon READ_ONLY_BUFFER_ICON;
-
-	/**
-	 * @deprecated Use <code>GUIUtilities.loadIcon("normal.gif");</code>
-	 * instead.
-	 */
-	@Deprecated
-	public static Icon NORMAL_BUFFER_ICON;
-
-	/**
-	 * @deprecated Use <code>GUIUtilities.loadIcon("jedit-icon.gif");</code>
-	 * instead.
-	 */
-	@Deprecated
-	public static Icon WINDOW_ICON;
-	//}}}
-
 	//{{{ Icon methods
 
 	//{{{ setIconPath() method
@@ -355,7 +318,7 @@ public class GUIUtilities
 			while(st.hasMoreTokens())
 			{
 				String menuItemName = st.nextToken();
-				if(menuItemName.equals("-"))
+				if("-".equals(menuItemName))
 					menu.addSeparator();
 				else
 					menu.add(loadMenuItem(context,menuItemName,false));
@@ -487,9 +450,9 @@ public class GUIUtilities
 	public static Container loadToolBar(ActionContext context, String name)
 	{
 		JToolBar toolB = new JToolBar();
-		toolB.setFloatable(false);
 		toolB.setName(name);
 		toolB.setLayout(new FlowLayout(FlowLayout.LEFT, 0, 0));
+		toolB.setFloatable(jEdit.getBooleanProperty("view.toolbar.floatable"));
 
 		String buttons = jEdit.getProperty(name);
 		if(buttons != null)
@@ -498,7 +461,7 @@ public class GUIUtilities
 			while(st.hasMoreTokens())
 			{
 				String button = st.nextToken();
-				if(button.equals("-"))
+				if("-".equals(button))
 				{
 					toolB.addSeparator(new Dimension(12,12));
 				}
@@ -589,6 +552,29 @@ public class GUIUtilities
 		return label;
 	} //}}}
 
+	//{{{ getPlatformShortcutLabel() method
+	/**
+	* Translates a shortcut description string (e.g. "CS+SEMICOLON") to
+	* a platform-localized description.  On OS X this puts in the pretty
+	* unicode characters for Shift, Cmd, etc.
+	*/
+	public static String getPlatformShortcutLabel(String label)
+	{
+		if( !OperatingSystem.isMacOSLF() || label == null || label.length() == 0)
+			return label;
+
+		String[] strokes = label.split(" +");
+		StringBuilder out = new StringBuilder();
+		for (int i = 0; i < strokes.length; i++)
+		{
+			if (i > 0)
+				out.append(' ');
+			out.append(getMacShortcutLabel(strokes[i]));
+		}
+
+		return out.toString();
+        } //}}}
+
 	//{{{ getShortcutLabel() method
 	/**
 	 * Returns a label string to show users what shortcut are
@@ -602,6 +588,9 @@ public class GUIUtilities
 		{
 			String shortcut1 = jEdit.getProperty(action + ".shortcut");
 			String shortcut2 = jEdit.getProperty(action + ".shortcut2");
+
+			shortcut1 = getPlatformShortcutLabel(shortcut1);
+			shortcut2 = getPlatformShortcutLabel(shortcut2);
 
 			if(shortcut1 == null || shortcut1.length() == 0)
 			{
@@ -788,6 +777,7 @@ public class GUIUtilities
 		{
 			EventQueue.invokeAndWait(new Runnable()
 			{
+				@Override
 				public void run()
 				{
 					retValue[0] = confirm(comp, name, args, buttons, type);
@@ -797,6 +787,54 @@ public class GUIUtilities
 		catch (Exception e)
 		{
 			return JOptionPane.CANCEL_OPTION;
+		}
+		return retValue[0];
+	} //}}}
+
+	//{{{ option() method
+	 /**
+	 * Displays an option dialog dialog box and returns the button pushed by the
+	 * user. The title of the dialog is fetched from the
+	 * <code><i>name</i>.title</code> property. The message is fetched
+	 * from the <code><i>name</i>.message</code> property.
+	 * @param comp The component to display the dialog for
+	 * @param name The name of the dialog
+	 * @param args Positional parameters to be substituted into the
+	 * message text
+	 * @param type The dialog type - for example,
+	 * JOptionPane.WARNING_MESSAGE
+	 * @param options the buttons
+	 * @param initialValue the initial value
+	 * @since jEdit 4.5pre1
+	 */
+	public static int option(final Component comp, final String name,
+		final Object[] args, final int type,
+		final Object[] options, final Object initialValue)
+	{
+		if (EventQueue.isDispatchThread())
+		{
+			hideSplashScreen();
+
+			return JOptionPane.showOptionDialog(comp,
+				jEdit.getProperty(name + ".message",args),
+				jEdit.getProperty(name + ".title"),JOptionPane.DEFAULT_OPTION, type,
+				null, options, initialValue);
+		}
+		final int[] retValue = new int[1];
+		try
+		{
+			EventQueue.invokeAndWait(new Runnable()
+			{
+				@Override
+				public void run()
+				{
+					retValue[0] = option(comp, name, args, type, options, initialValue);
+				}
+			});
+		}
+		catch (Exception e)
+		{
+			return 0;
 		}
 		return retValue[0];
 	} //}}}
@@ -969,29 +1007,6 @@ public class GUIUtilities
 		return SyntaxUtilities.parseColor(name, Color.black);
 	} //}}}
 
-	//{{{ parseColor() method
-	/**
-	 * @deprecated use {@link SyntaxUtilities#parseColor(String,Color)}
-	 */
-	@Deprecated
-	public static Color parseColor(String name, Color defaultColor)
-	{
-		return SyntaxUtilities.parseColor(name, defaultColor);
-	} //}}}
-
-	//{{{ getColorHexString() method
-	/**
-	 * Converts a color object to its hex value. The hex value
-	 * prefixed is with `#', for example `#ff0088'.
-	 * @param c The color object
-	 * @deprecated use {@link SyntaxUtilities#parseStyle(String,String,int,boolean)}
-	 */
-	@Deprecated
-	public static String getColorHexString(Color c)
-	{
-		return SyntaxUtilities.getColorHexString(c);
-	} //}}}
-
 	//{{{ parseStyle() method
 	/**
 	 * Converts a style string to a style object.
@@ -1005,25 +1020,6 @@ public class GUIUtilities
 		throws IllegalArgumentException
 	{
 		return SyntaxUtilities.parseStyle(str,family,size,true);
-	} //}}}
-
-	//{{{ parseStyle() method
-	/**
-	 * Converts a style string to a style object.
-	 * @param str The style string
-	 * @param family Style strings only specify font style, not font family
-	 * @param size Style strings only specify font style, not font family
-	 * @param color If false, the styles will be monochrome
-	 * @exception IllegalArgumentException if the style is invalid
-	 * @since jEdit 4.0pre4
-	 * @deprecated use {@link SyntaxUtilities#parseStyle(String,String,int,boolean)}
-	 */
-	@Deprecated
-	public static SyntaxStyle parseStyle(String str, String family, int size,
-		boolean color)
-		throws IllegalArgumentException
-	{
-		return SyntaxUtilities.parseStyle(str,family,size,color);
 	} //}}}
 
 	//{{{ getStyleString() method
@@ -1056,36 +1052,6 @@ public class GUIUtilities
 		}
 
 		return buf.toString();
-	} //}}}
-
-	//{{{ loadStyles() method
-	/**
-	 * Loads the syntax styles from the properties, giving them the specified
-	 * base font family and size.
-	 * @param family The font family
-	 * @param size The font size
-	 * @since jEdit 3.2pre6
-	 * @deprecated use {@link SyntaxUtilities#loadStyles(String,int)}
-	 */
-	@Deprecated
-	public static SyntaxStyle[] loadStyles(String family, int size)
-	{
-		return SyntaxUtilities.loadStyles(family,size,true);
-	}
-
-	/**
-	 * Loads the syntax styles from the properties, giving them the specified
-	 * base font family and size.
-	 * @param family The font family
-	 * @param size The font size
-	 * @param color If false, the styles will be monochrome
-	 * @since jEdit 4.0pre4
-	 * @deprecated use {@link SyntaxUtilities#loadStyles(String,int,boolean)}
-	 */
-	@Deprecated
-	public static SyntaxStyle[] loadStyles(String family, int size, boolean color)
-	{
-		return SyntaxUtilities.loadStyles(family, size, color);
 	} //}}}
 
 	//}}}
@@ -1364,26 +1330,6 @@ public class GUIUtilities
 		jEdit.setIntegerProperty(name + ".height", bounds.height);
 	} //}}}
 
-	//{{{ centerOnScreen() method
-	/**
-	 * Centers the given window on the screen. This method is needed because
-	 * JDK 1.3 does not have a <code>JWindow.setLocationRelativeTo()</code>
-	 * method.
-	 * @since jEdit 4.2pre3
-	 * @deprecated use {@link javax.swing.JWindow#setLocationRelativeTo(java.awt.Component)}
-	 */
-	@Deprecated
-	public static void centerOnScreen(Window win)
-	{
-		GraphicsDevice gd = GraphicsEnvironment
-			.getLocalGraphicsEnvironment()
-			.getDefaultScreenDevice();
-		Rectangle gcbounds = gd.getDefaultConfiguration().getBounds();
-		int x = gcbounds.x + (gcbounds.width - win.getWidth()) / 2;
-		int y = gcbounds.y + (gcbounds.height - win.getHeight()) / 2;
-		win.setLocation(x,y);
-	} //}}}
-
 	//}}}
 
 	//{{{ hideSplashScreen() method
@@ -1449,6 +1395,7 @@ public class GUIUtilities
 			{
 				EventQueue.invokeLater(new Runnable()
 				{
+						@Override
 						public void run()
 						{
 							comp.requestFocusInWindow();
@@ -1513,7 +1460,7 @@ public class GUIUtilities
 			}
 		}
 		return bounds;
-	}
+	} //}}}
 
 	//{{{ showPopupMenu() method
 	/**
@@ -1700,6 +1647,8 @@ public class GUIUtilities
 	//{{{ getView() method
 	/**
 	 * Finds the view parent of the specified component.
+	 * @param comp the component from which you want to get the parent view
+	 * @return the parent view, or null if the component was not in a View.
 	 * @since jEdit 4.0pre2
 	 */
 	public static View getView(Component comp)
@@ -1853,14 +1802,6 @@ public class GUIUtilities
 		Log.log(Log.DEBUG, GUIUtilities.class, "Icon theme set to: "+theme);
 		setIconPath("jeditresource:/org/gjt/sp/jedit/icons/themes/" + theme + '/');
 		Log.log(Log.DEBUG, GUIUtilities.class, "Loading icon theme from: "+iconPath);
-
-		// don't do this in static{} since we need jEdit.initMisc()
-		// run first so we have the jeditresource: protocol
-		NEW_BUFFER_ICON = loadIcon("new.gif");
-		DIRTY_BUFFER_ICON = loadIcon("dirty.gif");
-		READ_ONLY_BUFFER_ICON = loadIcon("readonly.gif");
-		NORMAL_BUFFER_ICON = loadIcon("normal.gif");
-		WINDOW_ICON = loadIcon(jEdit.getProperty("logo.icon.medium"));
 	} //}}}
 
 	//{{{ showSplashScreen() method
@@ -1896,12 +1837,7 @@ public class GUIUtilities
 	private static JMenuItem _loadMenuItem(String name, ActionContext context, boolean setMnemonic)
 	{
 
-		String label = jEdit.getProperty(name + ".label");
-		
-		if (label == null)
-		{
-			label = name;
-		}
+		String label = jEdit.getProperty(name + ".label", name);
 		char mnemonic;
 		int index = label.indexOf('$');
 		if (index != -1 && label.length() - index > 1)
@@ -1935,6 +1871,95 @@ public class GUIUtilities
 		return mi;
 	} //}}}
 
+	private static HashMap<String, String> macKeySymbols = null;
+
+	/*
+	 * Create a list of unicode characters to be used in displaying keyboard shortcuts
+	 * on Mac OS X.
+	 */
+	static
+	{
+		macKeySymbols = new HashMap<String, String>();
+
+		// These are the unicode code points used in cocoa apps for displaying
+		// shortcuts.
+		macKeySymbols.put("ENTER",         "\u21A9");
+		macKeySymbols.put("HOME",          "\u2196");
+		macKeySymbols.put("END",           "\u2198");
+		macKeySymbols.put("BACK_SPACE",    "\u232B");
+		macKeySymbols.put("DELETE",        "\u2326");
+		macKeySymbols.put("PAGE_UP",       "\u21DE");
+		macKeySymbols.put("PAGE_DOWN",     "\u21DF");
+		macKeySymbols.put("LEFT",          "\u2190");
+		macKeySymbols.put("UP",            "\u2191");
+		macKeySymbols.put("RIGHT",         "\u2192");
+		macKeySymbols.put("DOWN",          "\u2193");
+		macKeySymbols.put("ESCAPE",        "\u238B");
+		macKeySymbols.put("TAB",           "\u21E5");
+		macKeySymbols.put("SPACE",         "\u2423");
+	}
+
+	//{{{ getMacShortcutLabel() method
+	/**
+	 * Convert a shortcut label to a Mac-friendly version by changing written-out
+	 * names and modifiers (e.g. C+PERIOD) to symbols.
+	 */
+	private static String getMacShortcutLabel(String label)
+	{
+		StringBuilder out = new StringBuilder();
+
+		int endOfModifiers = label.indexOf('+');
+		for (int i = 0; i < endOfModifiers; i++)
+		{
+			char c = Character.toUpperCase(label.charAt(i));
+			switch (c)
+			{
+			case 'A':
+				out.append('\u2303');  // ctrl
+				break;
+			case 'C':
+				out.append('\u2318');  // cmd
+				break;
+			case 'M':
+				out.append('\u2325');  // alt
+				break;
+			case 'S':
+				out.append('\u21E7');  // shift
+				break;
+			}
+		}
+
+		// We've done the modifiers, now do the key
+		String key = label.substring(endOfModifiers + 1);
+
+		// Some keys have Mac-specific symbols
+		String text = macKeySymbols.get(key);
+
+		// Others don't
+		if (text == null)
+		{
+			// Everything else: periods, commas, etc. should be shown as the actual
+			// character
+			try
+			{
+				// e.g., convert the string "PERIOD" to the int KeyEvent.VK_PERIOD
+				int keyCode = KeyEvent.class.getField("VK_".concat(key)).getInt(null);
+
+				// And then convert KeyEvent.VK_PERIOD to the string "."
+				text = KeyEvent.getKeyText(keyCode).toUpperCase();
+			}
+			catch(Exception e)
+			{
+				// This is probably an error, but it will be logged in
+				// KeyEventTranslator.parseKey anyway, so just ignore it here.
+				text = key.toUpperCase();
+			}
+		}
+		out.append(text);
+
+		return out.toString();
+	} //}}}
+
 	private GUIUtilities() {}
 	//}}}
 
@@ -1946,15 +1971,15 @@ public class GUIUtilities
 	 * For non-Frame's use {@link GUIUtilities#saveGeometry(Window,String)}
 	 *
 	 * @author Björn Kautler
-	 * @version $Id: GUIUtilities.java 19158 2010-12-19 23:34:48Z ezust $
+	 * @version $Id: GUIUtilities.java 21012 2012-01-29 19:08:10Z voituk $
 	 * @since jEdit 4.3pre6
 	 * @see GUIUtilities#saveGeometry(Window,Container,String)
 	 */
 	private static class SizeSaver extends ComponentAdapter implements WindowStateListener
 	{
-		private Frame frame;
-		private Container parent;
-		private String name;
+		private final Frame frame;
+		private final Container parent;
+		private final String name;
 
 		//{{{ SizeSaver constructors
 		/**
@@ -1976,6 +2001,7 @@ public class GUIUtilities
 		} //}}}
 
 		//{{{ windowStateChanged() method
+		@Override
 		public void windowStateChanged(WindowEvent wse)
 		{
 			int extendedState = wse.getNewState();
@@ -2019,6 +2045,7 @@ public class GUIUtilities
 			final Rectangle bounds = frame.getBounds();
 			final Runnable sizeSaver = new Runnable()
 			{
+				@Override
 				public void run()
 				{
 					int extendedState = frame.getExtendedState();

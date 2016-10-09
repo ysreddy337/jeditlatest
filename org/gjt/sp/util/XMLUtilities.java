@@ -41,7 +41,7 @@ import org.xml.sax.helpers.XMLReaderFactory;
  * XML utility methods that only depend on the JDK.
  *
  * @author Marcelo Vanzin
- * @version $Id: XMLUtilities.java 13929 2008-10-25 14:23:41Z k_satoda $
+ * @version $Id: XMLUtilities.java 19899 2011-09-02 07:36:54Z kpouer $
  * @since 4.3pre6
  */
 public class XMLUtilities
@@ -152,15 +152,7 @@ public class XMLUtilities
 		}
 		finally
 		{
-			try
-			{
-				if(in != null)
-					in.close();
-			}
-			catch(IOException io)
-			{
-				Log.log(Log.ERROR,XMLUtilities.class,io);
-			}
+			IOUtilities.closeQuietly(in);
 		}
 		return false;
 	} //}}}

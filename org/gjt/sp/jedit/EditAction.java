@@ -37,7 +37,7 @@ import java.awt.event.ActionListener;
  * @see ActionSet
  *
  * @author Slava Pestov
- * @version $Id: EditAction.java 17144 2010-01-30 00:32:11Z kpouer $
+ * @version $Id: EditAction.java 20108 2011-10-18 12:16:38Z evanpw $
  */
 public abstract class EditAction extends JEditAbstractEditAction<View>
 {
@@ -93,17 +93,7 @@ public abstract class EditAction extends JEditAbstractEditAction<View>
 	 * abstract since jEdit 4.3pre7
 	 */
 	abstract public void invoke(View view);
-	
-	//{{{ getView() method
-	/**
-	 * @deprecated Call <code>GUIUtilities.getView()</code> instead.
-	 */
-	 @Deprecated
-	public static View getView(Component comp)
-	{
-		// moved to GUIUtilities as it makes no sense being here.
-		return GUIUtilities.getView(comp);
-	} //}}}
+	//}}}
 
 	//{{{ isToggle() method
 	/**

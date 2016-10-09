@@ -40,16 +40,6 @@ import org.gjt.sp.util.Log;
  */
 public class GrabKeyDialog extends JDialog
 {
-	//{{{ toString() method
-	/**
-	 * @deprecated use {@link org.gjt.sp.jedit.input.AbstractInputHandler#toString(java.awt.event.KeyEvent)}
-	 */
-	@Deprecated
-	public static String toString(KeyEvent evt)
-	{
-		return AbstractInputHandler.toString(evt);
-	} //}}}
-
 	//{{{ GrabKeyDialog constructor
 	/**
 	 * Create and show a new modal dialog.
@@ -97,7 +87,7 @@ public class GrabKeyDialog extends JDialog
 	public String getShortcut()
 	{
 		if(isOK)
-			return shortcut.getText();
+			return shortcut.getShortcut();
 		else
 			return null;
 	} //}}}
@@ -369,6 +359,20 @@ public class GrabKeyDialog extends JDialog
 			return false;
 		} //}}}
 
+		// The public-facing string is converted to a platform-specific
+		// form, but we keep the canonical shortcut string around for
+		// internal use.
+		@Override
+		public void setText(String s)
+		{
+			rawShortcut = (s == null) ? "" : s;
+			super.setText( GUIUtilities.getPlatformShortcutLabel(s) );
+		}
+		public String getShortcut()
+		{
+			return rawShortcut;
+		}
+
 		//{{{ processKeyEvent() method
 		@Override
 		protected void processKeyEvent(KeyEvent _evt)
@@ -407,7 +411,7 @@ public class GrabKeyDialog extends JDialog
 					"==> Translated to " + key + '\n');
 			}
 
-			StringBuilder keyString = new StringBuilder(getText());
+			StringBuilder keyString = new StringBuilder(getShortcut());
 
 			if(getDocument().getLength() != 0)
 				keyString.append(' ');
@@ -446,6 +450,8 @@ public class GrabKeyDialog extends JDialog
 			if(debugBuffer == null)
 				updateAssignedTo(keyString.toString());
 		} //}}}
+
+		protected String rawShortcut = "";
 	} //}}}
 
 	//{{{ ActionHandler class
@@ -479,7 +485,7 @@ public class GrabKeyDialog extends JDialog
 		//{{{ canClose() method
 		private boolean canClose()
 		{
-			String shortcutString = shortcut.getText();
+			String shortcutString = shortcut.getShortcut();
 			if(shortcutString.length() == 0
 				&& binding.isAssigned())
 			{

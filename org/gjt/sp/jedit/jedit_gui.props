@@ -38,6 +38,8 @@ common.moveDown=Move Down
 common.moveDown.icon=22x22/actions/go-down.png
 common.clearAll=Clear All
 common.clearAll.icon=22x22/actions/edit-clear.png
+common.selectAll=Select All
+common.selectNone=Select None
 
 lineSep.unix=Unix (\\n)
 lineSep.windows=DOS/Windows (\\r\\n)
@@ -169,11 +171,11 @@ icons=22x22/actions/resize-horisontal.png \
 #}}}
 
 view.search.find=Search for:
-view.search.close-tooltip=Hide search bar
+view.search.close-tooltip=Hide search bar (ESCAPE)
 
 view.action.prompt=Action:
 view.action.no-completions=No matching actions found
-view.action.close-tooltip=Hide action bar
+view.action.close-tooltip=Hide action bar (ESCAPE)
 #}}}
 
 #{{{ Context menu
@@ -181,6 +183,14 @@ view.context=cut copy paste paste-previous paste-deleted - \
 	select-block to-upper to-lower - hypersearch-word - \
 	add-marker - collapse-fold expand-fold narrow-to-fold
 view.context.customize=Customize This Menu...
+#}}}
+
+#{{{ System tray menu
+systrayicon=true
+tray.newView.label=New view
+tray.newPlainView.label=New plain view
+tray.exit.label=Exit
+
 #}}}
 
 #{{{ Menu bar
@@ -197,8 +207,8 @@ file=new-file \
      %reload-encoding \
      - \
      close-buffer \
-     global-close-buffer \
      closeall-except-active \
+     global-close-buffer \
      close-all \
      - \
      save \
@@ -233,7 +243,8 @@ bufferset-toggle-exclusive.label=Toggle E$xclusive BufferSets
 bufferset-toggle-exclusive.tooltip=When a buffer is opened, close it in other non-intersecting buffersets.
 closeall-except-active.icon.small=16x16/actions/document-close.png
 global-close-buffer.icon.small=16x16/actions/document-close.png
-close-all.label=Clos$e All
+close-all.label=Clos$e All (global)
+close-all.tooltip=Close all buffers in all Views
 close-all.icon.small=16x16/actions/document-close.png
 save.label=$Save
 save.icon.small=16x16/actions/document-save.png
@@ -309,7 +320,7 @@ clipboard=cut-append \
 	  paste-deleted \
 	  - \
 	  cut-string-register \
-          copy-string-register \
+	  copy-string-register \
 	  paste-string-register \
 	  - \
 	  cut-append-string-register \
@@ -345,7 +356,7 @@ selection=select-none \
 	  toggle-multi-select \
 	  toggle-rect-select \
 	  - \
-          select-line-range
+	  select-line-range
 selection.label=More $Selection
 select-none.label=Select $None
 select-word.label=Select $Word
@@ -434,6 +445,7 @@ search=find \
        quick-search-word \
        hypersearch-word \
        - \
+       whole-word \
        ignore-case \
        regexp \
        - \
@@ -450,8 +462,9 @@ replace-and-find-next.label=Re$place and Find Next
 replace-all.label=Replace $All
 quick-search.label=$Incremental Search Bar
 hypersearch.label=$HyperSearch Bar
-quick-search-word.label=Incremental Search for $Word
+quick-search-word.label=I$ncremental Search for Word
 hypersearch-word.label=H$yperSearch for Word
+whole-word.label=$Whole Word
 ignore-case.label=Ignore $Case
 regexp.label=Regular E$xpressions
 hypersearch-results.label=HyperSearch Results
@@ -584,13 +597,13 @@ scroll-down-page.label=Page Scroll D$own
 
 #{{{ Splitting menu
 splitting=unsplit-current \
-          unsplit \
-          split-horizontal \
-          split-vertical \
+	  unsplit \
+	  split-horizontal \
+	  split-vertical \
 	  resplit \
 	  - \
-          prev-textarea \
-          next-textarea
+	  prev-textarea \
+	  next-textarea
 splitting.label=$Splitting
 split-horizontal.label=Split $Horizontally
 split-vertical.label=Split $Vertically
@@ -616,6 +629,7 @@ docking=left-docking-area \
 	top-docking-area \
 	right-docking-area \
 	bottom-docking-area \
+	focus-textarea \
 	- \
 	toggle-dock-areas \
 	close-docking-area \
@@ -631,6 +645,7 @@ left-docking-area.label=Go to $Left Docking Area
 top-docking-area.label=Go to $Top Docking Area
 right-docking-area.label=Go to $Right Docking Area
 bottom-docking-area.label=Go to $Bottom Docking Area
+focus-textarea.label=Go to Text Area
 close-docking-area.label=$Close Current Docking Area
 layout-load.label=$Load docking layout ...
 layout-save.label=$Save docking layout ...
@@ -716,7 +731,6 @@ eval-selection.label=Evaluate $Selection
 troubleshooting=log-viewer \
 		update-log \
 		- \
-		io-progress-monitor \
 		task-monitor \
 		keyboard-tester \
 		memory-status \
@@ -741,7 +755,9 @@ edit-syntax-style.label=Edit syntax style of token under caret
 #}}}
 
 #{{{ Macros menu
-macros=record-macro \
+macros=new-macro \
+       - \
+       record-macro \
        stop-recording \
        - \
        last-macro \
@@ -754,6 +770,8 @@ macros=record-macro \
        -
 macros.code=new MacrosProvider();
 macros.label=Ma$cros
+new-macro.label=New Macro
+new-macro.icon.small=16x16/actions/document-new.png
 record-macro.label=$Record Macro...
 record-macro.icon.small=16x16/actions/media-record.png
 stop-recording.label=$Stop Recording
@@ -778,11 +796,13 @@ no-plugins.label=No Plugins Installed
 #{{{ Help menu
 help-menu=about \
      help \
-     tip-of-the-day
+     tip-of-the-day \
+     userFeedback
 help-menu.label=$Help
 about.label=$About jEdit...
 help.label=jEdit $Help
 tip-of-the-day.label=$Tip of the Day
+userFeedback.label=Make a suggestion...
 #}}}
 
 #}}}
@@ -790,14 +810,14 @@ tip-of-the-day.label=$Tip of the Day
 #{{{ Macro strings
 
 macro.temp.header=// This is a temporary macro. First, check over the\n\
-                  // commands to make sure this is what you intended.\n\
-                  // Then, to run this macro, switch to the buffer\n\
-                  // where you would like to execute it and press C+m C+p.
+		  // commands to make sure this is what you intended.\n\
+		  // Then, to run this macro, switch to the buffer\n\
+		  // where you would like to execute it and press C+m C+p.
 
 macro.header=// This is a recorded macro. First, check over the\n\
-             // commands to make sure this is what you intended. Then,\n\
-             // save this buffer, and the macro should appear in the\n\
-             // Macros menu.
+	     // commands to make sure this is what you intended. Then,\n\
+	     // save this buffer, and the macro should appear in the\n\
+	     // Macros menu.
 
 #}}}
 
@@ -944,7 +964,7 @@ wrap.soft=soft
 #}}}
 
 #{{{ Status bar component visibility
-view.status=( mode , fold , encoding ) wrap multiSelect rectSelect overwrite lineSep buffersets memory-status errors clock
+view.status=( mode , fold , encoding ) wrap multiSelect rectSelect overwrite lineSep buffersets task-monitor memory-status errors clock
 
 view.status.show-caret-status=true
 #}}}
@@ -989,6 +1009,7 @@ about.text=jEdit is brought to you by\n\
 	Amedeo Farello\n\
 	Andre Kaplan\n\
 	Andrey Khalyavin\n\
+	Anshal Shukla\n\
 	Anthony Roy\n\
 	Artur Biesiadowski\n\
 	Aziz Sharif\n\
@@ -1024,6 +1045,7 @@ about.text=jEdit is brought to you by\n\
 	David Askew\n\
 	David Moss\n\
 	David Taylor\n\
+	Dennis Hotson\n\
 	Denis Lambot\n\
 	Dirk Moebius\n\
 	Dominic Stolerman\n\
@@ -1032,6 +1054,7 @@ about.text=jEdit is brought to you by\n\
 	Eric Benoit\n\
 	Eric Berry\n\
 	Eric Ladner\n\
+	Evan Wright\n\
 	Fan Ho Yin\n\
 	Francesc Roses\n\
 	George Hovey\n\
@@ -1135,6 +1158,7 @@ about.text=jEdit is brought to you by\n\
 	Rudolf Widmann\n\
 	Ryan Fowler\n\
 	Ryan Grove\n\
+	Ryan Mott\n\
 	Saimon Moore\n\
 	Satguru Srivastava\n\
 	Scott Allen\n\
@@ -1173,6 +1197,23 @@ about.text=jEdit is brought to you by\n\
 
 #{{{ Error list dialog, used to report I/O and plugin load errors
 error-list.plugin-manager=Plugin Manager
+#}}}
+
+#{{{
+largeBufferDialog.title=Large buffer {0}
+largeBufferDialog.message=The buffer is very large and jEdit may become unresponsive\n\
+	due to syntax highlighting. You should consider the following options.\n\
+	-Keep Full syntax : jEdit's syntax highlight will work as usual, jEdit \n\
+	may become very slow, this is not recommended.\n\
+	-Context insensitive syntax highlighting. In this case, jEdit will\n\
+	do fast highlighting, but the result may not be perfect. The\n\
+	buffer is highlighted line by line without checking context\n\
+	of the previous line. It is possible that the syntax is not accurate\n\
+	if you have tokens on multiple lines (multiline comments, xml tags ...)\n\
+	-Use 'text' mode of jEdit (no syntax highlighting)
+largeBufferDialog.fullSyntax=Full syntax highlight
+largeBufferDialog.contextInsensitive=Context insensitive syntax highlight
+largeBufferDialog.defaultMode=Text edit mode
 #}}}
 
 #{{{ I/O error dialog box
@@ -1390,6 +1431,8 @@ search.beanshell-replace-btn=Return value of a BeanShell snippet
 search.settings=Settings:
 search.keep=Keep dialog
 search.keep.mnemonic=k
+search.word=Whole word
+search.word.mnemonic=q
 search.case=Ignore case
 search.case.mnemonic=i
 search.regexp=Regular expressions
@@ -1526,6 +1569,8 @@ search-no-selection.message=Please select some text or deactivate the\n\
 
 #{{{ Paste previous and paste deleted dialogs
 paste-from-list.whitespace=<whitespace>
+paste-from-list.max-item-length=1000
+paste-from-list.max-preview-length=100000
 paste-previous.title=Paste Previous
 paste-previous.caption=Recently copied and pasted text:
 paste-deleted.title=Paste Deleted
@@ -1773,6 +1818,14 @@ options.jedit.label=jEdit
 # Option pane to show by default
 options.last=editing
 
+#{{{ Options groups
+options.groups=jedit browser
+options.group.jedit=general abbrevs appearance context docking editing \
+	encodings gutter mouse plugin-manager print firewall save-back \
+	shortcuts status syntax textarea toolbar view
+options.group.browser=browser.general browser.colors browser.custom.context
+#}}}
+
 #{{{ General pane
 options.general.label=General
 options.general.code=new GeneralOptionPane();
@@ -1797,11 +1850,13 @@ options.general.saveCaret=Save caret positions in recent file list
 options.general.persistentMarkers=Save marker positions
 options.general.resetUndo=Reset undo history on save
 options.general.restore=Restore previously open files on startup
+options.general.restore.splits=Restore split configuration
 options.general.restore.remote=... including remote files over VFS
 options.general.restore.cli=... including file names specified on the command line
 options.general.encodingDetectors=List of encoding autodetectors:
 options.general.fallbackEncodings=List of fallback encodings:
 options.general.fallbackEncodings.tooltip=A whitespace-separated list of encodings to try against encoding errors on loading
+options.general.systrayicon=Show the systray icon
 #}}}
 
 #{{{ Abbreviations pane
@@ -1908,6 +1963,8 @@ options.editing.indentSize=Indent width:
 options.editing.noWordSep=Extra word characters:
 options.editing.camelCasedWords=Separate "CamelCased" words
 options.editing.noTabs=Soft (emulated with spaces) tabs
+options.editing.elasticTabstops=Indent using elastic tabstops
+options.editing.elasticTabstops.tooltip=(Experimental) - may cause instability in jEdit.
 options.editing.deepIndent=Deep indent
 #}}}
 
@@ -1921,8 +1978,6 @@ options.encodings.available.tooltip=<html>Encodings in this column will <b>not</
   Drag them to the right column to activate them</html>
 options.encodings.selected.tooltip=Encodings in this column be shown in encoding dialogs.\
   Drag them to the left column to hide them
-options.encodings.selectAll=Select All
-options.encodings.selectNone=Select None
 #}}}
 
 #{{{ Gutter pane
@@ -2029,6 +2084,7 @@ options.save-back.twoStageSave.tooltip=Stage 1: Create a temporary file and save
 options.save-back.confirmSaveAll="Save All Buffers" asks for confirmation
 options.save-back.autosaveUntitled=Autosave untitled buffers
 options.save-back.suppressNotSavedConfirmUntitled=Never mark Untitled buffers dirty.
+options.save-back.suppressNotSavedConfirmUntitled.tooltip=Checking this means untitled buffers get wiped out whenever a new one is created (it's a feature!) 
 options.save-back.useMD5forDirtyCalculation=Never mark buffers dirty if contents are unchanged.
 options.save-back.useMD5forDirtyCalculation.tooltip=Compare with length and MD5 hash of  buffer at load time, to decide if an edited buffer is still dirty.
 #}}}
@@ -2134,13 +2190,14 @@ options.textarea.wrapGuide=Wrap guide:
 options.textarea.electricBorders=Electric (auto scroll) borders
 options.textarea.stdNextPrevWord=Go to next/previous word commands eat whitespace
 options.textarea.antiAlias=Anti Aliased smooth text
-options.textarea.antiAlias.tooltip=Slows down display on some systems. 
+options.textarea.antiAlias.tooltip=Slows down display on some systems
 options.textarea.fracFontMetrics=Fractional font metrics (for better smooth \
 	text display)
 options.textarea.fracFontMetrics.tooltip=Not recommended with subpixel antialiasing
-options.textArea.stripTrailingEOL=Hide final end of line (if any)
-options.textArea.completeFromAllBuffers=Complete words from all open buffers (default is \
+options.textarea.stripTrailingEOL=Hide final end of line (if any)
+options.textarea.completeFromAllBuffers=Complete words from all open buffers (default is \
     to limit search to currently visible buffers)
+options.textarea.lineSpacing.label=Extra vertical line spacing (in pixels):
 #}}}
 
 #{{{ Tool Bar pane
@@ -2177,6 +2234,7 @@ options.toolbar.reset.dialog.message=Are you sure you want to reset the toolbar 
 options.view.label=View
 options.view.code=new ViewOptionPane();
 options.view.viewLayout=View layout
+options.view.floatableToolbars=Floatable Toolbars
 options.view.alternateDockingLayout=Alternate docked window placement
 options.view.alternateToolBarLayout=Alternate tool bar placement
 options.view.showFullPath=Show full path of buffer in title bar
@@ -2230,6 +2288,12 @@ options.browser.general.doubleClickClose=Double-clicking an open file closes it
 options.browser.general.currentBufferFilter=Filter in file dialogs is \
 	current buffer extension
 options.browser.general.useDefaultIcons=Use default icons
+#}}}
+
+#{{{ Browser Context Menu
+options.browser.custom.context.label=Context menu
+options.browser.custom.context.caption=Custom items in browser right click menu:
+options.browser.custom.context.code=new BrowserContextOptionPane();
 #}}}
 
 #{{{ Font selector
@@ -2389,6 +2453,7 @@ vfs.browser.new-file.icon=22x22/actions/document-new.png
 vfs.browser.new-file.label=New File
 vfs.browser.new-file.shortcut=C+n
 vfs.browser.open.label=Open
+vfs.browser.open-desktop.label=Open in $Desktop
 vfs.browser.other-encoding-2.label=Other ({0})...
 vfs.browser.other-encoding.label=Other...
 vfs.browser.reload.icon=22x22/actions/view-refresh.png
@@ -2446,8 +2511,8 @@ vfs.browser.commands.encoding.auto-detect=Auto-detect
 
 vfs.browser.open-in.label=Open in
 vfs.browser.open-in=vfs.browser.open-view \
-                    vfs.browser.open-plain-view \
-                    vfs.browser.open-split
+		    vfs.browser.open-plain-view \
+		    vfs.browser.open-split
 vfs.browser.open-view.label=New View
 vfs.browser.open-plain-view.label=New Plain View
 vfs.browser.open-split.label=New Split
@@ -2559,6 +2624,15 @@ plugin-manager.status.error=Error
 
 plugin-manager.list-download-connect=Connecting to plugins.jedit.org
 plugin-manager.list-download=Downloading plugin list from plugins.jedit.org
+plugin-manager.list-download.need-password.title=HTTP Proxy needs password
+plugin-manager.list-download.need-password.message=HTTP Proxy needs password.\n\
+Please configure a valid username/password in "Download Options".
+plugin-manager.list-download.disconnected.title=Error downloading plugin list
+plugin-manager.list-download.disconnected.message=The plugin list can''t be downloaded:\n\
+host {0} is not available. It may be worth checking your internet connection...
+plugin-manager.list-download.generic-error.title=Error downloading plugin list
+plugin-manager.list-download.generic-error.message=Error downloading plugin list:\n\
+error is {0} - {1}
 plugin-manager.filterField=Show only plugins whose name contains this text
 
 #{{{ Plugin management
@@ -2586,7 +2660,7 @@ install-plugins.info.releaseDate=Release date
 install-plugins.info.version=Version
 install-plugins.info.category=Category
 
-install-plugins.totalSize=Total Size:\ 
+install-plugins.totalSize={0} plugin(s), total size: {1}
 install-plugins.select-all=Select All
 install-plugins.install=Install
 install-plugins.show-updates=Show Updates
@@ -2641,7 +2715,47 @@ errorwidget.popupmenu=logs-remove-all-errors
 logs-remove-all-errors.label=Remove all errors
 
 taskmanager.remainingtasks.label={0} remaining task(s)
-killring.load-memoryerror.message=Unable to load previously deleted text. Please increase your memory heap space.\
-  Press Yes to start jEdit anyway, or No to stop and change your settings.
-killring.load-memoryerror.title=Memory error
 
+#{{{ Statusbar Widgets
+# the widgets should have a label and a sample.
+# the label is displayed when choosing the list of widgets
+# the sample is an example of what the widget will show, for the
+# preview in the options
+statusbar.mode.label=Buffer edit mode (ex:java)
+statusbar.mode.sample=java
+statusbar.fold.label=Buffer fold handler (ex:explicit)
+statusbar.fold.sample=explicit
+statusbar.encoding.label=Buffer encoding (ex:UTF-8)
+statusbar.encoding.sample=UTF-8
+statusbar.wrap.label=Buffer wrapping mode (ex:N)
+statusbar.wrap.sample=N
+statusbar.multiSelect.label=Buffer multiple selection mode (ex:m)
+statusbar.multiSelect.sample=m
+statusbar.rectSelect.label=Buffer rectangular selection mode (ex:r)
+statusbar.rectSelect.sample=r
+statusbar.overwrite.label=Buffer overwrite (ex:o)
+statusbar.overwrite.sample=o
+statusbar.lineSep.label=Buffer line separator (ex:U)
+statusbar.lineSep.sample=U
+statusbar.memory-status.label=Memory status (ex:9/24Mb)
+statusbar.memory-status.sample=9/24Mb
+statusbar.clock.label=Clock (ex:16:45)
+statusbar.clock.sample=16:45
+statusbar.buffersets.label=Bufferset scope (ex:G)
+statusbar.buffersets.sample=G
+statusbar.selection-length.label=Selection's length (ex:192)
+statusbar.selection-length.sample=192
+statusbar.last-modified.label=Date of last modification on disk (ex:12/03/11 16:43)
+statusbar.last-modified.sample=12/03/11 16:43
+statusbar.task-monitor.label=Task monitor (ex: 7 task(s))
+statusbar.task-monitor.tooltip=Click to see running tasks dockable
+statusbar.task-monitor.sample=7 task(s)
+statusbar.task-monitor.template={0} task(s)
+#}}}
+
+killring.load-memoryerror.message=<html>Unable to load previously deleted text. Please increase your memory heap space.<br>\
+  Press <b>start</b> to start jEdit anyway, or <br><b>stop</b> to stop and change your settings. <br>You can also <b>delete the history file</b> and start jEdit</html>
+killring.load-memoryerror.title=Memory error
+killring.start=start
+killring.stop=stop
+killring.delete=delete killring and start

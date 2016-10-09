@@ -36,7 +36,7 @@ import org.gjt.sp.util.Log;
 
 /**
  * Incremental search tool bar.
- * @version $Id: SearchBar.java 13400 2008-08-23 07:51:57Z k_satoda $
+ * @version $Id: SearchBar.java 19366 2011-02-15 14:24:42Z kpouer $
  */
 public class SearchBar extends JToolBar
 {
@@ -98,6 +98,12 @@ public class SearchBar extends JToolBar
 		hyperSearch.setOpaque(false);
 		hyperSearch.setRequestFocusEnabled(false);
 
+		add(wholeWord = new JCheckBox(jEdit.getProperty(
+			"search.word")));
+		wholeWord.addActionListener(actionHandler);
+		wholeWord.setMargin(margin);
+		wholeWord.setOpaque(false);
+		wholeWord.setRequestFocusEnabled(false);
 		update();
 
 		//{{{ Create the timer used by incremental search
@@ -145,6 +151,7 @@ public class SearchBar extends JToolBar
 	{
 		ignoreCase.setSelected(SearchAndReplace.getIgnoreCase());
 		regexp.setSelected(SearchAndReplace.getRegexp());
+		wholeWord.setSelected(SearchAndReplace.getWholeWord());
 		hyperSearch.setSelected(jEdit.getBooleanProperty(
 			"view.search.hypersearch.toggle"));
 	} //}}}
@@ -166,7 +173,7 @@ public class SearchBar extends JToolBar
 	//{{{ Instance variables
 	private View view;
 	private HistoryTextField find;
-	private JCheckBox ignoreCase, regexp, hyperSearch;
+	private JCheckBox ignoreCase, regexp, hyperSearch, wholeWord;
 	private Timer timer;
 	private boolean wasError;
 	private Color defaultBackground;
@@ -360,6 +367,11 @@ public class SearchBar extends JToolBar
 			else if(source == regexp)
 			{
 				SearchAndReplace.setRegexp(regexp
+					.isSelected());
+			}
+			else if (source == wholeWord)
+			{
+				SearchAndReplace.setWholeWord(wholeWord
 					.isSelected());
 			}
 			else if(source == close)

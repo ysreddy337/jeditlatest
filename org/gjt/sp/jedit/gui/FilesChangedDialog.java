@@ -30,13 +30,14 @@ import javax.swing.*;
 import java.awt.event.*;
 import java.awt.*;
 import org.gjt.sp.jedit.*;
+import org.gjt.sp.util.EnhancedTreeCellRenderer;
 //}}}
 
 /**
  * Files changed on disk dialog.
  *
  * @author Slava Pestov
- * @version $Id: FilesChangedDialog.java 12504 2008-04-22 23:12:43Z ezust $
+ * @version $Id: FilesChangedDialog.java 19788 2011-08-11 00:57:19Z Vampire0 $
  */
 public class FilesChangedDialog extends EnhancedDialog
 {
@@ -402,7 +403,7 @@ public class FilesChangedDialog extends EnhancedDialog
 	} //}}}
 
 	//{{{ Renderer class
-	static class Renderer extends DefaultTreeCellRenderer
+	static class Renderer extends EnhancedTreeCellRenderer
 	{
 		Renderer()
 		{
@@ -412,13 +413,17 @@ public class FilesChangedDialog extends EnhancedDialog
 			groupFont = entryFont.deriveFont(Font.BOLD);
 		}
 
-		public Component getTreeCellRendererComponent(JTree tree,
+		@Override
+		protected TreeCellRenderer newInstance()
+		{
+			return new Renderer();
+		}
+
+		@Override
+		protected void configureTreeCellRendererComponent(JTree tree,
 			Object value, boolean selected, boolean expanded,
 			boolean leaf, int row, boolean hasFocus)
 		{
-			super.getTreeCellRendererComponent(tree,value,
-				selected,expanded,leaf,row,hasFocus);
-
 			DefaultMutableTreeNode node = (DefaultMutableTreeNode)value;
 
 			if(node.getParent() == tree.getModel().getRoot())
@@ -427,8 +432,6 @@ public class FilesChangedDialog extends EnhancedDialog
 				setFont(entryFont);
 
 			setIcon(null);
-
-			return this;
 		}
 
 		private Font entryFont;

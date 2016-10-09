@@ -85,7 +85,7 @@ import org.gjt.sp.jedit.buffer.FoldHandler;
  *
  * @since jEdit 4.2pre1
  * @author Slava Pestov
- * @version $Id: ServiceManager.java 17827 2010-05-16 20:51:45Z ezust $
+ * @version $Id: ServiceManager.java 20108 2011-10-18 12:16:38Z evanpw $
  */
 public class ServiceManager
 {
@@ -244,7 +244,7 @@ public class ServiceManager
 			}
 			return value.getInstance();
 		}
-	} //}}}
+	}
 
     /**
      * Returns an instance of the given service. The first time this is

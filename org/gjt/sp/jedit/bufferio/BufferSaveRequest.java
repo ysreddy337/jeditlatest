@@ -35,7 +35,7 @@ import java.nio.charset.UnsupportedCharsetException;
 /**
  * A buffer save request.
  * @author Slava Pestov
- * @version $Id: BufferSaveRequest.java 17453 2010-03-11 16:33:41Z voituk $
+ * @version $Id: BufferSaveRequest.java 19409 2011-02-28 14:58:27Z kpouer $
  */
 public class BufferSaveRequest extends BufferIORequest
 {
@@ -153,6 +153,14 @@ public class BufferSaveRequest extends BufferIORequest
 
 			if(!twoStageSave)
 				VFSManager.sendVFSUpdate(vfs,path,true);
+		}
+		catch (FileNotFoundException e)
+		{
+			Log.log(Log.ERROR,this,"Unable to save buffer " + e);
+			String[] pp = { e.getMessage() };
+			VFSManager.error(view,path,"ioerror.write-error",pp);
+
+			buffer.setBooleanProperty(ERROR_OCCURRED,true);
 		}
 		catch(UnsupportedCharsetException e)
 		{

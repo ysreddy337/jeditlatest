@@ -19,7 +19,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
- * $Id: Display_Abbreviations.bsh 5224 2005-06-08 22:33:27Z orutherfurd $
+ * $Id: Display_Abbreviations.bsh 19505 2011-04-13 13:40:38Z kpouer $
  *
  * requires JDK 1.2, jEdit3.0
  *
@@ -112,8 +112,8 @@ Vector makeTableDataForMode(Vector v, String name)
 			row.addElement(expandEnum.nextElement());
 			newData.addElement(row);
 		}
-		MiscUtilities.quicksort(newData,
-			new MiscUtilities.StringICaseCompare());
+		Collections.sort(newData,
+			new StandardUtilities.StringCompare(true));
 		currentSet = name;
 		if( v != null)
 			v.removeAllElements();

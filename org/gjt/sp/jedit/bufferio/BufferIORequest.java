@@ -50,7 +50,7 @@ import org.gjt.sp.util.WorkRequest;
 /**
  * A buffer I/O request.
  * @author Slava Pestov
- * @version $Id: BufferIORequest.java 16339 2009-10-14 09:59:36Z kpouer $
+ * @version $Id: BufferIORequest.java 19026 2010-11-26 12:54:56Z kpouer $
  */
 public abstract class BufferIORequest extends WorkRequest
 {
@@ -74,17 +74,6 @@ public abstract class BufferIORequest extends WorkRequest
 	 * Buffer boolean property set when an error occurs.
 	 */
 	public static final String ERROR_OCCURRED = "BufferIORequest__error";
-
-	// These are no longer used but still here only for compatibility.
-	@Deprecated public static final int UTF8_MAGIC_1 = 0xef;
-	@Deprecated public static final int UTF8_MAGIC_2 = 0xbb;
-	@Deprecated public static final int UTF8_MAGIC_3 = 0xbf;
-	@Deprecated public static final int UNICODE_MAGIC_1 = 0xfe;
-	@Deprecated public static final int UNICODE_MAGIC_2 = 0xff;
-	@Deprecated public static final int XML_PI_LENGTH = 50;
-	@Deprecated public static final int GZIP_MAGIC_1 = 0x1f;
-	@Deprecated public static final int GZIP_MAGIC_2 = 0x8b;
-
 	//}}}
 
 	//{{{ Instance variables

@@ -5,18 +5,22 @@
 *
 * Copyright (C) 2003 Ollie Rutherfurd <oliver@jedit.org>
 *
-* $Id: Copy_Lines.bsh 11860 2008-02-24 23:43:28Z ezust $
+* $Id: Copy_Lines.bsh 20787 2012-01-14 01:51:43Z ezust $
 */
 
-copyLines(){
+copyLines()
+{
 	selections = textArea.getSelectedLines();
 	
-	if(selections.length == 0){
+	if(selections.length == 0)
+	{
 		selections = new int [] {textArea.getCaretLine()};
 	}
 	start = textArea.getLineStartOffset(selections[0]);
 	stop = textArea.getLineEndOffset(selections[selections.length-1]);
-	Registers.getRegister('$').setValue(textArea.getText(start,stop-start+1));
+	String text = textArea.getText(start,stop-start);
+	java.awt.datatransfer.Transferable value = new java.awt.datatransfer.StringSelection(text);
+	Registers.getRegister('$').setTransferable(value);
 }
 
 copyLines();

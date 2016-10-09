@@ -43,7 +43,7 @@ import java.util.List;
 
 /**
  * @author Slava Pestov
- * @version $Id: TextAreaTransferHandler.java 19550 2011-06-08 21:37:11Z ezust $
+ * @version $Id: TextAreaTransferHandler.java 19698 2011-07-23 12:22:01Z shlomy $
  */
 public class TextAreaTransferHandler extends TransferHandler
 {
@@ -110,18 +110,15 @@ public class TextAreaTransferHandler extends TransferHandler
 			{
 				DataFlavor uriListStringDataFlavor = null;
 				DataFlavor[] dataFlavors = t.getTransferDataFlavors();
-				
-				for (int i = 0;i<dataFlavors.length;i++)
+
+				for (DataFlavor dataFlavor : dataFlavors)
 				{
-					DataFlavor dataFlavor = dataFlavors[i];
-					if ("text".equals(dataFlavor.getPrimaryType()) &&
-					    "uri-list".equals(dataFlavor.getSubType()) &&
-					    dataFlavor.getRepresentationClass() == String.class)
+					if (isUriList(dataFlavor))
 					{
 						uriListStringDataFlavor = dataFlavor;
 						break;
 					}
- 				}
+				}
 				
 				if (uriListStringDataFlavor != null &&t.isDataFlavorSupported(uriListStringDataFlavor))
 				{
@@ -157,6 +154,10 @@ public class TextAreaTransferHandler extends TransferHandler
 		View view = editPane.getView();
 		Buffer buffer = null;
 
+		// per the Java API, javaFileListFlavor guarantees that a 
+		// List<File> will be returned.  So suppress warning for this
+		// statement.  We know what we're doing.
+		@SuppressWarnings("unchecked")
 		List<File> data = (List<File>) t.getTransferData(DataFlavor.javaFileListFlavor);
 
 		boolean browsedDirectory = false;
@@ -209,6 +210,10 @@ public class TextAreaTransferHandler extends TransferHandler
 			{
 				String str0 = components[i];
 
+				// gnome-commander adds a 0 byte at the end of the file name, discard it
+				int len = str0.length();
+				if (len > 0 && (int)str0.charAt(len - 1) == 0)
+					str0 = str0.substring(0, len - 1);
 				if (str0.length() > 0)
 				{
 					URI uri = new URI(str0); // this handles the URI-decoding
@@ -226,7 +231,7 @@ public class TextAreaTransferHandler extends TransferHandler
 						}
 						else
 						{
-							VFSManager.runInWorkThread(new DraggedURLLoader(textArea,uri.getPath()));
+							VFSManager.runInAWTThread(new DraggedURLLoader(textArea,uri.getPath()));
 						}
 						found = true;
 					}
@@ -269,9 +274,8 @@ public class TextAreaTransferHandler extends TransferHandler
 			boolean found = false;
 			String[] components = str.split("\n");
 
-			for (int i = 0;i<components.length;i++)
+			for (String str0 : components)
 			{
-				String str0 = components[i];
 				// Only examine the string for a URL if it came from
 				// outside of jEdit.
 				VFS vfs = VFSManager.getVFSForPath(str0);
@@ -283,10 +287,10 @@ public class TextAreaTransferHandler extends TransferHandler
 						str0 = str0.substring(7);
 					}
 
-					VFSManager.runInWorkThread(new DraggedURLLoader(textArea,str0));
+					VFSManager.runInWorkThread(new DraggedURLLoader(textArea, str0));
 				}
 				found = true;
-				
+
 			}
 			
 			if (found)
@@ -328,10 +332,10 @@ public class TextAreaTransferHandler extends TransferHandler
 				insertPos = caret;
 				insertOffset = 0;
 				Selection[] selections = textArea.getSelection();
-				for (int i=0;i<selections.length;i++)
+				for (Selection selection : selections)
 				{
-					if (selections[i].end < insertPos + insertOffset)
-						insertOffset -= selections[i].end - selections[i].start;
+					if (selection.end < insertPos + insertOffset)
+						insertOffset -= selection.end - selection.start;
 				}
 			}
 			else
@@ -412,6 +416,14 @@ public class TextAreaTransferHandler extends TransferHandler
 		dragSource = null;
 	} //}}}
 
+	//{{{ isUriList() method
+	private boolean isUriList(DataFlavor flavor)
+	{
+		return ("text".equals(flavor.getPrimaryType()) &&
+			"uri-list".equals(flavor.getSubType()) &&
+			flavor.getRepresentationClass() == String.class);
+	} //}}}
+
 	//{{{ canImport() methods
 	@Override
 	public boolean canImport(TransferSupport support)
@@ -434,18 +446,21 @@ public class TextAreaTransferHandler extends TransferHandler
 		// + text area read only, do an or of all flags
 		boolean returnValue = false;
 
-		for(int i = 0; i < flavors.length; i++)
+		for (DataFlavor flavor : flavors)
 		{
-			if(flavors[i].equals(
-				DataFlavor.javaFileListFlavor))
+			if (flavor.equals(DataFlavor.javaFileListFlavor) ||
+				isUriList(flavor))
 			{
 				returnValue = true;
-			}
-			else if(flavors[i].equals(
+				break;
+			} else if (flavor.equals(
 				DataFlavor.stringFlavor))
 			{
-				if(textArea.isEditable())
+				if (textArea.isEditable())
+				{
 					returnValue = true;
+					break;
+				}
 			}
 		}
 

@@ -42,7 +42,7 @@ import org.gjt.sp.util.StandardUtilities;
 /**
  * Tool bar editor.
  * @author Slava Pestov
- * @version $Id: ToolBarOptionPane.java 18968 2010-11-15 23:31:24Z ezust $
+ * @version $Id: ToolBarOptionPane.java 18967 2010-11-15 23:22:36Z ezust $
  */
 public class ToolBarOptionPane extends AbstractOptionPane
 {

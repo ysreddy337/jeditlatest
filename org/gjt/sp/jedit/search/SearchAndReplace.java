@@ -64,7 +64,7 @@ import org.gjt.sp.util.*;
  *
  * @author Slava Pestov
  * @author John Gellene (API documentation)
- * @version $Id: SearchAndReplace.java 19553 2011-06-09 01:23:57Z ezust $
+ * @version $Id: SearchAndReplace.java 19407 2011-02-28 14:07:12Z kpouer $
  */
 public class SearchAndReplace
 {
@@ -119,6 +119,24 @@ public class SearchAndReplace
 		return replace;
 	} //}}}
 
+	//{{{ setWholeWord() method
+	/**
+	 * Sets the whole word flag.
+	 * @param wholeWord True if only whole words should be searched,
+	 * false otherwise
+	 * @since 4.5pre1
+	 */
+	public static void setWholeWord(boolean wholeWord)
+	{
+		if(wholeWord == SearchAndReplace.wholeWord)
+			return;
+
+		SearchAndReplace.wholeWord = wholeWord;
+		matcher = null;
+
+		EditBus.send(new SearchSettingsChanged(null));
+	} //}}}
+
 	//{{{ setIgnoreCase() method
 	/**
 	 * Sets the ignore case flag.
@@ -134,6 +152,18 @@ public class SearchAndReplace
 		matcher = null;
 
 		EditBus.send(new SearchSettingsChanged(null));
+	} //}}}
+
+	//{{{ getWholeWord() method
+	/**
+	 * Returns the state of the whole word flag.
+	 * @return True if only whole words should be searched,
+	 * false otherwise
+	 * @since 4.5pre1
+	 */
+	public static boolean getWholeWord()
+	{
+		return wholeWord;
 	} //}}}
 
 	//{{{ getIgnoreCase() method
@@ -264,7 +294,7 @@ public class SearchAndReplace
 	//{{{ setSearchMatcher() method
 	/**
 	 * Sets a custom search string matcher. Note that calling
-	 * {@link #setSearchString(String)},
+	 * {@link #setSearchString(String)}, {@link #setWholeWord(boolean)},
 	 * {@link #setIgnoreCase(boolean)}, or {@link #setRegexp(boolean)}
 	 * will reset the matcher to the default.
 	 */
@@ -294,12 +324,12 @@ public class SearchAndReplace
 
 		if (regexp)
 		{
-			Pattern re = Pattern.compile(search, 
+			Pattern re = Pattern.compile(search,
 				PatternSearchMatcher.getFlag(ignoreCase));
-			matcher = new PatternSearchMatcher(re, ignoreCase);
+			matcher = new PatternSearchMatcher(re, ignoreCase, wholeWord);
 		}
 		else
-			matcher = new BoyerMooreSearchMatcher(search, ignoreCase);
+			matcher = new BoyerMooreSearchMatcher(search, ignoreCase, wholeWord);
 
 		return matcher;
 	} //}}}
@@ -622,6 +652,9 @@ loop:			for(;;)
 				buffer.getLineOfOffset(start)) == start);
 			endOfLine = true;
 		}
+
+		String noWordSep = (String) buffer.getMode().getProperty("noWordSep");
+		matcher.setNoWordSep(noWordSep);
 		SearchMatcher.Match match = matcher.nextMatch(text,
 			startOfLine,endOfLine,firstTime,reverse);
 		if(match != null)
@@ -842,9 +875,7 @@ loop:			for(;;)
 
 		view.showWaitCursor();
 
-		boolean smartCaseReplace = (replace != null
-			&& TextUtilities.getStringCase(replace)
-			== TextUtilities.LOWER_CASE);
+		boolean smartCaseReplace = getSmartCaseReplace();
 
 		int fileCount = 0;
 		int occurCount = 0;
@@ -962,6 +993,7 @@ loop:			while(path != null)
 	{
 		search = jEdit.getProperty("search.find.value");
 		replace = jEdit.getProperty("search.replace.value");
+		wholeWord = jEdit.getBooleanProperty("search.wholeWord.toggle");
 		ignoreCase = jEdit.getBooleanProperty("search.ignoreCase.toggle");
 		regexp = jEdit.getBooleanProperty("search.regexp.toggle");
 		beanshell = jEdit.getBooleanProperty("search.beanshell.toggle");
@@ -984,6 +1016,7 @@ loop:			while(path != null)
 	{
 		jEdit.setProperty("search.find.value",search);
 		jEdit.setProperty("search.replace.value",replace);
+		jEdit.setBooleanProperty("search.wholeWord.toggle",wholeWord);
 		jEdit.setBooleanProperty("search.ignoreCase.toggle",ignoreCase);
 		jEdit.setBooleanProperty("search.regexp.toggle",regexp);
 		jEdit.setBooleanProperty("search.beanshell.toggle",beanshell);
@@ -1019,6 +1052,7 @@ loop:			while(path != null)
 		BeanShell.getNameSpace().getClassManager(),
 		"search and replace");
 	private static boolean regexp;
+	private static boolean wholeWord;
 	private static boolean ignoreCase;
 	private static boolean reverse;
 	private static boolean beanshell;
@@ -1035,8 +1069,13 @@ loop:			while(path != null)
 	{
 		if(beanshell && replace.length() != 0)
 		{
+			String text;
+			if( replace.trim().startsWith( "{" ) )
+				text = replace;
+			else
+				text = "return (" + replace + ");";	
 			replaceMethod = BeanShell.cacheBlock("replace",
-				"return (" + replace + ");",true);
+				text,true);
 		}
 		else
 			replaceMethod = null;
@@ -1069,6 +1108,8 @@ loop:			while(path != null)
 					+ reverse + ");");
 			}
 
+			recorder.record("SearchAndReplace.setWholeWord("
+				+ wholeWord + ");");
 			recorder.record("SearchAndReplace.setIgnoreCase("
 				+ ignoreCase + ");");
 			recorder.record("SearchAndReplace.setRegexp("
@@ -1149,6 +1190,8 @@ loop:			while(path != null)
 		boolean smartCaseReplace)
 		throws Exception
 	{
+		String wordBreakChars = (String) buffer.getMode().getProperty("wordBreakChars");
+		matcher.setNoWordSep(wordBreakChars);
 		int occurCount = 0;
 
 		boolean endOfLine = (buffer.getLineEndOffset(

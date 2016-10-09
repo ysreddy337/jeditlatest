@@ -112,7 +112,7 @@ public class Chunk extends Token
 	 * @since jEdit 4.2pre1
 	 */
 	public static float paintChunkBackgrounds(Chunk chunks,
-		Graphics2D gfx, float x, float y)
+		Graphics2D gfx, float x, float y, int lineHeight)
 	{
 		Rectangle clipRect = gfx.getClipBounds();
 
@@ -121,7 +121,7 @@ public class Chunk extends Token
 		FontMetrics forBackground = gfx.getFontMetrics();
 
 		int ascent = forBackground.getAscent();
-		int height = forBackground.getHeight();
+		int height = lineHeight;
 
 		while(chunks != null)
 		{
@@ -229,10 +229,10 @@ public class Chunk extends Token
 		}
 
 
-		int i = 0;
-		String family;
 		List<Font> userFonts = new ArrayList<Font>();
 
+		String family;
+		int i = 0;
 		while ((family = props.getProperty("view.fontSubstList." + i)) != null)
 		{
 			/*
@@ -241,8 +241,8 @@ public class Chunk extends Token
 			 * check skips fonts that don't exist.
 			 */
 			Font f = new Font(family, Font.PLAIN, 12);
-			if (!f.getFamily().equalsIgnoreCase("dialog") ||
-			    family.equalsIgnoreCase("dialog"))
+			if (!"dialog".equalsIgnoreCase(f.getFamily()) ||
+				"dialog".equalsIgnoreCase(family))
 				userFonts.add(f);
 			i++;
 		}
@@ -322,10 +322,10 @@ public class Chunk extends Token
 				float[] pos = gv.getGlyphPositions(0, gv.getNumGlyphs(), null);
 				for (int i = 0; i < gv.getNumGlyphs(); i++)
 				{
-					float glyphX = myx + pos[i * 2];
+					float glyphX = myx + pos[i << 1];
 					float nextX = (i == gv.getNumGlyphs() - 1)
 					            ? width
-					            : myx + pos[i * 2 + 2];
+					            : myx + pos[(i << 1) + 2];
 
 					if (nextX > x)
 					{
@@ -347,7 +347,7 @@ public class Chunk extends Token
 
 	//{{{ init() method
 	public void init(Segment seg, TabExpander expander, float x,
-		FontRenderContext fontRenderContext)
+		FontRenderContext fontRenderContext, int physicalLineOffset)
 	{
 		initialized = true;
 
@@ -358,7 +358,7 @@ public class Chunk extends Token
 		else if(length == 1 && seg.array[seg.offset + offset] == '\t')
 		{
 			visible = false;
-			float newX = expander.nextTabStop(x,offset + length);
+			float newX = expander.nextTabStop(x,physicalLineOffset+offset);
 			width = newX - x;
 		}
 		else
@@ -494,7 +494,7 @@ public class Chunk extends Token
 	 * @return Width of the rendered text.
 	 */
 	private float layoutGlyphs(FontRenderContext frc,
-				   char text[],
+				   char[] text,
 				   int start,
 				   int end)
 	{

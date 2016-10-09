@@ -57,7 +57,7 @@ public class EnhancedCheckBoxMenuItem extends JCheckBoxMenuItem
 		
 		if(OperatingSystem.hasScreenMenuBar() && shortcut != null)
 		{
-			setText(label + " (" + shortcut + ')');
+			setText(label + " ( " + shortcut + " )");
 			shortcut = null;
 		}
 		else
@@ -128,7 +128,7 @@ public class EnhancedCheckBoxMenuItem extends JCheckBoxMenuItem
 		@Override
 		public boolean isSelected()
 		{
-			if(!isShowing())
+			if(!isVisible())
 				return false;
 
 			EditAction a = context.getAction(action);

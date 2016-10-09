@@ -41,7 +41,6 @@ import org.gjt.sp.util.Log;
 import org.gjt.sp.util.ProgressObserver;
 import org.gjt.sp.util.IOUtilities;
 import org.gjt.sp.util.StandardUtilities;
-import org.gjt.sp.util.ThreadUtilities;
 import org.gjt.sp.util.WorkThread;
 //}}}
 
@@ -68,11 +67,10 @@ import org.gjt.sp.util.WorkThread;
  *
  * Methods whose names are prefixed with "_" expect to be given a
  * previously-obtained session object. A session must be obtained from the AWT
- * thread in one of two ways:
+ * thread this method:
  *
  * <ul>
  * <li>{@link #createVFSSession(String,Component)}</li>
- * <li>{@link #showBrowseDialog(Object[],Component)}</li>
  * </ul>
  *
  * When done, the session must be disposed of using
@@ -87,7 +85,6 @@ import org.gjt.sp.util.WorkThread;
  * <li>{@link #insert(View,Buffer,String)}</li>
  * <li>{@link #load(View,Buffer,String)}</li>
  * <li>{@link #save(View,Buffer,String)}</li>
- * <li>{@link #showBrowseDialog(Object[],Component)}</li>
  * </ul>
  *
  * All remaining methods are required to be thread-safe in subclasses.
@@ -102,7 +99,7 @@ import org.gjt.sp.util.WorkThread;
  * @see VFSManager#getVFSForProtocol(String)
  *
  * @author Slava Pestov
- * @author $Id: VFS.java 18758 2010-10-10 12:19:07Z voituk $
+ * @author $Id: VFS.java 19908 2011-09-02 23:08:54Z Vampire0 $
  */
 public abstract class VFS
 {
@@ -197,16 +194,6 @@ public abstract class VFS
 
 	//{{{ VFS constructors
 	/**
-	 * @deprecated Use the form where the constructor takes a capability
-	 * list.
-	 */
-	@Deprecated
-	protected VFS(String name)
-	{
-		this(name,0);
-	}
-
-	/**
 	 * Creates a new virtual filesystem.
 	 * @param name The name
 	 * @param caps The capabilities
@@ -276,25 +263,6 @@ public abstract class VFS
 		return extAttrs;
 	} //}}}
 
-	//{{{ showBrowseDialog() method
-	/**
-	 * Displays a dialog box that should set up a session and return
-	 * the initial URL to browse.
-	 * @param session Where the VFS session will be stored
-	 * @param comp The component that will parent error dialog boxes
-	 * @return The URL
-	 * @since jEdit 2.7pre1
-	 * @deprecated This function is not used in the jEdit core anymore,
-	 *             so it doesn't have to be provided anymore. If you want
-	 *             to use it for another purpose like in the FTP plugin,
-	 *             feel free to do so.
-	 */
-	@Deprecated
-	public String showBrowseDialog(Object[] session, Component comp)
-	{
-		return null;
-	} //}}}
-
 	//{{{ getFileName() method
 	/**
 	 * Returns the file name component of the specified path.
@@ -319,6 +287,34 @@ public abstract class VFS
 			return path;
 
 		return path.substring(index + 1);
+	} //}}}
+
+	//{{{ getFilePath() method
+	/**
+	 * Returns the path component of the specified VFS path.
+	 * The standard implementation cuts off the protocol
+	 * and the protocol separator character and then delegates
+	 * to eventually present sub-VFS-paths present in the VFS path
+	 * like "jode:archive:/test.zip!/test.txt".
+	 * <p/>
+	 * If a VFS implementation can have additional
+	 * information in the VFS path like username / password / host / port
+	 * for FTP VFS or archive filename for archive VFS, this
+	 * method should be overridden to remove those information also.
+	 * The easiest would be to remove those additional information
+	 * and then delegate to {@code super.getFilePath()}.
+	 *
+	 * @param vfsPath The VFS path
+	 * @since jEdit 4.5pre1
+	 */
+	public String getFilePath(String vfsPath)
+	{
+		if (!MiscUtilities.isURL(vfsPath))
+			return vfsPath;
+
+		String filePath = vfsPath.substring(MiscUtilities.getProtocolOfURL(vfsPath).length() + 1);
+
+		return VFSManager.getVFSForPath(filePath).getFilePath(filePath);
 	} //}}}
 
 	//{{{ getParentOfPath() method
@@ -460,7 +456,7 @@ public abstract class VFS
 		else
 			// BufferLoadRequest can cause UI interations (for example FTP connection dialog),
 			// so it should be runned in Dispatch thread
-			//ThreadUtilities.runInDispatchThread(request); 
+			//ThreadUtilities.runInDispatchThread(request);
 			VFSManager.runInWorkThread(request);
 
 		return true;
@@ -762,18 +758,6 @@ public abstract class VFS
 		Component comp)
 		throws IOException
 	{
-		return _listDirectory(session,directory,comp);
-	} //}}}
-
-	//{{{ _listDirectory() method
-	/**
-	 * @deprecated Use <code>_listFiles()</code> instead.
-	 */
-	@Deprecated
-	public DirectoryEntry[] _listDirectory(Object session, String directory,
-		Component comp)
-		throws IOException
-	{
 		VFSManager.error(comp,directory,"vfs.not-supported.list",new String[] { name });
 		return null;
 	} //}}}
@@ -792,62 +776,7 @@ public abstract class VFS
 		Component comp)
 		throws IOException
 	{
-		return _getDirectoryEntry(session,path,comp);
-	} //}}}
-
-	//{{{ _getDirectoryEntry() method
-	/**
-	 * Returns the specified directory entry.
-	 * @param session The session get it with {@link VFS#createVFSSession(String, Component)}
-	 * @param path The path
-	 * @param comp The component that will parent error dialog boxes
-	 * @exception IOException if an I/O error occurred
-	 * @return The specified directory entry, or null if it doesn't exist.
-	 * @since jEdit 2.7pre1
-	 * @deprecated Use <code>_getFile()</code> instead.
-	 */
-	@Deprecated
-	public DirectoryEntry _getDirectoryEntry(Object session, String path,
-		Component comp)
-		throws IOException
-	{
 		return null;
-	} //}}}
-
-	//{{{ DirectoryEntry class
-	/**
-	 * @deprecated Use <code>VFSFile</code> instead.
-	 */
-	@Deprecated
-	public static class DirectoryEntry extends VFSFile
-	{
-		//{{{ DirectoryEntry constructor
-		/**
-		 * @since jEdit 4.2pre2
-		 */
-		public DirectoryEntry()
-		{
-		} //}}}
-
-		//{{{ DirectoryEntry constructor
-		public DirectoryEntry(String name, String path, String deletePath,
-			int type, long length, boolean hidden)
-		{
-			this.name = name;
-			this.path = path;
-			this.deletePath = deletePath;
-			this.symlinkPath = path;
-			this.type = type;
-			this.length = length;
-			this.hidden = hidden;
-			if(path != null)
-			{
-				// maintain backwards compatibility
-				VFS vfs = VFSManager.getVFSForPath(path);
-				canRead = ((vfs.getCapabilities() & READ_CAP) != 0);
-				canWrite = ((vfs.getCapabilities() & WRITE_CAP) != 0);
-			}
-		} //}}}
 	} //}}}
 
 	//{{{ _delete() method
@@ -1028,7 +957,7 @@ public abstract class VFS
 	//{{{ DirectoryEntryCompare class
 	/**
 	 * Implementation of {@link Comparator}
-	 * interface that compares {@link VFS.DirectoryEntry} instances.
+	 * interface that compares {@link VFSFile} instances.
 	 * @since jEdit 4.2pre1
 	 */
 	public static class DirectoryEntryCompare implements Comparator<VFSFile>
