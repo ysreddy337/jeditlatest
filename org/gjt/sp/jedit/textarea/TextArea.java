@@ -66,7 +66,7 @@ import org.gjt.sp.util.ThreadUtilities;
  *
  * @author Slava Pestov
  * @author kpouer (rafactoring into standalone text area)
- * @version $Id: TextArea.java 19548 2011-06-08 20:50:08Z ezust $
+ * @version $Id: TextArea.java 19935 2011-09-06 21:03:24Z ezust $
  */
 public abstract class TextArea extends JComponent
 {
@@ -731,6 +731,8 @@ public abstract class TextArea extends JComponent
 	 */
 	public void scrollTo(int line, int offset, boolean doElectricScroll)
 	{
+		if (buffer.isLoading())
+			return;
 		if(Debug.SCROLL_TO_DEBUG)
 			Log.log(Log.DEBUG,this,"scrollTo(), lineCount="
 				+ getLineCount());
@@ -2544,6 +2546,8 @@ loop:		for(int i = lineNo + 1; i < getLineCount(); i++)
 	 */
 	public void goToNextWord(boolean select, boolean eatWhitespace)
 	{
+		if (buffer.isLoading())
+			return;
 		int lineStart = getLineStartOffset(caretLine);
 		int newCaret = caret - lineStart;
 		String lineText = getLineText(caretLine);
@@ -2620,13 +2624,6 @@ loop:		for(int i = getCaretPosition() - 1; i >= 0; i--)
 	public void goToPrevCharacter(boolean select)
 	{
 		Selection s = getSelectionAtOffset(caret);
-
-		if(caret == 0)
-		{
-			getToolkit().beep();
-			return;
-		}
-
 		if(!select && s instanceof Selection.Range)
 		{
 			if(multi)
@@ -2643,6 +2640,13 @@ loop:		for(int i = getCaretPosition() - 1; i >= 0; i--)
 				return;
 			}
 		}
+
+		if(caret == 0)
+		{
+			getToolkit().beep();
+			return;
+		}
+
 
 		int extraStartVirt = 0;
 		int extraEndVirt = 0;
@@ -2850,6 +2854,8 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 	 */
 	public void goToPrevWord(boolean select, boolean eatWhitespace, boolean eatOnlyAfterWord)
 	{
+		if (buffer.isLoading())
+			return;
 		int lineStart = getLineStartOffset(caretLine);
 		int newCaret = caret - lineStart;
 		String lineText = getLineText(caretLine);
@@ -3083,6 +3089,8 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 	 */
 	public void goToStartOfWhiteSpace(boolean select)
 	{
+		if (buffer.isLoading())
+			return;
 		Selection s = getSelectionAtOffset(caret);
 		int line, offset;
 		if(select || s == null)
@@ -3121,6 +3129,8 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 	 */
 	public void goToEndOfWhiteSpace(boolean select)
 	{
+		if (buffer.isLoading())
+			return;
 		Selection s = getSelectionAtOffset(caret);
 		int line, offset;
 		if(select || s == null)

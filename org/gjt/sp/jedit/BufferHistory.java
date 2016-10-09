@@ -40,7 +40,7 @@ import org.gjt.sp.util.IOUtilities;
 /**
  * Recent file list.
  * @author Slava Pestov
- * @version $Id: BufferHistory.java 14455 2009-01-25 10:10:56Z kpouer $
+ * @version $Id: BufferHistory.java 19858 2011-08-28 16:32:33Z ezust $
  */
 public class BufferHistory
 {
@@ -433,7 +433,25 @@ public class BufferHistory
 			else if(name.equals("PATH"))
 				path = charData.toString();
 			else if(name.equals("CARET"))
-				caret = Integer.parseInt(charData.toString());
+			{
+				try
+				{
+					String s = charData.toString().trim();
+
+					if (s.length() != charData.length())
+					{
+						Log.log(Log.WARNING, this,
+							"The caret position in recent.xml was wrong: '"+
+							charData + "', fixing it");
+					}
+					caret = Integer.parseInt(s);
+				}
+				catch (NumberFormatException e)
+				{
+					Log.log(Log.ERROR, this, "Unable to parse caret position " +
+						charData);
+				}
+			}
 			else if(name.equals("SELECTION"))
 				selection = charData.toString();
 			else if(name.equals("ENCODING"))

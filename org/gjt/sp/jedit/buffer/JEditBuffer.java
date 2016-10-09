@@ -63,7 +63,7 @@ import java.util.regex.Pattern;
  * </ul>
  *
  * @author Slava Pestov
- * @version $Id: JEditBuffer.java 18698 2010-10-01 20:40:40Z daleanson $
+ * @version $Id: JEditBuffer.java 19873 2011-08-30 05:16:57Z ezust $
  *
  * @since jEdit 4.3pre3
  */
@@ -2137,7 +2137,7 @@ loop:		for(int i = 0; i < seg.count; i++)
 	 */
 	public boolean isTransactionInProgress()
 	{
-		return transaction || undoInProgress || insideCompoundEdit();
+		return transaction || undoInProgress || insideCompoundEdit() || loading;
 	} //}}}
 
 	//{{{ beginCompoundEdit() method

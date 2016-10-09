@@ -42,14 +42,16 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.Vector;
 //}}}
 
 /**
  * Key binding editor.
  * @author Slava Pestov
- * @version $Id: ShortcutsOptionPane.java 16676 2009-12-18 14:44:32Z shlomy $
+ * @version $Id: ShortcutsOptionPane.java 20056 2011-10-07 19:48:42Z ezust $
  */
 public class ShortcutsOptionPane extends AbstractOptionPane
 {
@@ -166,6 +168,7 @@ public class ShortcutsOptionPane extends AbstractOptionPane
 	private void initModels()
 	{
 		List<KeyBinding[]> allBindings = new Vector<KeyBinding[]>();
+		Set<String> knownBindings = new HashSet<String>();
 		models = new Vector<ShortcutsModel>();
 		ActionSet[] actionSets = jEdit.getActionSets();
 		for(int i = 0; i < actionSets.length; i++)
@@ -182,7 +185,16 @@ public class ShortcutsOptionPane extends AbstractOptionPane
 				ShortcutsModel model = createModel(modelLabel,
 						actionSet.getActionNames());
 				models.addElement(model);
-				allBindings.addAll(model.getBindings());
+				List<KeyBinding[]> bindings = model.getBindings();
+				for (KeyBinding[] binding : bindings)
+				{
+					String name = binding[0].name;
+					if (!knownBindings.contains(name))
+					{
+						knownBindings.add(name);
+						allBindings.add(binding);
+					}
+				}
 			}
 		}
 		if (models.size() > 1)

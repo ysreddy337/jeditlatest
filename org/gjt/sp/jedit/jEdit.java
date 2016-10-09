@@ -68,7 +68,7 @@ import org.gjt.sp.util.SyntaxUtilities;
 /**
  * The main class of the jEdit text editor.
  * @author Slava Pestov
- * @version $Id: jEdit.java 19611 2011-06-20 22:54:04Z Vampire0 $
+ * @version $Id: jEdit.java 19955 2011-09-12 14:38:34Z evanpw $
  */
 public class jEdit
 {
@@ -89,7 +89,7 @@ public class jEdit
 	public static String getBuild()
 	{
 		// (major).(minor).(<99 = preX, 99 = "final").(bug fix)
-		return "04.04.99.01";
+		return "04.04.99.02";
 	} //}}}
 
 	//{{{ main() method
@@ -1430,6 +1430,30 @@ public class jEdit
 	} //}}}
 
 	//{{{ openFile() methods
+	/**
+	 * Opens a file, either immediately if the application is finished starting up,
+	 * or after the first view has been created if not.
+	 * @param path The file path
+	 *
+	 * @return the buffer if succesfully loaded immediately, or null otherwise
+	 *
+	 * @since jEdit 4.4.2
+	 */
+	public static Buffer openFileAfterStartup(String path)
+	{
+		if (isStartupDone())
+		{
+			return openFile(getActiveView(), path);
+		}
+		else
+		{
+			// These additional file names will be treated just as if they had
+			// been passed on the command line
+			additionalFiles.add(path);
+			return null;
+		}
+	}
+	
 	/**
 	 * Opens a file. Note that as of jEdit 2.5pre1, this may return
 	 * null if the buffer could not be opened.
@@ -3098,6 +3122,7 @@ public class jEdit
 	private static View activeView;
 
 	private static Vector<Boolean> startupDone = new Vector<Boolean>();
+	private static Vector<String> additionalFiles = new Vector<String>();
 
 	private static Thread mainThread;
 	//}}}
@@ -3868,7 +3893,21 @@ public class jEdit
 					if(view == null)
 						view = newView(null,null);
 
-					Buffer buffer = openFiles(null,userDir,args);
+					Buffer buffer;
+					
+					// Treat the elements of additionalFiles just like command-line arguments
+					if (!additionalFiles.isEmpty())
+					{
+						String[] newArgs = new String[additionalFiles.size() + args.length];
+						additionalFiles.copyInto(newArgs);
+						System.arraycopy(args, 0, newArgs, additionalFiles.size(), args.length);
+						buffer = openFiles(null,userDir,newArgs);
+					}
+					else
+					{
+						buffer = openFiles(null,userDir,args);
+					}
+					
 					if(buffer != null)
 						view.setBuffer(buffer,true);
 				}
