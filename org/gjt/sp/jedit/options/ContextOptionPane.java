@@ -29,7 +29,7 @@ import org.gjt.sp.jedit.*;
 /**
  * Right-click context menu editor.
  * @author Slava Pestov
- * @version $Id: ContextOptionPane.java 21983 2012-08-07 15:29:11Z ezust $
+ * @version $Id: ContextOptionPane.java 21981 2012-08-06 19:19:16Z jarekczek $
  */
 public class ContextOptionPane extends AbstractContextOptionPane
 {
@@ -39,7 +39,7 @@ public class ContextOptionPane extends AbstractContextOptionPane
 	{
 		super("context", jEdit.getProperty("options.context.caption"));
 	}
-
+	
 	protected void _init()
 	{
 		super._init();

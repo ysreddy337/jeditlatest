@@ -1,6 +1,6 @@
 /*
  * VFSDirectoryEntryTable.java - VFS directory entry table
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2003, 2005 Slava Pestov
@@ -49,7 +49,7 @@ import org.gjt.sp.util.ThreadUtilities;
 
 /**
  * @author Slava Pestov
- * @version $Id: VFSDirectoryEntryTable.java 21706 2012-05-23 16:58:56Z ezust $
+ * @version $Id: VFSDirectoryEntryTable.java 21831 2012-06-18 22:54:17Z ezust $
  * @since jEdit 4.2pre1
  */
 public class VFSDirectoryEntryTable extends JTable

@@ -1,6 +1,6 @@
 /*
  * VFSBrowser.java - VFS browser
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2000, 2003 Slava Pestov
@@ -56,7 +56,7 @@ import org.gjt.sp.jedit.menu.MenuItemTextComparator;
  * VFSFileChooserDialog.
  *
  * @author Slava Pestov
- * @version $Id: VFSBrowser.java 21555 2012-04-03 15:17:35Z kpouer $
+ * @version $Id: VFSBrowser.java 22996 2013-05-17 09:43:00Z kpouer $
  */
 public class VFSBrowser extends JPanel implements DefaultFocusComponent,
 	DockableWindow
@@ -76,7 +76,7 @@ public class VFSBrowser extends JPanel implements DefaultFocusComponent,
 	 */
 	public static final int SAVE_DIALOG = 1;
 	/**
-	 * Choose directory dialog mode.
+	 * File Open Dialog with extra context menu actions like the BROWSER mode.
 	 */
 	public static final int BROWSER_DIALOG = 4;
 	/**
@@ -368,11 +368,9 @@ public class VFSBrowser extends JPanel implements DefaultFocusComponent,
 			}
 			else if("last".equals(defaultPath))
 			{
-				HistoryModel pathModel = HistoryModel.getModel("vfs.browser.path");
-				if(pathModel.getSize() == 0)
+				path = getLastVisitedPath();
+				if (path == null)
 					path = "~";
-				else
-					path = pathModel.getItem(0);
 			}
 			else if("favorites".equals(defaultPath))
 				path = "favorites:";
@@ -606,6 +604,21 @@ public class VFSBrowser extends JPanel implements DefaultFocusComponent,
 	}
 	// }}}
 
+	//{{{ getLastVisitedPath() method
+	/**
+	 * Returns the last path visited by VFSBrowser. If no path was ever
+	 * visited, returns <code>null</code>,
+	 * @since 5.1
+	 */
+	public static String getLastVisitedPath()
+	{
+		HistoryModel pathModel = HistoryModel.getModel("vfs.browser.path");
+		if(pathModel.getSize() == 0)
+			return null;
+		else
+			return pathModel.getItem(0);
+	} //}}}
+
 	//{{{ setDirectory() method
 	public void setDirectory(String path)
 	{
@@ -674,21 +687,29 @@ public class VFSBrowser extends JPanel implements DefaultFocusComponent,
 			dialogType = "vfs.browser.delete-confirm";
 		}
 
-		StringBuilder buf = new StringBuilder();
 		String typeStr = "files";
 		for(int i = 0; i < files.length; i++)
 		{
-			buf.append(files[i].getPath());
-			buf.append('\n');
 			if (files[i].getType() == VFSFile.DIRECTORY)
+			{
 				typeStr = "directories and their contents";
+				break;
+			}
 		}
 
-		Object[] args = { buf.toString(), typeStr};
+		// In the previous version the first argument was the file list, now it is a list so the file list is not
+		// created anymore. But for compatibility an empty string is used.
+		Object[] args = { "", typeStr };
 
-		int result = GUIUtilities.confirm(this,dialogType,args,
-			JOptionPane.YES_NO_OPTION,
-			JOptionPane.WARNING_MESSAGE);
+		JList list = new JList(files);
+		list.setVisibleRowCount(10);
+		JPanel panel = new JPanel(new BorderLayout());
+		panel.add(new JScrollPane(list));
+		panel.add(new JLabel(jEdit.getProperty(dialogType+".message", args)), BorderLayout.PAGE_START);
+		int result = JOptionPane
+			.showConfirmDialog(this, panel, jEdit.getProperty(dialogType+".title"),
+							   JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+
 		if(result != JOptionPane.YES_OPTION)
 			return;
 
@@ -1048,6 +1069,9 @@ public class VFSBrowser extends JPanel implements DefaultFocusComponent,
 			case VFSFile.DIRECTORY:
 				targetPath = file.getPath();
 				break;
+			default:
+				Log.log(Log.ERROR, this, "Unknown file type " + file.getType());
+				return;
 		}
 		VFS vfs = VFSManager.getVFSForPath(targetPath);
 		Object vfsSession = null;
@@ -1077,12 +1101,13 @@ public class VFSBrowser extends JPanel implements DefaultFocusComponent,
 					sources.add(copiedFile.getAbsolutePath());
 				}
 			}
-			CopyFileWorker worker = new CopyFileWorker(this, sources, targetPath);
+			CopyFileWorker worker = new CopyFileWorker(this, sources, targetPath, CopyFileWorker.Behavior.RENAME);
 			ThreadUtilities.runInBackground(worker);
 		}
 		finally
 		{
-			vfs._endVFSSession(vfsSession, this);
+			if (vfsSession != null)
+				vfs._endVFSSession(vfsSession, this);
 		}
 	} //}}}
 
@@ -1101,7 +1126,7 @@ public class VFSBrowser extends JPanel implements DefaultFocusComponent,
 		setDirectory(MiscUtilities.getParentOfPath(path));
 		// Do not change this until all VFS Browser tasks are
 		// done in ThreadUtilities
-		VFSManager.runInAWTThread(new Runnable()
+		AwtRunnableQueue.INSTANCE.runAfterIoTasks(new Runnable()
 		{
 			public void run()
 			{
@@ -1634,7 +1659,7 @@ check_selected: for(int i = 0; i < selectedFiles.length; i++)
 			{
 				// Do not change this until all VFS Browser tasks are
 				// done in ThreadUtilities
-				VFSManager.runInAWTThread(new Runnable()
+				AwtRunnableQueue.INSTANCE.runAfterIoTasks(new Runnable()
 				{
 					public void run()
 					{
@@ -1770,6 +1795,7 @@ check_selected: for(int i = 0; i < selectedFiles.length; i++)
 			addKeyListener(this);
 			if(OperatingSystem.isMacOSLF())
 				putClientProperty("JButton.buttonType","toolbar");
+			setAction(new Action());
 		} //}}}
 
 		public void keyReleased(KeyEvent e) {}
@@ -1803,6 +1829,15 @@ check_selected: for(int i = 0; i < selectedFiles.length; i++)
 				}
 			}
 		} //}}}
+		
+		//{{{ Action class
+		class Action extends AbstractAction
+		{
+			public void actionPerformed(ActionEvent ae)
+			{
+				doPopup();
+			}
+		} //}}}
 	} //}}}
 
 
@@ -1814,6 +1849,7 @@ check_selected: for(int i = 0; i < selectedFiles.length; i++)
 		CommandsMenuButton()
 		{
 			setText(jEdit.getProperty("vfs.browser.commands.label"));
+			GUIUtilities.setAutoMnemonic(this);
 			setName("commands");
 			popup = new BrowserCommandsMenu(VFSBrowser.this, null);
 		} //}}}
@@ -1834,7 +1870,7 @@ check_selected: for(int i = 0; i < selectedFiles.length; i++)
 		PluginsMenuButton()
 		{
 			setText(jEdit.getProperty("vfs.browser.plugins.label"));
-
+			GUIUtilities.setAutoMnemonic(this);
 			setName("plugins");
 
 			setMargin(new Insets(1,1,1,1));
@@ -1874,6 +1910,7 @@ check_selected: for(int i = 0; i < selectedFiles.length; i++)
 		FavoritesMenuButton()
 		{
 			setText(jEdit.getProperty("vfs.browser.favorites.label"));
+			GUIUtilities.setAutoMnemonic(this);
 			setName("favorites");
 			createPopupMenu();
 

@@ -1,6 +1,6 @@
 /*
  * BufferAdapter.java - Buffer listener adapter
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2001, 2005 Slava Pestov
@@ -26,7 +26,7 @@ package org.gjt.sp.jedit.buffer;
  * An adapter you can subclass to avoid having to implement all the methods
  * of the {@link BufferListener} interface.
  * @author Slava Pestov
- * @version $Id: BufferAdapter.java 17966 2010-06-03 08:27:12Z kpouer $
+ * @version $Id: BufferAdapter.java 21831 2012-06-18 22:54:17Z ezust $
  * @since jEdit 4.3pre3
  */
 public abstract class BufferAdapter implements BufferListener

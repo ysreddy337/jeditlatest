@@ -1,6 +1,6 @@
 /*
  * StatusBarOptionPane.java - Tool bar options panel
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2008-2012 Matthieu Casanova
@@ -38,7 +38,7 @@ import org.gjt.sp.jedit.*;
 /**
  * Status bar editor.
  * @author Matthieu Casanova
- * @version $Id: StatusBarOptionPane.java 21616 2012-04-30 08:32:24Z kpouer $
+ * @version $Id: StatusBarOptionPane.java 21831 2012-06-18 22:54:17Z ezust $
  */
 public class StatusBarOptionPane extends AbstractOptionPane
 {

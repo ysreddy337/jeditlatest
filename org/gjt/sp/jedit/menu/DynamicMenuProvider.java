@@ -1,6 +1,6 @@
 /*
  * DynamicMenuProvider.java - API for dynamic plugin menus
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2003 Slava Pestov
@@ -32,7 +32,7 @@ import javax.swing.JMenu;
  *
  * @since jEdit 4.2pre2
  * @author Slava Pestov
- * @version $Id: DynamicMenuProvider.java 13060 2008-07-17 18:22:42Z ezust $
+ * @version $Id: DynamicMenuProvider.java 21831 2012-06-18 22:54:17Z ezust $
  */
 public interface DynamicMenuProvider
 {

@@ -1,6 +1,6 @@
 /*
  * BrowserCommandsMenu.java - provides various commands
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2000, 2003 Slava Pestov
@@ -36,7 +36,7 @@ import org.gjt.sp.jedit.menu.MenuItemTextComparator;
 //}}}
 
 /**
- * @version $Id: BrowserCommandsMenu.java 20834 2012-01-17 16:29:14Z kpouer $
+ * @version $Id: BrowserCommandsMenu.java 22900 2013-03-28 21:22:13Z ezust $
  * @author Slava Pestov and Jason Ginchereau
  */
 public class BrowserCommandsMenu extends JPopupMenu
@@ -104,16 +104,12 @@ public class BrowserCommandsMenu extends JPopupMenu
 				|| browser.getMode() == VFSBrowser.BROWSER_DIALOG))
 			{
 				add(createMenuItem("open", "22x22/actions/document-open.png"));
-				JMenuItem openDesktop = GUIUtilities
-					.loadMenuItem(VFSBrowser.getActionContext(),
-						      "vfs.browser.open-desktop", true);
-				openDesktop.setIcon(GUIUtilities.loadIcon("22x22/actions/document-open.png"));
-				add(openDesktop);
-				add(GUIUtilities.loadMenu(
-					VFSBrowser.getActionContext(),
-					"vfs.browser.open-in"));
-				add(createMenuItem("insert"));
-
+				add(GUIUtilities.loadMenu(VFSBrowser.getActionContext(), "vfs.browser.open-in"));
+				if (browser.getSelectedFiles().length == 1) 
+				{
+					add(createMenuItem("open-desktop", "22x22/actions/document-open.png"));
+					add(createMenuItem("insert"));
+				}
 				if(fileOpen)
 					add(createMenuItem("close"));
 			}
@@ -318,6 +314,7 @@ public class BrowserCommandsMenu extends JPopupMenu
 	{
 		JMenu pluginMenu = new JMenu(jEdit.getProperty(
 			"vfs.browser.plugins.label"));
+		GUIUtilities.setAutoMnemonic(pluginMenu);
 		return (JMenu)browser.createPluginsMenu(pluginMenu,false);
 
 	} //}}}

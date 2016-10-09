@@ -1,6 +1,6 @@
 /*
  * HelpHistoryModelListener.java - History Model Listener for Help GUI
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2005 Nicholas O'Leary
@@ -25,7 +25,7 @@ package org.gjt.sp.jedit.help;
 /**
  * Listener interface to montior changes to a HelpHistoryModel
  * @author Nicholas O'Leary
- * @version $Id: HelpHistoryModelListener.java 12504 2008-04-22 23:12:43Z ezust $
+ * @version $Id: HelpHistoryModelListener.java 21831 2012-06-18 22:54:17Z ezust $
  */
 public interface HelpHistoryModelListener
 {

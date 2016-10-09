@@ -1,6 +1,6 @@
 /*
  * LogViewer.java
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1999, 2004 Slava Pestov
@@ -36,7 +36,7 @@ import org.gjt.sp.util.ThreadUtilities;
 //}}}
 
 /** Activity Log Viewer
- * @version $Id: LogViewer.java 21504 2012-03-29 17:45:22Z ezust $
+ * @version $Id: LogViewer.java 21989 2012-08-08 12:21:07Z jarekczek $
  */
 public class LogViewer extends JPanel implements DefaultFocusComponent
 {
@@ -483,6 +483,11 @@ public class LogViewer extends JPanel implements DefaultFocusComponent
 						GridBagConstraints.REMAINDER);
 
 					addComponent(Box.createVerticalStrut(11));
+					beep = new JCheckBox(jEdit.getProperty("debug.beepOnOutput.label"),
+						jEdit.getBooleanProperty("debug.beepOnOutput", false));
+					addComponent(beep);
+
+					addComponent(Box.createVerticalStrut(11));
 
 					JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
 					JButton okButton = new JButton(jEdit.getProperty("common.ok"));
@@ -533,7 +538,14 @@ public class LogViewer extends JPanel implements DefaultFocusComponent
 					jEdit.setColorProperty("log-viewer.message.warning.color", warningColor.getSelectedColor());
 					jEdit.setColorProperty("log-viewer.message.error.color", errorColor.getSelectedColor());
 
+					jEdit.setBooleanProperty("debug.beepOnOutput", beep.isSelected());
+
 					setFilter();
+					// it would be most clean to call jEdit.propertiesChanged() now
+					// which is needed since global debug.beepOnOutput flag is attached to this pane;
+					// but to avoid extra log entries, we workaround it by direct Log access
+					Log.setBeepOnOutput(beep.isSelected());
+					// jEdit.propertiesChanged();
 				}
 			};
 			setContentPane(pane);
@@ -554,6 +566,7 @@ public class LogViewer extends JPanel implements DefaultFocusComponent
 		private ColorWellButton noticeColor;
 		private ColorWellButton warningColor;
 		private ColorWellButton errorColor;
+		private JCheckBox beep;
 
 	} //}}}
 }

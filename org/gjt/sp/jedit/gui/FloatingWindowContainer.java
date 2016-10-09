@@ -1,6 +1,6 @@
 /*
  * FloatingWindowContainer.java - holds dockable windows
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2000, 2001, 2002 Slava Pestov
@@ -47,7 +47,7 @@ import org.gjt.sp.jedit.jEdit;
 /**
  * A container for dockable windows. This class should never be used
  * directly.
- * @version $Id: FloatingWindowContainer.java 13259 2008-08-10 20:54:46Z shlomy $
+ * @version $Id: FloatingWindowContainer.java 21831 2012-06-18 22:54:17Z ezust $
  * @since jEdit 4.0pre1
  */
 public class FloatingWindowContainer extends JFrame implements DockableWindowContainer,

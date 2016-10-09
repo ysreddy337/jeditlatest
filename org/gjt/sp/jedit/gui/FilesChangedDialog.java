@@ -1,6 +1,6 @@
 /*
  * FilesChangedDialog.java - Files changed on disk
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2003 Slava Pestov
@@ -37,7 +37,7 @@ import org.gjt.sp.util.EnhancedTreeCellRenderer;
  * Files changed on disk dialog.
  *
  * @author Slava Pestov
- * @version $Id: FilesChangedDialog.java 19788 2011-08-11 00:57:19Z Vampire0 $
+ * @version $Id: FilesChangedDialog.java 21831 2012-06-18 22:54:17Z ezust $
  */
 public class FilesChangedDialog extends EnhancedDialog
 {

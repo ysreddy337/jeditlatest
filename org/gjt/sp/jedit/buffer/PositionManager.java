@@ -1,6 +1,6 @@
 /*
  * PositionManager.java - Manages positions
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2001, 2005 Slava Pestov
@@ -37,7 +37,7 @@ import org.gjt.sp.util.Log;
  * of the position are implemented separately.
  *
  * @author Slava Pestov
- * @version $Id: PositionManager.java 21727 2012-05-27 17:11:01Z jarekczek $
+ * @version $Id: PositionManager.java 21831 2012-06-18 22:54:17Z ezust $
  * @since jEdit 4.2pre3
  */
 class PositionManager

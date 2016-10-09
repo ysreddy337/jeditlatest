@@ -1,6 +1,6 @@
 /*
  * BrowserColorsOptionPane.java - Browser colors options panel
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2001, 2002 Slava Pestov
@@ -40,7 +40,7 @@ import org.gjt.sp.jedit.*;
 /**
  * Browser color editor.
  * @author Slava Pestov
- * @version $Id: BrowserColorsOptionPane.java 14468 2009-01-25 13:26:51Z kpouer $
+ * @version $Id: BrowserColorsOptionPane.java 22665 2013-01-11 16:25:33Z kpouer $
  */
 public class BrowserColorsOptionPane extends AbstractOptionPane
 {
@@ -124,8 +124,8 @@ public class BrowserColorsOptionPane extends AbstractOptionPane
 		int selectedRow = colorsTable.getSelectedRow();
 		remove.setEnabled(selectedRow != -1);
 		moveUp.setEnabled(selectedRow > 0);
-		moveUp.setEnabled(selectedRow != -1 && selectedRow !=
-			colorsModel.getRowCount());
+		moveDown.setEnabled(selectedRow != -1 && selectedRow !=
+			colorsModel.getRowCount() - 1);
 	} //}}}
 
 	//{{{ setSelectedRow() method

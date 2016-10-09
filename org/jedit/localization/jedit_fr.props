@@ -31,11 +31,13 @@ common.more=Plus
 common.insert=Insérer
 common.add=Ajouter
 common.remove=Supprimer
+common.removeCurrent=Supprimer
 common.moveUp=Monter
 common.moveDown=Descendre
 common.clearAll=Tout effacer
 common.selectAll=Tout sélectionner
 common.selectNone=Ne rien sélectionner
+common.loading=Chargement...
 
 lineSep.unix=Unix (\\n)
 lineSep.windows=DOS/Windows (\\r\\n)
@@ -96,7 +98,7 @@ global-close-buffer.label=Fermer (général)
 global-close-buffer.tooltip=Fermer le tampon dans tous les panneaux d'édition et fenêtres
 closeall-except-active.tooltip=Effacer le jeu de tampons dans le panneau d'édition courant à l'exception du(des) tampon(s) affichés
 closeall-except-active.label=Fermer les au$tres
-closeall-bufferset.label=Tou&t fermer
+closeall-bufferset.label=Tou$t fermer
 closeall-bufferset.tooltip=Fermer le jeu de tampons dans le panneau d'édition
 bufferset-toggle-exclusive.label=Basculer vers les jeux de tampons exclusifs
 bufferset-toggle-exclusive.tooltip=Lorsqu'un tampon est ouvert, le fermer dans d'autres jeux de tampons non inclus.
@@ -371,7 +373,7 @@ io-progress-monitor.label=Progression $I/O
 task-monitor.label=Gestionnaire des $tâches
 keyboard-tester.label=$Tester un raccourci clavier...
 memory-status.label=Utilisation de la $mémoire...
-reload-modes.label=$Recharger l'éditeur de modes
+reload-modes.label=$Recharger les modes de coloration syntaxique
 #}}}
 
 #{{{ Quick options menu
@@ -612,16 +614,16 @@ largeBufferDialog.title=Tampon volumineux {0}
 largeBufferDialog.message=Le tampon est très volumineux et jEdit risque de ne plus répondre\n\
 	à cause de la coloration syntaxique. Vous devriez prendre en considération les options suivantes.\n\
 	-Conserver la coloration complète : la coloration syntaxique fonctionnera comme habituellement\n\
-	jEdit ralentira probablement, ceci n''est pas recommandé.\n\
+	jEdit ralentira probablement, ceci n'est pas recommandé.\n\
 	-Coloration syntaxique hors contexte. Dans ce cas, jEdit procédera\n\
 	à une coloration rapide, mais le résultat ne sera pas parfait. Le\n\
 	tampon est coloré ligne par ligne sans vérification du contexte\n\
 	de la ligne précédente. Il est possible que la coloration ne soit pas précise\n\
 	si vous avez des portions de code sur plusieurs lignes (commentaires, balises xml...)\n\
-	-Utilisez le mode d''édition brut de jEdit (pas de coloration syntaxique)
+	-Utilisez le mode d'édition brut de jEdit (pas de coloration syntaxique)
 largeBufferDialog.fullSyntax=Coloration syntaxique complète
 largeBufferDialog.contextInsensitive=Coloration syntaxique hors contexte
-largeBufferDialog.defaultMode=Mode d''édition brut
+largeBufferDialog.defaultMode=Mode d'édition brut
 #}}}
 
 #{{{ I/O error dialog box
@@ -635,7 +637,7 @@ ioerror.directory-error-nomsg=Impossible de lister les fichiers de dossier.
 ioerror.encoding-error=Chargement correct du fichier impossible (des données ont pu être perdues) en utilisant\n\
 	un encodage « {0} ».\n\
 	({1})\n\
-	Esssayez de choisir un encodage différent.\n\
+	Essayez de choisir un encodage différent.\n\
 	Pour ce faire allez dans Fichier->Recharger avec encodage.\n\
 	Si vous souhaitez que cela se fasse automatiquement, ajoutez les éléments\n\
 	dans la "Liste des encodages ajoutés" dans le panneau encodage des options générales.
@@ -739,7 +741,7 @@ badurl.message=Cette URL est invalide : {0}\n
 
 #{{{ Go to line dialog
 goto-line.title=Atteindre une ligne
-goto-line.message=Atteindre la ligne :
+goto-line.message=Atteindre la ligne ({0} - {1}) :
 #}}}
 
 #{{{ Word count dialog
@@ -840,6 +842,7 @@ search.settings=Paramètres :
 search.keep=Laisser la boîte ouverte
 search.keep.mnemonic=o
 search.word=Mot entier
+search.word.bar=Mot entier
 search.word.mnemonic=e
 search.case=Ignorer la casse
 search.case.mnemonic=i
@@ -885,6 +888,7 @@ search.synchronize.tooltip=Défini filtre d'extension et dossier pour la localis
 search.findBtn=Rechercher
 search.findBtn.mnemonic=h
 search.replaceBtn=Remplacer
+search.replaceBtn.mnemonic=e
 search.replaceAndFindBtn=Remplacer & rechercher
 search.replaceAndFindBtn.mnemonic=r
 search.replaceAllBtn=Tout remplacer
@@ -1430,6 +1434,8 @@ options.plugin-manager.location=Installer les plugins dans :
 options.plugin-manager.settings-dir=Le dossier de paramètres utilisateur
 options.plugin-manager.app-dir=Le dossier d'installation de jEdit
 options.plugin-manager.none=Centrale de plugins par défaut
+options.plugin-manager.no-plugin-available=Aucun plugin disponible
+options.plugin-manager.no-plugin-uptodate=Tous les plugins sont à jour
 #}}}
 
 #{{{ Printing pane
@@ -1594,8 +1600,7 @@ options.textarea.electricBorders=Bordures électriques (défilement automatique)
 options.textarea.stdNextPrevWord=La commande « Atteindre le mot suivant/précédent » ignore les espaces
 options.textarea.antiAlias=Lissage du texte
 options.textarea.antiAlias.tooltip=Ralentit l'affichage sur certains systèmes
-options.textarea.fracFontMetrics=Police à espacement proportionnel (pour un affichage plus « doux » \
-	du texte)
+options.textarea.fracFontMetrics=Police à espacement proportionnel
 options.textarea.fracFontMetrics.tooltip=Non recommandé avec l'antialiasing de sous-pixel
 options.textarea.stripTrailingEOL=Masquer la fin de ligne (si existante)
 options.textarea.completeFromAllBuffers=Mots complets de tous les tampons ouverts (par défaut, \
@@ -1814,7 +1819,7 @@ vfs.browser.file_filter.dir_only=Uniquement les dossiers
 vfs.browser.browse-window.label=Explorer dans une nouvelle fenêtre
 vfs.browser.browse.label=Explorer
 vfs.browser.close.label=Fermer
-vfs.browser.copy-path.label=Copier le chemin
+vfs.browser.copy-path.label=Copier
 vfs.browser.delete.label=Supprimer...
 vfs.browser.home.label=Dossier utilisateur
 vfs.browser.properties.label=Propriétés
@@ -1878,16 +1883,14 @@ vfs.browser.bad-filter.title=Filtre invalide
 vfs.browser.bad-filter.message=Le filtre {0} est invalide ({1})
 
 vfs.browser.recurse-favorites.title=Impossible d'ajouter des favoris à eux-mêmes
-vfs.browser.recurse-favorites.message=La liste des favoris ne peut étre ajoutée à elle-même.
+vfs.browser.recurse-favorites.message=La liste des favoris ne peut être ajoutée à elle-même.
 
 vfs.browser.delete-confirm.title=Confirmation de suppression de fichiers
-vfs.browser.delete-confirm.message=Souhaitez-vous vraiment supprimer les fichiers suivants {1}?\n\n\
-	{0}
+vfs.browser.delete-confirm.message=Souhaitez-vous vraiment supprimer les fichiers suivants?
 
 vfs.browser.delete-favorites.title=Retirer des favoris
 vfs.browser.delete-favorites.message=Souhaitez-vous vraiment supprimer les dossiers/fichiers suivants \
-	de la liste des favoris ?\n\n\
-	{0}
+	de la liste des favoris ?
 
 vfs.browser.rename.title=Renommer le fichier
 vfs.browser.rename.message=Indiquez le nouveau nom pour {0} :
@@ -2167,7 +2170,7 @@ macro.rs.DeleteCurrent.Deleted.message=Supprimé(s) :
 #}}}
 
 #{{{ Glob Close
-macro.rs.GlobClose.GlobPattern.label=Motif :
+macro.rs.GlobClose.GlobPattern.label=Motif (par exemple *.txt ou /usr/include/*):
 macro.rs.GlobClose.ErrorGlobPattern.error=Erreur dans le motif :
 #}}}
 
@@ -2239,7 +2242,6 @@ macro.rs.DebugBuffersets.EndEditpaneList.label=END EDITPANE LIST
 #{{{ Display Abbreviations
 macro.rs.DisplayAbbreviations.Abbreviation.label=Abréviation
 macro.rs.DisplayAbbreviations.Expansion.label=Expansion
-macro.rs.DisplayAbbreviations.AbbreviationSet.label=Jeu d'abréviations :
 macro.rs.DisplayAbbreviations.Close.label=Fermer
 macro.rs.DisplayAbbreviations.WriteSet.label=Afficher le jeu
 macro.rs.DisplayAbbreviations.WriteAll.label=Tout afficher

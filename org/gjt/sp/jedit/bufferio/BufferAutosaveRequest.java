@@ -1,6 +1,6 @@
 /*
  * BufferAutosaveRequest.java - I/O request
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2000, 2005 Slava Pestov
@@ -24,6 +24,8 @@ package org.gjt.sp.jedit.bufferio;
 
 //{{{ Imports
 import java.io.*;
+import java.io.Closeable;
+
 import org.gjt.sp.jedit.io.*;
 import org.gjt.sp.jedit.*;
 import org.gjt.sp.util.*;
@@ -32,7 +34,7 @@ import org.gjt.sp.util.*;
 /**
  * A buffer autosave request.
  * @author Slava Pestov
- * @version $Id: BufferAutosaveRequest.java 19408 2011-02-28 14:52:25Z kpouer $
+ * @version $Id: BufferAutosaveRequest.java 22357 2012-10-13 04:58:01Z ezust $
  */
 public class BufferAutosaveRequest extends BufferIORequest
 {
@@ -52,7 +54,7 @@ public class BufferAutosaveRequest extends BufferIORequest
 	} //}}}
 
 	//{{{ run() method
-	public void run()
+	public void _run()
 	{
 		OutputStream out = null;
 
@@ -62,28 +64,24 @@ public class BufferAutosaveRequest extends BufferIORequest
 			setStatus(jEdit.getProperty("vfs.status.autosave",args));
 
 			// the entire save operation can be aborted...
-			setAbortable(true);
+			setCancellable(true);
 
 			try
 			{
-				//buffer.readLock();
-
-				if(!buffer.isDirty())
-				{
-					// buffer has been saved while we
-					// were waiting.
-					return;
-				}
-
-				out = vfs._createOutputStream(session,path,view);
-				if(out == null)
-					return;
-
-				write(buffer,out);
+				buffer.readLock();
+				if(buffer.isDirty())
+					out = vfs._createOutputStream(session,path,view);
+				if(out != null)
+					write(buffer,out);
 			}
 			catch (FileNotFoundException e)
 			{
 				Log.log(Log.WARNING,this,"Unable to save " + e.getMessage());
+			}
+			catch(InterruptedException e)
+			{
+				cleanUpIncomplete(out);
+				Thread.currentThread().interrupt();
 			}
 			catch(Exception e)
 			{
@@ -91,32 +89,34 @@ public class BufferAutosaveRequest extends BufferIORequest
 				String[] pp = { e.toString() };
 				VFSManager.error(view,path,"ioerror.write-error",pp);
 
-				// Incomplete autosave file should not exist.
-				if(out != null)
-				{
-					try
-					{
-						out.close();
-						out = null;
-						vfs._delete(session,path,view);
-					}
-					catch(IOException ioe)
-					{
-						Log.log(Log.ERROR,this,ioe);
-					}
-				}
+				cleanUpIncomplete(out);
 			}
-			//finally
-			//{
-				//buffer.readUnlock();
-			//}
-		}
-		catch(WorkThread.Abort a)
-		{
+			finally
+			{
+				buffer.readUnlock();
+			}
 		}
 		finally
 		{
-			IOUtilities.closeQuietly(out);
+			IOUtilities.closeQuietly((Closeable)out);
 		}
 	} //}}}
+
+	private void cleanUpIncomplete(OutputStream out)
+	{
+		// Incomplete autosave file should not exist.
+		if(out != null)
+		{
+			try
+			{
+				out.close();
+				out = null;
+				vfs._delete(session,path,view);
+			}
+			catch(IOException ioe)
+			{
+				Log.log(Log.ERROR,this,ioe);
+			}
+		}
+	}
 }

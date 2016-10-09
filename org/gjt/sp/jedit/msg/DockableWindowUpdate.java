@@ -1,6 +1,6 @@
 /*
  * DockableWindowUpdate.java - Dockable window update message
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2003 Slava Pestov
@@ -28,7 +28,7 @@ import org.gjt.sp.jedit.*;
 /**
  * Message sent when dockable window state changes.
  * @author Slava Pestov
- * @version $Id: DockableWindowUpdate.java 12504 2008-04-22 23:12:43Z ezust $
+ * @version $Id: DockableWindowUpdate.java 21831 2012-06-18 22:54:17Z ezust $
  *
  * @since jEdit 4.2pre1
  */

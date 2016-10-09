@@ -1,6 +1,6 @@
 /*
  * TextAreaOptionPane.java - Text area options panel
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1998, 1999, 2000 Slava Pestov
@@ -40,7 +40,7 @@ import org.gjt.sp.jedit.gui.RolloverButton;
 
 /**
  * @author Slava Pestov
- * @version $Id: TextAreaOptionPane.java 20953 2012-01-25 19:35:49Z ezust $
+ * @version $Id: TextAreaOptionPane.java 21831 2012-06-18 22:54:17Z ezust $
  */
 public class TextAreaOptionPane extends AbstractOptionPane
 {

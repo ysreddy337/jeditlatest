@@ -1,6 +1,6 @@
 /*
  * BufferHistory.java - Remembers caret positions
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2000, 2005 Slava Pestov
@@ -23,6 +23,7 @@
 package org.gjt.sp.jedit;
 
 //{{{ Imports
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -40,7 +41,7 @@ import org.gjt.sp.util.IOUtilities;
 /**
  * Recent file list.
  * @author Slava Pestov
- * @version $Id: BufferHistory.java 19833 2011-08-25 12:01:54Z kpouer $
+ * @version $Id: BufferHistory.java 22948 2013-04-23 17:58:00Z thomasmey $
  */
 public class BufferHistory
 {
@@ -271,7 +272,7 @@ public class BufferHistory
 		}
 		finally
 		{
-			IOUtilities.closeQuietly(out);
+			IOUtilities.closeQuietly((Closeable)out);
 		}
 	} //}}}
 
@@ -395,7 +396,7 @@ public class BufferHistory
 	//{{{ trimToLimit() method
 	private static void trimToLimit(Deque<Entry> list)
 	{
-		int max = jEdit.getIntegerProperty("recentFiles",50);
+		int max = jEdit.getIntegerProperty("recentFiles", 40);
 		while(list.size() > max)
 			list.removeLast();
 	} //}}}

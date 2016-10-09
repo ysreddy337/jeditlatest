@@ -1,6 +1,6 @@
 /*
  * ExplicitFoldHandler.java - Explicit fold handler
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2001 Slava Pestov
@@ -29,7 +29,7 @@ import javax.swing.text.Segment;
  * embedded in the text.
  *
  * @author Slava Pestov
- * @version $Id: ExplicitFoldHandler.java 12504 2008-04-22 23:12:43Z ezust $
+ * @version $Id: ExplicitFoldHandler.java 21831 2012-06-18 22:54:17Z ezust $
  * @since jEdit 4.0pre1
  */
 public class ExplicitFoldHandler extends FoldHandler

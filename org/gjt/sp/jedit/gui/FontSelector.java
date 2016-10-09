@@ -1,6 +1,6 @@
 /*
  * FontSelector.java - Font selector
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2000, 2003 Slava Pestov
@@ -40,7 +40,7 @@ import org.gjt.sp.util.Log;
 /**
  * A font chooser widget.
  * @author Slava Pestov
- * @version $Id: FontSelector.java 17430 2010-03-07 03:16:20Z vanza $
+ * @version $Id: FontSelector.java 21831 2012-06-18 22:54:17Z ezust $
  */
 public class FontSelector extends JButton
 {

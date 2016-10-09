@@ -1,6 +1,6 @@
 /*
  * HistoryButton.java - History Button
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2005 Nicholas O'Leary
@@ -34,7 +34,7 @@ import javax.swing.event.*;
 /**
  * History Button
  * @author Nicholas O'Leary
- * @version $Id: HistoryButton.java 12504 2008-04-22 23:12:43Z ezust $
+ * @version $Id: HistoryButton.java 21831 2012-06-18 22:54:17Z ezust $
  */
 public class HistoryButton extends JPanel implements ActionListener
 {

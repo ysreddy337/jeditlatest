@@ -1,6 +1,6 @@
 /*
  * jEdit - Programmer's Text Editor
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright © 2010 jEdit contributors
@@ -62,7 +62,7 @@ public class ElasticTabstopsTabExpander implements TabExpander
 		float ret = -5;
 		if(columnBlock!=null)
 		{	
-			Vector lines = columnBlock.getLines();
+			Vector<ColumnBlockLine> lines = columnBlock.getLines();
 			if(columnBlock.areTabSizesDirty())
 			{
 				float colBlockWidth = -1;

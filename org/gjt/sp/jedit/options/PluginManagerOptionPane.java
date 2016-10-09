@@ -1,6 +1,6 @@
 /*
  * PluginManagerOptionPane.java - Plugin options panel
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2003 Kris Kopicki
@@ -37,7 +37,7 @@ import org.gjt.sp.util.*;
 /**
  * The plugin manager option pane.
  * 
- * @version $Id: PluginManagerOptionPane.java 17941 2010-06-01 14:22:58Z kpouer $
+ * @version $Id: PluginManagerOptionPane.java 22357 2012-10-13 04:58:01Z ezust $
  */
 public class PluginManagerOptionPane extends AbstractOptionPane
 {
@@ -70,10 +70,10 @@ public class PluginManagerOptionPane extends AbstractOptionPane
 			cacheForSpinner = new JSpinner(spinnerModel);
 			spinnerPanel = new JPanel();
 			spinnerPanel.setLayout(new BoxLayout(spinnerPanel, BoxLayout.X_AXIS));
-			spinnerPanel.add(new JLabel("Cache plugin list for: (minutes)"));
+			spinnerPanel.add(new JLabel(jEdit.getProperty("options.plugin-manager.list-cache.minutes")));
 			spinnerPanel.add(cacheForSpinner);
 			spinnerPanel.add(Box.createGlue());
-			
+
 		}
 		JRadioButton appDir = new JRadioButton(jEdit.getProperty(
 				"options.plugin-manager.app-dir"));
@@ -112,14 +112,20 @@ public class PluginManagerOptionPane extends AbstractOptionPane
 		downloadSource.setAlignmentX(Component.LEFT_ALIGNMENT);
 		buttonPanel.add(downloadSource);
 
-		buttonPanel.add(Box.createVerticalStrut(6));
-
 		/* Delete downloaded files */
 		deleteDownloads = new JCheckBox(jEdit.getProperty(
 			"options.plugin-manager.deleteDownloads"));
 		deleteDownloads.setSelected(jEdit.getBooleanProperty("plugin-manager.deleteDownloads"));
 		deleteDownloads.setAlignmentX(Component.LEFT_ALIGNMENT);
 		buttonPanel.add(deleteDownloads);
+
+		/* Disable obsolete plugins */
+		disableObsolete = new JCheckBox(jEdit.getProperty(
+			"options.plugin-manager.disable-obsolete"));
+		disableObsolete.setSelected(jEdit.getBooleanProperty("plugin-manager.disable-obsolete", true));
+		disableObsolete.setAlignmentX(Component.LEFT_ALIGNMENT);
+		buttonPanel.add(disableObsolete);
+
 
 		buttonPanel.add(Box.createVerticalStrut(6));
 
@@ -130,7 +136,7 @@ public class PluginManagerOptionPane extends AbstractOptionPane
 		locGrp.add(appDir);
 		JPanel locPanel = new JPanel();
 		locPanel.setLayout(new BoxLayout(locPanel,BoxLayout.Y_AXIS));
-		
+
 		if(jEdit.getSettingsDirectory() != null)
 		{
 			locPanel.add(settingsDir);
@@ -160,6 +166,7 @@ public class PluginManagerOptionPane extends AbstractOptionPane
 		jEdit.setBooleanProperty("plugin-manager.downloadSource",downloadSource.isSelected());
 		jEdit.setBooleanProperty("plugin-manager.deleteDownloads",deleteDownloads.isSelected());
 		jEdit.setIntegerProperty("plugin-manager.list-cache.minutes", spinnerModel.getNumber().intValue());
+		jEdit.setBooleanProperty("plugin-manager.disable-obsolete", disableObsolete.isSelected());
 		if(miraList.getSelectedIndex() != -1)
 		{
 			String currentMirror = miraModel.getID(miraList.getSelectedIndex());
@@ -180,6 +187,7 @@ public class PluginManagerOptionPane extends AbstractOptionPane
 	//{{{ Instance variables
 	private JLabel mirrorLabel;
 
+	private JCheckBox disableObsolete;
 	private JRadioButton settingsDir;
 	private JCheckBox downloadSource;
 	private JCheckBox deleteDownloads;
@@ -388,7 +396,7 @@ public class PluginManagerOptionPane extends AbstractOptionPane
 			}
 			finally
 			{
-				IOUtilities.closeQuietly(out);
+				IOUtilities.closeQuietly((Closeable)out);
 			}
 		} //}}}
 	} //}}}

@@ -1,6 +1,6 @@
 /*
  * VFSFileChooserDialog.java - VFS file chooser
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2000, 2005 Slava Pestov
@@ -38,6 +38,7 @@ import org.gjt.sp.jedit.gui.EnhancedDialog;
 import org.gjt.sp.jedit.io.*;
 import org.gjt.sp.jedit.*;
 import org.gjt.sp.jedit.buffer.JEditBuffer;
+import org.gjt.sp.jedit.bufferio.IoTask;
 import org.gjt.sp.util.*;
 //}}}
 
@@ -45,7 +46,7 @@ import org.gjt.sp.util.*;
  * Wraps the VFS browser in a modal dialog.
  * Shows up when "File-Open" is used. 
  * @author Slava Pestov
- * @version $Id: VFSFileChooserDialog.java 20945 2012-01-24 20:24:26Z ezust $
+ * @version $Id: VFSFileChooserDialog.java 22943 2013-04-22 11:44:40Z thomasmey $
  */
 public class VFSFileChooserDialog extends EnhancedDialog
 {
@@ -119,7 +120,7 @@ public class VFSFileChooserDialog extends EnhancedDialog
 	public void dispose()
 	{
 		GUIUtilities.saveGeometry(this,"vfs.browser.dialog");
-		VFSManager.getIOThreadPool().removeProgressListener(workThreadHandler);
+		TaskManager.instance.removeTaskListener(ioTaskHandler);
 		super.dispose();
 	} //}}}
 
@@ -175,9 +176,9 @@ public class VFSFileChooserDialog extends EnhancedDialog
 		if(session == null)
 			return;
 
-		VFSManager.runInWorkThread(new GetFileTypeRequest(
+		ThreadUtilities.runInBackground(new GetFileTypeRequest(
 			vfs,session,path,type));
-		VFSManager.runInAWTThread(new Runnable()
+		AwtRunnableQueue.INSTANCE.runAfterIoTasks(new Runnable()
 		{
 			public void run()
 			{
@@ -257,7 +258,7 @@ public class VFSFileChooserDialog extends EnhancedDialog
 	private JButton ok;
 	private JButton cancel;
 	private boolean isOK;
-	private WorkThreadHandler workThreadHandler;
+	private TaskListener ioTaskHandler;
 	//}}}
 
 	//{{{ getDefaultTitle() method
@@ -373,8 +374,8 @@ public class VFSFileChooserDialog extends EnhancedDialog
 
 		content.add(BorderLayout.SOUTH,panel);
 
-		VFSManager.getIOThreadPool().addProgressListener(
-			workThreadHandler = new WorkThreadHandler());
+		TaskManager.instance.addTaskListener(
+				ioTaskHandler = new IoTaskHandler());
 
 		pack();
 		GUIUtilities.loadGeometry(this,"vfs.browser.dialog");
@@ -498,7 +499,7 @@ public class VFSFileChooserDialog extends EnhancedDialog
 				return;
 			}
 
-			for(int i = 0; i < files.length; i++)
+			for(int i = 0, n = files.length; i < n; i++)
 			{
 				if(files[i].getType() == VFSFile.FILE)
 				{
@@ -525,41 +526,65 @@ public class VFSFileChooserDialog extends EnhancedDialog
 		} //}}}
 	} //}}}
 
-	//{{{ WorkThreadListener class
-	private class WorkThreadHandler implements WorkThreadProgressListener
+	//{{{ IoTaskListener class
+	private class IoTaskHandler implements TaskListener
 	{
-		//{{{ statusUpdate() method
-		public void statusUpdate(final WorkThreadPool threadPool,
-			int threadIndex)
+		private final Runnable cursorStatus = new Runnable()
 		{
-			SwingUtilities.invokeLater(new Runnable()
+			public void run()
 			{
-				public void run()
+				int requestCount = TaskManager.instance.countIoTasks();
+				if(requestCount == 0)
 				{
-					int requestCount = threadPool.getRequestCount();
-					if(requestCount == 0)
-					{
-						getContentPane().setCursor(
-							Cursor.getDefaultCursor());
-					}
-					else if(requestCount >= 1)
-					{
-						getContentPane().setCursor(
-							Cursor.getPredefinedCursor(
-							Cursor.WAIT_CURSOR));
-					}
+					getContentPane().setCursor(
+						Cursor.getDefaultCursor());
 				}
-			});
+				else if(requestCount >= 1)
+				{
+					getContentPane().setCursor(
+						Cursor.getPredefinedCursor(
+						Cursor.WAIT_CURSOR));
+				}
+			}
+		};
+
+		//{{{ waiting() method
+		public void waiting(Task task)
+		{
+			SwingUtilities.invokeLater(cursorStatus);
+		} //}}}
+	
+		//{{{ running() method
+		public void running(Task task)
+		{
+			SwingUtilities.invokeLater(cursorStatus);
+		} //}}}
+	
+		//{{{ done() method
+		public void done(Task task)
+		{
+			SwingUtilities.invokeLater(cursorStatus);
+		} //}}}
+
+		//{{{ statusUpdated() method
+		public void statusUpdated(Task task)
+		{
+		} //}}}
+
+		//{{{ maximumUpdated() method
+		public void maximumUpdated(Task task)
+		{
 		} //}}}
 
 		//{{{ progressUpdate() method
-		public void progressUpdate(WorkThreadPool threadPool, int threadIndex)
+		public void valueUpdated(Task task)
 		{
+			SwingUtilities.invokeLater(cursorStatus);
 		} //}}}
 	} //}}}
 
 	//{{{ GetFileTypeRequest class
-	private class GetFileTypeRequest implements Runnable
+	private class GetFileTypeRequest extends IoTask
 	{
 		VFS    vfs;
 		Object session;
@@ -569,13 +594,14 @@ public class VFSFileChooserDialog extends EnhancedDialog
 		GetFileTypeRequest(VFS vfs, Object session,
 			String path, int[] type)
 		{
+			super();
 			this.vfs     = vfs;
 			this.session = session;
 			this.path    = path;
 			this.type    = type;
 		}
 
-		public void run()
+		public void _run()
 		{
 			try
 			{

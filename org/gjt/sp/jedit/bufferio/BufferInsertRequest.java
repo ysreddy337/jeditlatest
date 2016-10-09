@@ -1,6 +1,6 @@
 /*
  * BufferInsertRequest.java - I/O request
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2000, 2005 Slava Pestov
@@ -24,6 +24,8 @@ package org.gjt.sp.jedit.bufferio;
 
 //{{{ Imports
 import java.io.*;
+import java.io.Closeable;
+
 import org.gjt.sp.jedit.io.*;
 import org.gjt.sp.jedit.*;
 import org.gjt.sp.util.*;
@@ -32,7 +34,7 @@ import org.gjt.sp.util.*;
 /**
  * A buffer insert request.
  * @author Slava Pestov
- * @version $Id: BufferInsertRequest.java 12504 2008-04-22 23:12:43Z ezust $
+ * @version $Id: BufferInsertRequest.java 22357 2012-10-13 04:58:01Z ezust $
  */
 public class BufferInsertRequest extends BufferIORequest
 {
@@ -52,14 +54,14 @@ public class BufferInsertRequest extends BufferIORequest
 	} //}}}
 
 	//{{{ run() method
-	public void run()
+	public void _run()
 	{
 		InputStream in = null;
 		try
 		{
 			String[] args = { vfs.getFileName(path) };
 			setStatus(jEdit.getProperty("vfs.status.load",args));
-			setAbortable(true);
+			setCancellable(true);
 
 			path = vfs._canonPath(session,path,view);
 
@@ -80,7 +82,7 @@ public class BufferInsertRequest extends BufferIORequest
 
 			/* we don't do this in Buffer.insert() so that
 			   we can insert multiple files at once */
-			VFSManager.runInAWTThread(new Runnable()
+			AwtRunnableQueue.INSTANCE.runAfterIoTasks(new Runnable()
 			{
 				public void run()
 				{
@@ -88,6 +90,11 @@ public class BufferInsertRequest extends BufferIORequest
 						seg.toString());
 				}
 			});
+		}
+		catch(InterruptedException e)
+		{
+			buffer.setBooleanProperty(ERROR_OCCURRED,true);
+			Thread.currentThread().interrupt();
 		}
 		catch(Exception e)
 		{
@@ -97,13 +104,9 @@ public class BufferInsertRequest extends BufferIORequest
 
 			buffer.setBooleanProperty(ERROR_OCCURRED,true);
 		}
-		catch(WorkThread.Abort a)
-		{
-			buffer.setBooleanProperty(ERROR_OCCURRED,true);
-		}
 		finally
 		{
-			IOUtilities.closeQuietly(in);
+			IOUtilities.closeQuietly((Closeable)in);
 			try
 			{
 				vfs._endVFSSession(session,view);
@@ -114,10 +117,6 @@ public class BufferInsertRequest extends BufferIORequest
 				String[] pp = { e.toString() };
 				VFSManager.error(view,path,"ioerror.read-error",pp);
 
-				buffer.setBooleanProperty(ERROR_OCCURRED,true);
-			}
-			catch(WorkThread.Abort a)
-			{
 				buffer.setBooleanProperty(ERROR_OCCURRED,true);
 			}
 		}

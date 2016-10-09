@@ -1,6 +1,6 @@
 /*
  * TextAreaExtension.java - Custom painter and tool tip handler
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2002 Slava Pestov
@@ -36,7 +36,7 @@ import java.awt.Graphics2D;
  * @since jEdit 4.0pre4
  *
  * @author Slava Pestov
- * @version $Id: TextAreaExtension.java 15570 2009-06-25 00:43:57Z ezust $
+ * @version $Id: TextAreaExtension.java 21831 2012-06-18 22:54:17Z ezust $
  */
 public abstract class TextAreaExtension
 {

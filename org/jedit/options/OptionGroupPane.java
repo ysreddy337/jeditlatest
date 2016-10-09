@@ -1,6 +1,6 @@
 /*
  * OptionGroupPane.java - A Pane (view) for displaying/selecting OptionGroups.
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:
  *
  * Copyright (C) 2005 Slava Pestov
@@ -214,14 +214,14 @@ public class OptionGroupPane extends AbstractOptionPane implements TreeSelection
         // {{{ selectPane() methods
 	private boolean selectPane(OptionGroup node, String name)
 	{
-		return selectPane(node, name, new ArrayList());
+		return selectPane(node, name, new ArrayList<Object>());
 	} 
 
-	private boolean selectPane(OptionGroup node, String name, ArrayList path)
+	private boolean selectPane(OptionGroup node, String name, ArrayList<Object> path)
 	{
 		path.add(node);
 
-		Enumeration e = node.getMembers();
+		Enumeration<Object> e = node.getMembers();
 		while (e.hasMoreElements())
 		{
 			Object obj = e.nextElement();
@@ -285,17 +285,27 @@ public class OptionGroupPane extends AbstractOptionPane implements TreeSelection
 	// {{{ init() method
 	protected void _init()
 	{
-
 		setLayout(new BorderLayout());
 		deferredOptionPanes = new HashMap<Object, OptionPane>();
 		optionTreeModel = new OptionTreeModel();
 		OptionGroup rootGroup = (OptionGroup) optionTreeModel.getRoot();
-		rootGroup.addOptionGroup(optionGroup);
+
+		// #3608324: ignore the root node of the option group as it does not provide
+		// a label and only add its children
+		for (Enumeration<Object> members = optionGroup.getMembers(); members.hasMoreElements();)
+		{
+				Object member = members.nextElement();
+				if (member instanceof OptionGroup)
+						rootGroup.addOptionGroup((OptionGroup)member);
+				else if (member instanceof String)
+						rootGroup.addOptionPane((String)member);
+				// TODO are there any other cases that must handled?
+		}
+
 		paneTree = new JTree(optionTreeModel);
-		paneTree.setVisibleRowCount(1);
 		paneTree.setRootVisible(false);
 		paneTree.setCellRenderer(new PaneNameRenderer());
-
+		
 		JPanel content = new JPanel(new BorderLayout(12, 12));
 		content.setBorder(new EmptyBorder(12, 12, 12, 12));
 		add(content, BorderLayout.CENTER);
@@ -308,7 +318,7 @@ public class OptionGroupPane extends AbstractOptionPane implements TreeSelection
 
 		paneTree.setShowsRootHandles(true);
 		paneTree.setRootVisible(false);
-
+		
 		JScrollPane scroller = new JScrollPane(paneTree,
 			JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
 			JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
@@ -322,30 +332,16 @@ public class OptionGroupPane extends AbstractOptionPane implements TreeSelection
 		paneTree.getSelectionModel().addTreeSelectionListener(this);
 
 		OptionGroup rootNode = (OptionGroup) paneTree.getModel().getRoot();
-		for (int i = 0; i < rootNode.getMemberCount(); i++)
-		{
-			paneTree.expandPath(new TreePath(new Object[] { rootNode,
-				rootNode.getMember(i) }));
-		}
-
-		// returns false if no such pane exists; calling with null
-		// param selects first option pane found
 		String name = optionGroup.getName();
-		selectPane(rootNode, null);
-		/*
-		 * if ((defaultPaneName != null) && (!selectPane(rootNode,
-		 * defaultPaneName))) selectPane(rootNode, null);
-		 */
-
-		splitter.setDividerLocation(paneTree.getPreferredSize().width
-			+ scroller.getVerticalScrollBar().getPreferredSize().width);
-
 		String pane = jEdit.getProperty(name + ".last");
 		selectPane(rootNode, pane);
-
+		paneTree.setVisibleRowCount(1);
+		
 		int dividerLocation = jEdit.getIntegerProperty(name + ".splitter", -1);
 		if (dividerLocation != -1)
 			splitter.setDividerLocation(dividerLocation);
+		else splitter.setDividerLocation(paneTree.getPreferredSize().width
+					+ scroller.getVerticalScrollBar().getPreferredSize().width);
 
 	} //}}}
 
@@ -365,7 +361,7 @@ public class OptionGroupPane extends AbstractOptionPane implements TreeSelection
 		if (obj instanceof OptionGroup)
 		{
 			OptionGroup grp = (OptionGroup) obj;
-			Enumeration members = grp.getMembers();
+			Enumeration<Object> members = grp.getMembers();
 			while (members.hasMoreElements())
 			{
 				save(members.nextElement());

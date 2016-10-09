@@ -3,10 +3,10 @@
  * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
- * Copyright (C) 1999, 2005 Slava Pestov
- * Portions copyright (C) 2000 Richard S. Hall
- * Portions copyright (C) 2001 Dirk Moebius
- * Portions copyright (c) 2005-2012 by the jEdit All-Volunteer Development Team (tm)
+ * Copyright © 1999-2013 Slava Pestov, Richard S. Hall, Dirk Moebius,
+ *    jgellene, ezust, vanza, kpouer, Vampire0, Jarekczek, k_satoda, voituk,
+ *    Thomas Meyer, Martin Raspe
+ *   And possibly other members of the All Volunteer Developer Team (tm)
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -46,7 +46,7 @@ import org.gjt.sp.util.StringList;
 //}}}
 
 /**
- * Path name manipulation, string manipulation, and more.<p>
+ * Path, URL name manipulation, string manipulation, and more.<p>
  *
  * The most frequently used members of this class are:<p>
  *
@@ -57,9 +57,7 @@ import org.gjt.sp.util.StringList;
  * <li>{@link #constructPath(String,String)}</li>
  * </ul>
  *
- * @author Slava Pestov
- * @author John Gellene (API documentation)
- * @version $Id: MiscUtilities.java 22457 2012-11-11 17:16:21Z ezust $
+ * @version $Id: MiscUtilities.java 22828 2013-03-05 19:40:05Z ezust $
  */
 public class MiscUtilities
 {
@@ -130,6 +128,7 @@ public class MiscUtilities
 
 	/** Accepts a string from the user which may contain variables of various syntaxes.
 	 *  The function supports the following expansion syntaxes:
+	 *     ~/ or ~\   expand to user.home
 	 *     $varname
 	 *     ${varname} (on non-windows)
 	 *     %varname% (on Windows)
@@ -172,7 +171,7 @@ public class MiscUtilities
 		return arg;
 	} //}}}
 
-	//{{{ abbreviate() method
+	//{{{ abbreviate() methods
 	/** @return an abbreviated path, replacing values with variables, if a prefix exists.
 		uses platform convention (%varname% on windows, $varname on other platforms)
 	 *  @see #expandVariables
@@ -183,6 +182,16 @@ public class MiscUtilities
 		if (svc == null)
 			svc = new VarCompressor();
 		return svc.compress(path);
+	}
+	
+	/** Same as abbreviate() but checks a view option which can 
+	 * disable the feature for things jEdit UI components.
+	 * 
+	 */
+	public static String abbreviateView(String path)
+	{
+		if (!jEdit.getBooleanProperty("view.abbreviatePaths")) return path;
+		return abbreviate(path);		
 	} //}}}
 
 	//{{{ resolveSymlinks() method
@@ -197,6 +206,9 @@ public class MiscUtilities
 		if(isURL(path))
 			return path;
 
+		// 2 aug 2003: OS/2 Java has a broken getCanonicalPath()
+		if(OperatingSystem.isOS2())
+			return path;
 		// 18 nov 2003: calling this on a drive letter on Windows causes
 		// drive access
 		if(OperatingSystem.isWindows())
@@ -578,13 +590,13 @@ public class MiscUtilities
 		Uses native desktop commands for each platform, which ask the user to choose an
 		association for files that do not already have one, using the desktop's
 		dialog, in contrast to Desktop.open() which just throws an IOException
-		for unknown types. 
-		
-		@param path path or URL (supported on Linux, anyway) of thing to open  
+		for unknown types.
+
+		@param path path or URL (supported on Linux, anyway) of thing to open
 		@author Alan Ezust
 		@since jEdit 5.0
 	*/
-	public static void openInDesktop(String path) 
+	public static void openInDesktop(String path)
 	{
 		StringList sl = new StringList();
 		if (OperatingSystem.isWindows())
@@ -595,20 +607,28 @@ public class MiscUtilities
 		else if (OperatingSystem.isMacOS())
 			sl.add("open");
 		else if (OperatingSystem.isX11())
+		{
+			/* For gnome, use gnome-open. Need a way of testing that gnome is actually
+			   running though. Otherwise it is not the correct program to use. 
+			File f = new File("/usr/bin/gnome-open");
+			if (f.exists()) sl.add("gnome-open");
+			else */ 
 			sl.add("xdg-open");
-		try 
-		{		
+		}
+		try
+		{
 			if (sl.isEmpty()) // I don't know what platform it is
 				java.awt.Desktop.getDesktop().open(new File(path));
-			else 
+			else
 			{
 				sl.add(path);
+				Log.log(Log.DEBUG, MiscUtilities.class, "openInDesktop: " + sl.join(" "));
 				Runtime.getRuntime().exec(sl.toArray());
 			}
 		}
-		catch (IOException ioe) 
+		catch (IOException ioe)
 		{
-			Log.log(Log.ERROR, MiscUtilities.class, "openInDesktop failed: " + path, ioe);	
+			Log.log(Log.ERROR, MiscUtilities.class, "openInDesktop failed: " + path, ioe);
 		}
 	}// }}}
 
@@ -672,7 +692,7 @@ public class MiscUtilities
 	 * <code>backup.minTime</code> (property) ms ago.
 	 * Uses jedit properties to determine backup parameters,
 	 * like prefix, suffix.
-	 * @param file The file to back up.
+	 * @param path The file to back up.
 	 * @param backupDir The directory, usually obtained from
 	 *                  <code>prepareBackupDirectory</code>.
 	 * @return File suitable for backup of <code>file</code>,
@@ -698,7 +718,7 @@ public class MiscUtilities
 	 * In case of multiple backups does necessary backup renumbering.
 	 * Checks whether the last backup was not earlier than
 	 * <code>backupTimeDistance</code> ms ago.
-	 * @param file The file to back up.
+	 * @param path The file to back up.
 	 * @param backups The number of backups. Must be >= 1. If > 1, backup
 	 * files will be numbered.
 	 * @param backupDirectory The directory determined externally or

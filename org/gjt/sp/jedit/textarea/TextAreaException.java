@@ -1,6 +1,6 @@
 /*
  * ServiceManager.java - Handles services.xml files in plugins
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2006 Matthieu Casanova
@@ -26,7 +26,7 @@ package org.gjt.sp.jedit.textarea;
  * It can be catched and an error dialog can be displayed.
  *
  * @author Matthieu Casanova
- * @version $Id: TextAreaException.java 15570 2009-06-25 00:43:57Z ezust $
+ * @version $Id: TextAreaException.java 21831 2012-06-18 22:54:17Z ezust $
  */
 public class TextAreaException extends Exception
 {

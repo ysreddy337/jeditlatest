@@ -1,6 +1,6 @@
 /*
  * ReloadWithEncodingProvider.java - Recent file list menu
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2006 Marcelo Vanzin
@@ -46,7 +46,7 @@ import org.gjt.sp.jedit.io.EncodingServer;
  * Menu provider for actions to reload the current buffer with a
  * specific encoding.
  *
- * @version $Id: ReloadWithEncodingProvider.java 20367 2011-11-17 22:29:08Z kpouer $
+ * @version $Id: ReloadWithEncodingProvider.java 21831 2012-06-18 22:54:17Z ezust $
  */
 public class ReloadWithEncodingProvider implements ActionListener, DynamicMenuProvider
 {	

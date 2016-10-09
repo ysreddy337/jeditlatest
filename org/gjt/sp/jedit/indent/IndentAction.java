@@ -1,6 +1,6 @@
 /*
  * IndentAction.java
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2005 Slava Pestov
@@ -27,7 +27,7 @@ import org.gjt.sp.util.StandardUtilities;
 
 /** Abstract Indentation Action 
  * @author Slava Pestov
- * @version $Id: IndentAction.java 21398 2012-03-20 04:32:13Z ezust $
+ * @version $Id: IndentAction.java 21831 2012-06-18 22:54:17Z ezust $
  */
 public interface IndentAction
 {

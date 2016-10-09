@@ -1,6 +1,6 @@
 /*
  * Token.java - Syntax token
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1998, 1999, 2000, 2001, 2002 Slava Pestov
@@ -27,7 +27,7 @@ import java.lang.reflect.Field;
  * A linked list of syntax tokens.
  *
  * @author Slava Pestov
- * @version $Id: Token.java 15712 2009-07-19 19:40:40Z shlomy $
+ * @version $Id: Token.java 21831 2012-06-18 22:54:17Z ezust $
  */
 public class Token
 {

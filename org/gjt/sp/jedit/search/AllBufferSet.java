@@ -1,6 +1,6 @@
 /*
  * AllBufferSet.java - All buffer matcher
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1999, 2000, 2001 Slava Pestov
@@ -33,23 +33,32 @@ import org.gjt.sp.util.StandardUtilities;
 //}}}
 
 /**
- * A file set for searching all open buffers.
+ * A file set for searching all open buffers in a view.
  * @author Slava Pestov
- * @version $Id: AllBufferSet.java 15834 2009-08-01 05:35:05Z shlomy $
+ * @version $Id: AllBufferSet.java 22151 2012-09-04 04:01:41Z ezust $
  */
 public class AllBufferSet extends BufferListSet
 {
 	//{{{ AllBufferSet constructor
 	/**
-	 * Creates a new all buffer set.
+	 * Creates a view buffer set.
 	 * @param glob The filename glob
-	 * @since jEdit 2.7pre3
+	 * @param view The view to check for open buffers
+	 * @since jEdit 5.1pre1
 	 */
-	public AllBufferSet(String glob)
+	public AllBufferSet(String glob, View view)
 	{
 		this.glob = glob;
+		this.view = view;
 	} //}}}
-
+	
+	//{{{ getView() method
+	/** @since jEdit 5.1pre1 */
+	public View getView() 
+	{
+		return view;
+	}//}}}
+	
 	//{{{ getFileFilter() method
 	/**
 	 * Returns the filename filter.
@@ -68,19 +77,20 @@ public class AllBufferSet extends BufferListSet
 	@Override
 	public String getCode()
 	{
-		return "new AllBufferSet(\"" + StandardUtilities.charsToEscapes(glob)
-			+ "\")";
+		return "new AllBufferSet(\"" + StandardUtilities.charsToEscapes(glob) 
+		+ "\", view)";
 	} //}}}
 
 	//{{{ Instance variables
 	private String glob;
+	private View view;
 	//}}}
 
 	//{{{ _getFiles() method
 	@Override
 	protected String[] _getFiles(Component comp)
 	{
-		Buffer[] buffers = jEdit.getBuffers();
+		Buffer[] buffers = view.getBuffers();
 		List<String> returnValue = new ArrayList<String>(buffers.length);
 
 		Pattern filter;
@@ -91,7 +101,7 @@ public class AllBufferSet extends BufferListSet
 		}
 		catch(Exception e)
 		{
-			Log.log(Log.ERROR,this,e);
+			Log.log(Log.ERROR,this, "Error compiling Glob Pattern: " + glob, e);
 			return null;
 		}
 

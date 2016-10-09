@@ -1,6 +1,6 @@
 /*
  * IOUtilities.java - IO related functions
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2006 Matthieu Casanova
@@ -23,12 +23,13 @@
 package org.gjt.sp.util;
 
 import java.io.*;
+import javax.annotation.Nullable;
 
 /**
  * IO tools that depend on JDK only.
  *
  * @author Matthieu Casanova
- * @version $Id: IOUtilities.java 19107 2010-12-08 18:49:10Z ezust $
+ * @version $Id: IOUtilities.java 22995 2013-05-17 09:27:17Z kpouer $
  * @since 4.3pre5
  */
 public class IOUtilities
@@ -92,7 +93,7 @@ public class IOUtilities
 	 * @return <code>true</code> if the copy was done, <code>false</code> if it was interrupted
 	 * @throws IOException  IOException If an I/O error occurs
 	 */
-	public static boolean copyStream(int bufferSize, ProgressObserver progress,
+	public static boolean copyStream(int bufferSize, @Nullable ProgressObserver progress,
 					InputStream in, OutputStream out, boolean canStop)
 		throws IOException
 	{
@@ -108,7 +109,7 @@ public class IOUtilities
 				progress.setStatus(StandardUtilities.formatFileSize(copied));
 				progress.setValue(copied);
 			}
-			if(canStop && Thread.interrupted()) 
+			if(canStop && Thread.interrupted())
 				return false;
 		}
 		return true;
@@ -124,7 +125,7 @@ public class IOUtilities
 	 * @return <code>true</code> if the copy was done, <code>false</code> if it was interrupted
 	 * @throws IOException  IOException If an I/O error occurs
 	 */
-	public static boolean copyStream(ProgressObserver progress,
+	public static boolean copyStream(@Nullable ProgressObserver progress,
 					 InputStream in, OutputStream out, boolean canStop)
 		throws IOException
 	{
@@ -147,9 +148,12 @@ public class IOUtilities
 		else if (file.isDirectory())
 		{
 			File[] files = file.listFiles();
-			for (int i = 0; i < files.length; i++)
+			if (files != null)
 			{
-				length += fileLength(files[i]);
+				for (int i = 0; i < files.length; i++)
+				{
+					length += fileLength(files[i]);
+				}
 			}
 		}
 		return length;
@@ -158,10 +162,13 @@ public class IOUtilities
 	//{{{ closeQuietly() methods
 	/**
 	 * Method that will close an {@link InputStream} ignoring it if it is null and ignoring exceptions.
-	 *
+	 * @deprecated we want to remove this method without breaking compatibility
+	 * with your plugin. Closeable works for this type as of Java5.
+	 * @see #closeQuietly(Closeable)
 	 * @param in the InputStream to close.
 	 */
-	public static void closeQuietly(InputStream in)
+	@Deprecated
+	public static void closeQuietly(@Nullable InputStream in)
 	{
 		if(in != null)
 		{
@@ -178,10 +185,13 @@ public class IOUtilities
 
 	/**
 	 * Method that will close an {@link OutputStream} ignoring it if it is null and ignoring exceptions.
-	 *
+	 * @deprecated we want to remove this method without breaking compatibility
+	 * with your plugin. Closeable works for this type as of Java5.
+	 * @see #closeQuietly(Closeable)
 	 * @param out the OutputStream to close.
 	 */
-	public static void closeQuietly(OutputStream out)
+	@Deprecated
+	public static void closeQuietly(@Nullable OutputStream out)
 	{
 		if(out != null)
 		{
@@ -206,11 +216,14 @@ public class IOUtilities
 
 	/**
 	 * Method that will close an {@link Reader} ignoring it if it is null and ignoring exceptions.
-	 *
+	 * @deprecated we want to remove this method without breaking compatibility
+	 * with your plugin. Closeable works for this type as of Java5.
+	 * @see #closeQuietly(Closeable)
 	 * @param r the Reader to close.
 	 * @since jEdit 4.3pre5
 	 */
-	public static void closeQuietly(Reader r)
+	@Deprecated
+	public static void closeQuietly(@Nullable Reader r)
 	{
 		if(r != null)
 		{
@@ -227,10 +240,13 @@ public class IOUtilities
 
 	/**
 	 * Method that will close a {@link Writer} ignoring it if it is null and ignoring exceptions.
-	 *
+	 * @deprecated we want to remove this method without breaking compatibility
+	 * with your plugin. Closeable works for this type as of Java5.
+	 * @see #closeQuietly(Closeable)
 	 * @param out the Writer to close.
 	 */
-	public static void closeQuietly(Writer out)
+	@Deprecated
+	public static void closeQuietly(@Nullable Writer out)
 	{
 		if(out != null)
 		{
@@ -254,12 +270,12 @@ public class IOUtilities
 	}
 
 	/**
-	 * Method that will close an {@link java.io.Closeable} ignoring it if it is null and ignoring exceptions.
+	 * Method that will close a {@link java.io.Closeable} ignoring it if it is null and ignoring exceptions.
 	 *
 	 * @param closeable the closeable to close.
 	 * @since jEdit 4.3pre8
 	 */
-	public static void closeQuietly(Closeable closeable)
+	public static void closeQuietly(@Nullable Closeable closeable)
 	{
 		if(closeable != null)
 		{
@@ -281,6 +297,49 @@ public class IOUtilities
 			catch (IOException e)
 			{
 				//ignore
+			}
+		}
+	}
+
+
+	/**
+	 * Method that will close an {@link ObjectInput} ignoring it if it is null and ignoring exceptions.
+	 *
+	 * @param in the closeable to close.
+	 * @since jEdit 5.1pre1
+	 */
+	public void closeQuietly(@Nullable ObjectInput in)
+	{
+		if (in != null)
+		{
+			try
+			{
+				in.close();
+			}
+			catch (IOException e)
+			{
+				// ignore
+		}
+		}
+	}
+
+
+	/**
+	 * Method that will close an {@link ObjectOutput} ignoring it if it is null and ignoring exceptions.
+	 * @param out the closeable to close.
+	 * @since jEdit 5.1pre1
+	 */
+	public void closeQuietly(@Nullable ObjectOutput out)
+	{
+		if (out != null)
+		{
+			try
+			{
+				out.close();
+			}
+			catch (IOException e)
+			{
+				// ignore
 			}
 		}
 	} //}}}

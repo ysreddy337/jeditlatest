@@ -1,6 +1,6 @@
 /*
  * StandaloneTextArea.java - A TextArea that can be embedded in applications
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1999, 2005 Slava Pestov
@@ -27,7 +27,7 @@ package org.gjt.sp.jedit.textarea;
 //{{{ Imports
 import java.awt.Color;
 import java.awt.Font;
-import java.awt.event.ActionEvent;
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -35,9 +35,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.Properties;
 
-import javax.swing.AbstractAction;
 import javax.swing.JFrame;
-import javax.swing.JMenuItem;
 import javax.swing.WindowConstants;
 
 import org.gjt.sp.jedit.IPropertyManager;
@@ -63,7 +61,6 @@ import org.gjt.sp.jedit.syntax.TokenMarker;
 import org.gjt.sp.util.IOUtilities;
 import org.gjt.sp.util.Log;
 import org.gjt.sp.util.SyntaxUtilities;
-
 //}}}
 
 /** jEdit's standalone text component.
@@ -100,7 +97,7 @@ import org.gjt.sp.util.SyntaxUtilities;
  * @author Slava Pestov
  * @author John Gellene (API documentation)
    @author Matthieu Casanova
- * @version $Id: StandaloneTextArea.java 22132 2012-09-02 02:03:27Z ezust $
+ * @version $Id: StandaloneTextArea.java 22357 2012-10-13 04:58:01Z ezust $
  */
 public class StandaloneTextArea extends TextArea
 {
@@ -529,28 +526,6 @@ public class StandaloneTextArea extends TextArea
 		buffer.propertiesChanged();
 	} // }}}
 
-	//{{{ addMenuItem() method
-	/**
-	 * Adds a menu item from the action context to the popup menu and returns the item.
-	 * @return the menu item added
-	 */
-	public JMenuItem addMenuItem(String action, String label)
-	{
-		final JEditBeanShellAction shellAction = getActionContext().getAction(action);
-		if (shellAction == null)
-			return null ;
-		JMenuItem item = new JMenuItem();
-		item.setAction(new AbstractAction(label)
-		{
-			public void actionPerformed(ActionEvent e)
-			{
-				shellAction.invoke(StandaloneTextArea.this);
-			}
-		});
-		popup.add(item);
-		return item;
-	} //}}}
-
 	//{{{ createTextArea() method
 	/**
 	 * Create a standalone TextArea.
@@ -604,7 +579,7 @@ public class StandaloneTextArea extends TextArea
 		}
 		finally
 		{
-			IOUtilities.closeQuietly(in);
+			IOUtilities.closeQuietly((Closeable)in);
 		}
 		return props;
 	} //}}}

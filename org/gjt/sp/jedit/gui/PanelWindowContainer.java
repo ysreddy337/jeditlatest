@@ -1,6 +1,6 @@
 /*
  * PanelWindowContainer.java - holds dockable windows
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2000, 2004 Slava Pestov
@@ -72,7 +72,7 @@ import org.gjt.sp.util.StandardUtilities;
 /** A container for dockable windows. This class should never be used
  * directly.
  * @author Slava Pestov
- * @version $Id: PanelWindowContainer.java 21504 2012-03-29 17:45:22Z ezust $
+ * @version $Id: PanelWindowContainer.java 21831 2012-06-18 22:54:17Z ezust $
  * @since jEdit 4.0pre1
  */
 public class PanelWindowContainer implements DockableWindowContainer, DockingArea

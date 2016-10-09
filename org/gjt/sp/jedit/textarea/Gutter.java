@@ -1,6 +1,6 @@
 /*
  * Gutter.java
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1999, 2000 mike dillon
@@ -50,7 +50,7 @@ import org.gjt.sp.util.Log;
  * @see TextArea
  *
  * @author Mike Dillon and Slava Pestov
- * @version $Id: Gutter.java 21683 2012-05-19 09:33:20Z jarekczek $
+ * @version $Id: Gutter.java 21831 2012-06-18 22:54:17Z ezust $
  */
 public class Gutter extends JComponent implements SwingConstants
 {

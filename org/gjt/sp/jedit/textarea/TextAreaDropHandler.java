@@ -1,6 +1,6 @@
 /*
  * TextAreaTransferHandler.java - Drag and drop support
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2004 Slava Pestov
@@ -32,7 +32,7 @@ import org.gjt.sp.util.Log;
 
 /**
  * @author Slava Pestov
- * @version $Id: TextAreaDropHandler.java 17040 2010-01-23 14:19:47Z k_satoda $
+ * @version $Id: TextAreaDropHandler.java 21831 2012-06-18 22:54:17Z ezust $
  */
 class TextAreaDropHandler extends DropTargetAdapter
 {

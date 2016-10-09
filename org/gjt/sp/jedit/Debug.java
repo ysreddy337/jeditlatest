@@ -1,6 +1,6 @@
 /*
  * Debug.java - Various debugging flags
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2003 Slava Pestov
@@ -27,7 +27,7 @@ package org.gjt.sp.jedit;
  * development) and debugging routines.
  * @since jEdit 4.2pre1
  * @author Slava Pestov
- * @version $Id: Debug.java 21735 2012-05-29 17:06:05Z jarekczek $
+ * @version $Id: Debug.java 21831 2012-06-18 22:54:17Z ezust $
  */
 public class Debug
 {

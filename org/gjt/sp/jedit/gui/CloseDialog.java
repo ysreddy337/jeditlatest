@@ -1,6 +1,6 @@
 /*
  * CloseDialog.java - Close all buffers dialog
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1999, 2000 Slava Pestov
@@ -34,6 +34,7 @@ import org.gjt.sp.jedit.bufferio.BufferIORequest;
 import org.gjt.sp.jedit.io.*;
 import org.gjt.sp.jedit.*;
 import org.gjt.sp.util.Log;
+import org.gjt.sp.util.TaskManager;
 //}}}
 
 /** Close all buffers dialog
@@ -183,7 +184,7 @@ public class CloseDialog extends EnhancedDialog
 					Buffer buffer = jEdit.getBuffer(path);
 					if(!buffer.save(view,null,true,true))
 						return;
-					VFSManager.waitForRequests();
+					TaskManager.instance.waitForIoTasks();
 					if(buffer.getBooleanProperty(BufferIORequest
 						.ERROR_OCCURRED))
 						return;

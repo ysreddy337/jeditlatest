@@ -1,6 +1,6 @@
 /*
  * ListDirectoryBrowserTask
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright © 2010 Matthieu Casanova
@@ -35,7 +35,7 @@ import java.io.IOException;
 
 /**
  * @author Matthieu Casanova
- * @version $Id: ListDirectoryBrowserTask.java 19705 2011-07-26 17:19:05Z kpouer $
+ * @version $Id: ListDirectoryBrowserTask.java 21831 2012-06-18 22:54:17Z ezust $
  */
 class ListDirectoryBrowserTask extends AbstractBrowserTask
 {

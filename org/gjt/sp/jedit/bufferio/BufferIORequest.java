@@ -1,6 +1,6 @@
 /*
  * BufferIORequest.java - I/O request
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2000, 2004 Slava Pestov
@@ -44,15 +44,14 @@ import org.gjt.sp.jedit.io.Encoding;
 import org.gjt.sp.jedit.io.EncodingServer;
 import org.gjt.sp.util.IntegerArray;
 import org.gjt.sp.util.SegmentBuffer;
-import org.gjt.sp.util.WorkRequest;
 //}}}
 
 /**
  * A buffer I/O request.
  * @author Slava Pestov
- * @version $Id: BufferIORequest.java 19026 2010-11-26 12:54:56Z kpouer $
+ * @version $Id: BufferIORequest.java 22943 2013-04-22 11:44:40Z thomasmey $
  */
-public abstract class BufferIORequest extends WorkRequest
+public abstract class BufferIORequest extends IoTask
 {
 	//{{{ Constants
 
@@ -97,6 +96,7 @@ public abstract class BufferIORequest extends WorkRequest
 	protected BufferIORequest(View view, Buffer buffer,
 		Object session, VFS vfs, String path)
 	{
+		super();
 		this.view = view;
 		this.buffer = buffer;
 		this.session = session;
@@ -104,6 +104,7 @@ public abstract class BufferIORequest extends WorkRequest
 		this.path = path;
 
 		markersPath = Buffer.getMarkersPath(vfs, path);
+		//buffer.setIoTask(this);
 	} //}}}
 
 	//{{{ toString() method
@@ -143,7 +144,7 @@ public abstract class BufferIORequest extends WorkRequest
 
 	//{{{ read() method
 	protected SegmentBuffer read(Reader in, long length,
-		boolean insert) throws IOException
+		boolean insert) throws IOException, InterruptedException
 	{
 		/* we guess an initial size for the array */
 		IntegerArray endOffsets = new IntegerArray(
@@ -191,6 +192,9 @@ public abstract class BufferIORequest extends WorkRequest
 
 		while((len = in.read(buf,0,buf.length)) != -1)
 		{
+			if(Thread.interrupted())
+				throw new InterruptedException();
+
 			// Offset of previous line, relative to
 			// the start of the I/O buffer (NOT
 			// relative to the start of the document)
@@ -280,7 +284,7 @@ public abstract class BufferIORequest extends WorkRequest
 			seg.append(buf,lastLine,len - lastLine);
 		}
 
-		setAbortable(false);
+		setCancellable(false);
 
 		String lineSeparator;
 		if(seg.count == 0)
@@ -341,7 +345,7 @@ public abstract class BufferIORequest extends WorkRequest
 
 	//{{{ write() method
 	protected void write(Buffer buffer, OutputStream out)
-		throws IOException
+		throws IOException, InterruptedException
 	{
 		String encodingName
 			= buffer.getStringProperty(JEditBuffer.ENCODING);
@@ -361,6 +365,9 @@ public abstract class BufferIORequest extends WorkRequest
 		int i = 0;
 		while(i < bufferLineCount)
 		{
+			if(Thread.interrupted())
+				throw new InterruptedException();
+
 			buffer.getLineText(i,lineSegment);
 			try
 			{

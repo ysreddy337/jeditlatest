@@ -1,6 +1,6 @@
 /*
  * HelpHistoryModel.java - History Model for Help GUI
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2005 Nicholas O'Leary
@@ -29,7 +29,7 @@ import java.util.ArrayList;
 /**
  * History model used by the help browser 
  * @author Nicholas O'Leary
- * @version $Id: HelpHistoryModel.java 14598 2009-02-07 18:52:28Z kpouer $
+ * @version $Id: HelpHistoryModel.java 21831 2012-06-18 22:54:17Z ezust $
  */
 public class HelpHistoryModel
 {

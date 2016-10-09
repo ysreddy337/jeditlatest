@@ -1,6 +1,6 @@
 /*
  * SearchMatcher.java - Abstract string matcher interface
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1999, 2001, 2002 Slava Pestov
@@ -27,7 +27,7 @@ import org.gjt.sp.jedit.TextUtilities;
 /**
  * An abstract class for matching strings.
  * @author Slava Pestov
- * @version $Id: SearchMatcher.java 19386 2011-02-24 11:06:57Z kpouer $
+ * @version $Id: SearchMatcher.java 22941 2013-04-22 11:06:59Z thomasmey $
  */
 public abstract class SearchMatcher
 {
@@ -50,7 +50,7 @@ public abstract class SearchMatcher
 	 * @since jEdit 4.3pre5
 	 */
 	public abstract Match nextMatch(CharSequence text, boolean start,
-		boolean end, boolean firstTime, boolean reverse);
+		boolean end, boolean firstTime, boolean reverse) throws InterruptedException;
 
 	/**
 	 * @param noWordSep the chars that are considered as word chars for this search

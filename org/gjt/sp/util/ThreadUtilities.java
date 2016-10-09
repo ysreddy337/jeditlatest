@@ -1,6 +1,6 @@
 /*
  * ThreadUtilities.java - Utilities for threading
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2010 Matthieu Casanova
@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * The threadpool of jEdit.
  * It uses a ExecutorService from the java.util.concurrent package.
  * You can run {@link Task} or {@link Runnable} in it, Runnables will be
- * encapsulated in Task.
+ * encapsulated in Task and displayed in the Task Monitor. 
  *
  * @author Matthieu Casanova
  * @author Marcelo Vanzin
@@ -53,7 +53,8 @@ public class ThreadUtilities
 	 * The difference with VFSManager.runInAWTThread() method is that
 	 * this one will not wait for IO Request before being executed
 	 *
-	 * @param runnable the runnable to run
+	 * @param runnable the runnable to run - it should return something meaningful from 
+	 *    toString() so that we can display it in the Task Monitor.
 	 */
 	public static void runInDispatchThread(Runnable runnable)
 	{
@@ -73,11 +74,13 @@ public class ThreadUtilities
 	 *  <ul><li>this method runs the runnable after them</li>
 	 *  <li><code>invokeAndWait</code> runs the runnable before them
 	 *  </li></ul>
+	 * @param runnable the runnable to run - it should return something meaningful from 
+	 *    toString() so that we can display it in the Task Monitor.
 	 */
 	public static void runInDispatchThreadAndWait(Runnable runnable)
 	{
 		boolean interrupted = false;
-		MyRunnable run = new MyRunnable(runnable);
+		CountDownLatchRunnable run = new CountDownLatchRunnable(runnable);
 		runInDispatchThread(run);
 		while (run.done.getCount() > 0)
 		{
@@ -108,11 +111,13 @@ public class ThreadUtilities
 	 * From the article:
 	 * <a href="http://java.sun.com/products/jfc/tsc/articles/threads/threads1.html#event_dispatching">
 	 * Threads and Swing</a>
+	 * @param runnable the runnable to run - it should return something meaningful from 
+	 *    toString() so that we can display it in the Task Monitor.
 	 */
 	public static void runInDispatchThreadNow(Runnable runnable)
 	{
 		boolean interrupted = false;
-		MyRunnable run = new MyRunnable(runnable);
+		CountDownLatchRunnable run = new CountDownLatchRunnable(runnable);
 		try
 		{
 			EventQueue.invokeAndWait(run);
@@ -155,7 +160,8 @@ public class ThreadUtilities
 	 * The runnable will be encapsulated in a {@link Task}
 	 * @see #runInBackground(Task)
 	 *
-	 * @param runnable the runnable to run
+	 * @param runnable the runnable to run - it should return something meaningful from 
+	     toString() so that we can display it in the Task Monitor.
 	 */
 	public static void runInBackground(Runnable runnable)
 	{
@@ -201,7 +207,7 @@ public class ThreadUtilities
 		public Thread newThread(Runnable r)
 		{
 			Thread t = new Thread(threadGroup, r);
-			t.setName("jEdit Worker #" +threadIDs.getAndIncrement());
+			t.setName("jEdit Worker #" + threadIDs.getAndIncrement());
 			return t;
 		}
 
@@ -221,13 +227,13 @@ public class ThreadUtilities
 	}
 
 	//{{{ MyRunnable class
-	private static class MyRunnable implements Runnable
+	private static class CountDownLatchRunnable implements Runnable
 	{
 		private final Runnable runnable;
 
 		private CountDownLatch done = new CountDownLatch(1);
 
-		private MyRunnable(Runnable runnable)
+		private CountDownLatchRunnable(Runnable runnable)
 		{
 			this.runnable = runnable;
 		}

@@ -1,6 +1,6 @@
 /*
  * InputHandler.java - Manages key bindings and executes actions
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1999, 2003 Slava Pestov
@@ -46,7 +46,7 @@ import java.awt.*;
  * to the implementations of this class to do so.
  *
  * @author Slava Pestov
- * @version $Id: InputHandler.java 18919 2010-11-04 10:52:55Z kpouer $
+ * @version $Id: InputHandler.java 21831 2012-06-18 22:54:17Z ezust $
  * @see org.gjt.sp.jedit.gui.DefaultInputHandler
  */
 public abstract class InputHandler extends AbstractInputHandler<EditAction>

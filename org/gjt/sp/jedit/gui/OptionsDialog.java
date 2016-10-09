@@ -1,6 +1,6 @@
 /*
  * OptionsDialog.java - Tree options dialog
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1998, 2003 Slava Pestov
@@ -41,7 +41,7 @@ import org.gjt.sp.util.Log;
 
 /** An abstract options dialog box.
  * @author Slava Pestov
- * @version $Id: OptionsDialog.java 21586 2012-04-17 16:36:42Z ezust $
+ * @version $Id: OptionsDialog.java 21831 2012-06-18 22:54:17Z ezust $
  * @todo refactor to use OptionGroupPane
  */
 public abstract class OptionsDialog extends EnhancedDialog

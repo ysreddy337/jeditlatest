@@ -1,444 +1,286 @@
-jEdit 5.0 version history
-       (changes since jEdit 4.5.2)
+jEdit 5.1 version history
+       (changes since jEdit 5.0.0)
 :encoding=UTF-8:
 
-{{{ Version 5.0.0
+{{{ Version 5.1.0
 
-Thanks to Jarek Czekalski, Eric Le Lay, Matthieu Casanova, Tom Power, Malathi,
-Thomas Meyer, Vladimir Avondin, Björn "Vampire" Kautler and Alan Ezust for
-contributing to this release. 
+Thanks to Alan Ezust, Matthieu Casanova, and Björn "Vampire" Kautler
+for contributing to this release.
+
+{{{ UI improvements
+
+- The column titles were missing in shortcuts option pane
+  (#3614404 Matthieu Casanova)
+
+- Made TextArea thick caret thicker, and also thick when in overwrite mode.
+  (#3614784 Alan Ezust)
+
+- Added a new column "ActionSet" in Shortcuts option pane to know
+  to which actionSet an action belongs (feature #3614386 Matthieu Casanova)
+
+}}}
+
+}}}
+
+{{{ Version 5.1pre1
+
+Thanks to Björn "Vampire" Kautler, Jarek Czekalski, Thomas Meyer,
+Matthieu Casanova, cnvince, Alan Ezust, Malathi, Vladimir Avdonin, Eric Le Lay,
+Darien Brown, Steve snarum-micron, EdorFaus, Brian Clapper, Uwe Stöhr,
+Marc Häfner, stone1343, Richard The, Dale Anson, Benjamin Gmurczyk,
+Makarius, Marco Hunsicker, and Maik Nijhuis for contributing to this release.
 
 {{{ Bug fixes
 
-- Does not create backups on exit (#3579788 Jarek Czekalski)
+- The contextInsensitive flag of the edit mode was not used at the first use
+  of the edit mode (Matthieu Casanova)
 
-- I/O Error on First Save Attempt (#3574500 Jarek Czekalski) 
+- Fix mode loading for temporary buffers (patch #3609469 Thomas Meyer)
 
-- Fixed whole word search (#3551515 Matthieu Casanova)
+- Fix #3598661 - Don't allow negative values in the general option pane.
+  (Thomas Meyer)
 
-- Fixed a number of scrollbar bugs related to undo, multiline cut,
-  soft-wrap, and folding.
-  (Patch#3567959, Bugs #2832769, #2998294, and #3193168 - Thomas Meyer)
+- Fix #3596215 - NPE from docking layout save/loads when started with
+  -nosettings. (Alan Ezust)
 
-- Fix keymap duplication handling (Björn "Vampire" Kautler)
+- Fix #3597101, #3596600 - Bad error handling when an invalid path is entered
+  into the VFS Browser inputs. (Patch# 3602318 Benjamin Gmurczyk)
 
-- Fix broken macro Files/Glob_close.bsh (Eric Le Lay)
+- Bug no. #3590540 revealed a performance problem in the ChunkCache, because
+  every scroll action resulted in a tokenization of the really long line, which
+  takes a considerable time and makes jEdit unusable.
+  Fix is to always keep all Chunks of the tokenization process and use it as an
+  buffer in the ChunkCache class.
+  Tokenization of the physical line still happens for every insertion or
+  deletion of the Buffer. Tokenization also happens when the cursor enters the
+  physical line, as only the Chunks from the current physical line are keeped
+  in the ChunkCache.
+  (#3590540 Thomas Meyer)
 
-- File status checking before save (#3562315, Alan Ezust)
+- Bug no. #3590540 produced a soft wrap for a single physical line that was
+  greater than 16383 screen lines. Increased this limit to 65535 in
+  the ScreenLineManager (#3590540 Thomas Meyer)
 
-- Fix "Customize This Menu..." item in context menu options (#3554895 Tom Power)
+- Fixed Insert_Selection macro when the selection is empty (#3596616
+  Matthieu Casanova)
 
-- Fixed the StandaloneTextArea that cannot load keymaps
-  (#3562023 Matthieu Casanova)
+- fixed bug when pressing down if the is no selection (#3599630
+  Matthieu Casanova)
 
-- Fix a case where a NPE occurs when removing a plugin
-  (#3557441 Matthieu Casanova)
+- Fixed macros cut lines and copy lines when the buffer is empty (#3596612
+  Matthieu Casanova)
 
-- Recognizing "Extra word characters" in "Whole word" option in
-  searches (bug #3522497, patch #3543524 Malathi)
+- Fixed negative values used in recent file history count (#3598661 Matthieu
+  Casanova)
 
-- The macro Display_Abbreviations was broken (#3539691 Matthieu Casanova)
+- Fixed Run script macro when the file is empty (#3596609 Matthieu
+  Casanova)
 
-- Fix pressing return in parent files of the VFS browser that do not
-  browse the selected folder as it should (patch #3543499 by Eric Le Lay)
+- Fixed Get_Class_Name macro when the file is empty (#3596752 Matthieu
+  Casanova)
 
-}}}
-{{{ API
+- Re-added missing OS/2 support code. (#3589903 Alan Ezust)
 
-- New method MiscUtilities.openInDesktop() (Alan Ezust)
+- Added missing localization string:
+  options.plugin-manager.list-cache.minutes (#3574373 Matthieu Casanova)
 
-}}}
-{{{ UI
+- Fix AutoSave exception after multiline cut (#3017650 Thomas Meyer)
 
-- Disable menu bar mnemonics if they are mapped as otherwise defined shortcuts
-  so that they are not shown visually to the user when they actually do not
-  work and make sure that no conflict can arise with the default keymap and
-  any localization (#3528208 Björn "Vampire" Kautler)
+- Undomanager: Don't compact significant edits (#patch 3560615 Thomas Meyer)
 
-- Added a new German keymap. Replaced shortcuts that were unreachable
-  on a german keyboard. Moved shortcuts from German localization into
-  keymap. (#3572796 Björn "Vampire" Kautler)
+- Fixed undo after replace all with beanshell only first occurance
+  (#3551910 Thomas Meyer)
 
-- Translate underscores to spaces when displaying keymap names in the UI to
-  eliminate files with spaces in the name. (Björn "Vampire" Kautler)
+- Search all buffers now observes current BufferSet scope and can be restricted
+  to the current view's buffers when scope is not global. (#3423442 Alan Ezust)
 
-- Fix broken keymap properties (Björn "Vampire" Kautler)
+- Fix File status checking after buffer switch (#1871440 Alan Ezust)
 
-- Added russian localization (patch #3544154 Vladimir Avdonin)
+- Undo restores selection state in simple cases (deletions, replaces
+  on simple range selections). (patch #1570553 Maik Nijhuis, Thomas Meyer,
+  Jarek Czekalski)
 
-}}}
-{{{ Miscellaneous
+- Filter not synchronizing in search dialog when
+  "All buffers" is selected. (#1646584, patch #3549905 Eric Le Lay)
 
-- Correctly determine whether Look and Feel did change to not touch it if it
-  stays the same as this might cause delays and Exceptions.
-  (Björn "Vampire" Kautler)
+- Fixed VFS session not ended in VFS.copy() api (#3522406 Matthieu Casanova)
 
-- The .jedit/modes/catalog is now written using UTF-8 instead of default
-  OS encoding (#3560800 Matthieu Casanova)
+- Use of a scrollable list for delete dialog confirmation
+  (#2911520 Matthieu Casanova)
 
-}}}
+- Fix selecting mode based on exact filename match. (#3562935 Dale Anson)
 
-}}}
+- Fix old modes/catalog entries clutter properties. (#3533751 Eric Le Lay)
+  [Merged into 5.0.x]
 
-{{{ Version 5.0pre1
+- When checking a box to select a plugin to install, the description was
+  appearing and immediately disappearing. (#3398605 Dale Anson)
 
-Thanks to Björn "Vampire" Kautler, Nathan Gray, Evan Wright, Alan Ezust, Dale
-Anson, Matthieu Casanova, Olivier Pisano, Jimmy Chaw, peibl, Robert Schwenn,
-Martin Raspe, Max Funk, SPennington, Ingo Tomahogh, Jarek Czekalski, Jojaba,
-Stephen Blackheath, Milan Černil, Makarius, Chris Sullins, Peter C. Chapin,
-Tom Power and Donovaly for contributing to this release.
-
-{{{ Bug fixes
-
-- Fixed exception in dockable window system when loading a plugin using
-  jar libraries (#3532429 Matthieu Casanova)
-
-- The plugin description in install panel now supports html
-  (#3509183 Matthieu Casanova)
-
-- The mirror "Plugin Central default" now works as auto selecting
-  mirror and is used by default. Previous default was hardcoded "switch"
-  (mirror.switch.ch) as workaround, but one could easily stuck on broken
-  "Plugin Central default" and got strange errors.
-  (#2913393, #3501210 - Kazutoshi Satoda)
-
-- Avoided annoying behavior of electric keys that canceled obvious
-  manual indentation. Now they take effect only when the current level
-  of indentation is same with automatic indentation.
-  (#1936678, #2332140 Jarek Czekalski, Kazutoshi Satoda)
-
-- Fixed "Backup on every save" resets file permissions. Renaming of the file
-  was replaced with copying. (#1803073 Jarek Czekalski)
-
-- Added backup of remote files, for example opened with FTP plugin.
-  (#1525654 Jarek Czekalski)
-
-- Fixed NPE which was shown in place of a proper error message for empty
-  keyword elements in mode XML. (Kazutoshi Satoda)
-
-- Cannot DnD betweeen PingPongLists (#3501020 Jarek Czekalski)
-
-- Fixed macros at menu split are unaccessible (#3512853 Jarek Czekalski)
-
-- If the same plugin is installed in home and install folder, only the newest
-  is loaded. (#1848802 Matthieu Casanova)
-
-- Fixed rectangular selection constructor (patch #3440310 peibl)
-
-- When copying a file in VFSBrowser, if a file with the same name already exists
-  a suffix copy-n is added to avoid deleting the existing file
-  (#3470759 Matthieu Casanova)
-
-- Fixed Ctrl + key not working in completion popup (Matthieu Casanova)
-
-- Fixed copy of Hypersearch results adding \r in the clipboard
-  (#3142456 Matthieu Casanova)
-
-- The Java based installer now correctly handles GNU style long filenames in
-  the installer package and thus does not corrupt the JavaDoc files anymore
-  (#2327520 Björn "Vampire" Kautler)
-
-- Several message boxes were not being created on the EDT which would result in
-  tiny, non-resizable message boxes. (#3441535 Dale Anson)
+- Fix Exception when clicking Find orphan when disabled plugins (#2940864 Eric
+  Le Lay)
 
 }}}
 {{{ API Changes
 
-- New method Debug.compDelay, for debugging purposes (Jarek Czekalski)
+- TaskManager: Refactor io task - New class IoTask, a subclass of Task
+  Remove the code of the io special case in TaskManager (Thomas Meyer)
 
-- Made EditBus.send uninterruptible, as it was before putting handling of
-  messages into EDT (r17139, to 4.4).
+- Make SearchMatcher interrupttible (Thomas Meyer)
+  1.) API change: let SearchMatcher.nextMatch() throw InterruptedException
+  2.) BoyerMooreSearchMatcher: Switch to the new API and react on thread
+      interruption
 
-- New method ThreadUtilities.runInDispatchThreadNow() (Jarek Czekalski)
+- HyperSearch: Make search interruptible even when in VFS.listFiles():
+  New method TaskManager.cancelTasksByClass(): Interrupt all currently running
+  Tasks of the given type. (Thomas Meyer)
 
-- New VFS capability: NON_AWT_SESSION_CAP and a helper method
-  VFS.createVFSSessionSafe that frees the caller from entering the EDT
-  thread in most cases. All built-in filesystems have this capability set.
-  (Jarek Czekalski)
+- Deprecated extra overloads of IOUtilities.closeQuietly() in favor of
+  using Java5 closeQuietly(Closeable) instead. (Alan Ezust)
 
-- The status bar widget service is now
-  org.gjt.sp.jedit.gui.statusbar.StatusWidgetFactory instead of
-  org.gjt.sp.jedit.gui.statusbar.StatusWidget (only the name in service.xml)
-  is modified, because the service class is a StatusWidgetFactory and not a
-  StatusWidget (#3521413 Matthieu Casanova)
+- New class: OneTimeMigrationStep, for adding property migration services
+  (used by fix for #1871440 Alan Ezust)
 
-- New public constructor for org.gjt.sp.jedit.gui.ErrorListDialog
-  allowing for specifying custom urgency (priority). (Jarek Czekalski)
+- New method VFSBrowser.getLastVisitedPath() (Jarek Czekalski)
 
-- TextArea.isCaretVisible became public (patch #3518424 Makarius)
+- New method IOUtilities.closeQuietly(ObjectInput) (Matthieu Casanova)
 
-- Fixed jedit exit procedure. Now all views are closed. Earlier only
-  the current view was properly closed. This may be important for plugins
-  that were workarounding the issue, as now they will get more
-  ViewUpdate.CLOSED messages. (Jarek Czekalski)
+- New method IOUtilities.closeQuietly(ObjectOutput) (Matthieu Casanova)
 
-- The JEditEmbeddedTextArea and StandaloneTextArea do not create an empty
-  popup menu anymore.
-  To add a context menu in your JEditEmbeddedTextArea, please override
-  createPopupMenu(MouseEvent evt) as before, but also call
-  setRightClickPopupEnabled(true) in your constructor (Matthieu Casanova)
+- New method GUIUtilities.setAutoMnemonic(AbstractButton) (Jarek Czekalski)
 
-- New jEdit.getCurrentLanguage() method that returns the language used  by jEdit
-  (Matthieu Casanova)
+- New method: View.getBuffers(), aware of bufferset scope. (Alan Ezust)
 
-- New method JEditBuffer.insert(int offset, CharSequence seq) to insert
-  text in a buffer. (Matthieu Casanova)
+- Removed View.setBuffer(Buffer, boolean, boolean) and
+  View.setBuffer(Buffer, boolean): methods that had disableFileCheck flag in
+  since View no longer checks file status there. (#1871440 Alan Ezust)
 
-- New constructors for CopyFileWorker:
-  CopyFileWorker(Component comp, VFSFile[] vfsFiles, String target)
-  CopyFileWorker(Component comp, VFSFile[] vfsFiles, String target,
-                 Behavior behavior)
-  CopyFileWorker(Component comp, File[] files, String target)
-  CopyFileWorker(Component comp, File[] files, String target, Behavior behavior)
-  to allow copy of multiple files at the same time (Matthieu Casanova)
+- AllBufferSet.AllBufferSet(String glob, View v) - additional required
+  argument for View in constructor argument list. (#3423442 Alan Ezust)
 
-- New VFS.copy() methods:
-  copy(ProgressObserver progress, VFS sourceVFS, Object sourceSession,
-       String sourcePath, VFS targetVFS, Object targetSession,
-       String targetPath, Component comp, boolean canStop,
-       boolean sendVFSUpdate)
-  copy(ProgressObserver progress, String sourcePath,String targetPath,
-       Component comp, boolean canStop, boolean sendVFSUpdate)
-  (Matthieu Casanova)
+- Removed classes: IOProgressMonitor, WorkRequest, WorkThreadPool,
+  WorkThreadProgressListener (Thomas Meyer)
 
-- New methods MiscUtilities.getCompleteBaseName() to return
-  the (complete) base names of a file (until the last .) and
-  and getBaseName(), to replace the badly named getFileNameNoExtension,
-  which is now deprecated (Matthieu Casanova, Alan Ezust)
+- Removed VFSManager.getIOThreadPool() (Thomas Meyer)
 
-- TextUtilities.join() now accept Collection<?> instead of Collection<String>
-  (Matthieu Casanova)
+- Converted BufferIORequest, VFSFileChooserDialog.GetFileTypeRequest and
+  TextAreaTransferHandler.DraggedURLLoader to a Task (Thomas Meyer)
 
-- OperatingSystem.isOS2() method is removed since OS/2 cannot run jEdit since
-  many years (Matthieu Casanova)
+- Converted TaskManager to an enum singelton (Thomas Meyer)
 
-- OperatingSystem.isDOSDerived() is now deprecated since OS/2 do not exists
-  anymore Windows is the only DOS derived OS, so use OperatingSystem.isWindows()
-  instead (Matthieu Casanova)
+- Changed VFSManager.runInWorkThread(Runnable) to
+  VFSManager.runInWorkThread(Task) and made it accept only IO tasks
 
-- Some undocumented but public members in class DisplayTokenHandler and
-  Chunk became private as they should be in the first place.
-    Specifically:
-      org.gjt.sp.jedit.syntax.DisplayTokenHandler
-        MAX_CHUNK_LEN
-        initChunk()  (* this was protected)
-      org.gjt.sp.jedit.syntax.Chunk
-        accessable
-        initialized
-        style
-        width
-        Chunk constructors
-        offsetToX() (non static)
-        xToOffset() (non static)
-        init()
-  (Kazutoshi Satoda)
+- New class: AwtRunnableQueue (Thomas Meyer)
 
 }}}
 {{{ Editing
 
-- Nsis mode: added sectiongroup and deprecated subsection.
-  (patch #3531776 Uwe - donovaly)
+- Fixed bug in ruby multiline comments (Patch#3605738 fixing bug #3605168
+  Richard The)
 
-- Shellscript mode: changed electric keys to better fit current jEdit
-  capabilities in this area. (Jarek Czekalski)
+- Fixed shellscript highlight (patch #3602461 fixing bug #3594428 Richard The)
 
-- Made markers list selectable with keyboard. (patch #3509642 Tom Power)
+- Updated lua mode file (patch #2126692 stone1343)
 
-- Ada mode improvements (patch #3523836 Peter C. Chapin,
-  request #2860105 Britt)
+- Macros move lines up/down now keep the current selection (feature #3600082
+  Matthieu Casanova)
 
-- Scala mode added (#3501401 Daniel Spiewak)
+- Updated nsis2 mode (#3586538 Uwe Stöhr)
 
-- logs edit mode added (Matthieu Casanova)
+- There is now a new encoding Native2ASCII which collapses unicode
+  escapes in ISO-8859-1 files on read and expands characters that cannot be
+  encoded with ASCII as unicode escapes on write. This encoding is the one Java
+  properties files should be in. (Björn "Vampire" Kautler)
 
-- Dart mode added (patch #3483431 Chris Sullins)
+- Highlight entity references in xml attributes (#3559971 Eric Le Lay)
 
-- Haskell mode: Removed the fixed 8 character indent and tab size
-  (patch #3470636)
+- Added highlight of chapter title in rfc edit mode (Matthieu Casanova)
 
-- Haskell mode: Added some GHC extensions: recursive do and arrow notation
-  (patch #3470637 Stephen Blackheath)
+- Fixed shellscript do escape single quote with backslash
+  (#3557453 Matthieu Casanova)
 
-- New mxml.xml mode, and updates to ActionScript (patch #2913561 Chris Hill)
+- Updated ColdFusion mode (#3518536, #3561048 Darien Brown)
 
-- New metapost.xml mode (patch #1606258 Kondr)
+- Updated Verilog mode (#3536967 Steve snarum-micron)
 
-- Updated cobol.xml (patch #2654343 Markus Röhner)
+- Updated HTML mode (#3594526 Marc Häfner)
 
-- fortran90.xml: new Fortran90 edit mode (patch #2406563 Jonni Lehtiranta)
+- Updated CSS mode (#3595041 Marc Häfner)
 
-- roff.xml: New ROFF/GROFF/TROFF edit mode
-  (patch #3081484 Kostas Michalopoulos, Robert Schwenn)
+- Updated Coffeescript mode (#3595105 Marc Häfner)
 
-- nsis2.xml: Added Java/C style comments. (patch #2976473)
-
-- Ruby Edit Mode: Improved Symbol Highlighting
-  (patch #1918110 Ingo Tomahogh, Alan Ezust)
-
-- "velocity_pure.xml" edit mode to replace older sgml-based velocity.xml.
-  Velocity keywords nested within markup tags incorrectly highlighted.
-  (patch #1285741 Robert Schwenn)
-
-- Updated D edit mode (patch #3463009 Olivier Pisano)
-
-- Removed special highlight for object access and creation in php edit mode
-  (#2985508, #3151072 Matthieu Casanova)
-
-- Major simplification of phpdoc to make it look more like javadoc
-  (#1803310, #3029383, #3316733 Matthieu Casanova)
-
-- Added some missing keywords to vrml2 edit mode (patch #3471586 Jimmy Chaw)
-
-- Using no highlight or limited syntax highlight in large buffers now also
-  disables soft wrap (Matthieu Casanova)
-
-- Using no highlight or limited syntax highlight in large buffers now disables
-  highlight of very long lines (Matthieu Casanova)
-
-- Latex Indentation a nuisance (#3432974)
-
-- Made it possible to disable automatic indentation by buffer or by edit
-  mode, and created a status widget to toggle the setting (Evan Wright)
-
-- Fix for tracker 2976661, script tag attributes not syntax highlighted.
-  (Dale Anson)
-
-- Fix for tracker 846913, jsp syntax highlighting for single line comments.
-  (Dale Anson)
-
-- Updated css mode with new css 3 properties and values, tracker 3483390.
-  (Dale Anson)
-
-- Updated html mode to recognize new html 5 keywords, updated jsp mode to
-  delegate to html mode for html tags. (Dale Anson)
+- new PostgreSQL mode (feature #2833378 Thiemo Kellner, Eric Le Lay)
 
 }}}
-{{{ UI
+{{{ UI improvements
 
-- Made "Customize This Menu..." item in context menu optional.
-  (patch #3530786 Tom Power)
-
-- File System Browser docked on left by default. (Alan Ezust)
-
-- Suppressed output to standard error of encoding problems on opening
-  files, which affects also hypersearch encoding errors. These errors are
-  now displayed in a dialog, but not sent to error output.
-  (request #3517116 Jarek Czekalski)
-
-- Reserve space for 4 digit in memory's status bar widget.
-  (patch #3518422 Makarius)
-
-- The Windows installer and windows integration are now localized in french
-  (patch #3513215 Jojaba)
-
-- The Error status bar widget now use a JEditEmbeddedTextArea instead of a
-  simple swing TextArea to display exceptions (Matthieu Casanova)
-
-- jEdit now supports localization. (Matthieu Casanova)
-
-- Added french translation (Jojaba http://jojaba.free.fr)
-
-- Added german translation (Robert Schwenn)
-
-- Added czech translation (patch #3523511 Milan Černil)
-
-- Text Area option for Search System Fonts in Font substitution
-  (#3479585 Max Funk)
-
-- Dialog titles in file system browser
-  (patch #2968930, request #2807301 SPennington)
-
-- Standarized Buffer Switcher combo (#3408584, patch #3456572 Jarek Czekalski)
-
-- If a Task is not cancellable, the cancel button of TaskMonitor is disabled
+- Better information in the plugin manager when loading plugin list
   (Matthieu Casanova)
 
-- Added Icons to the VFS Browser context menu (Matthieu Casanova)
+- Initial view hidden by other windows at startup (#3610089)
 
-- Combined Global and Plugin options into a single pane, making Optional plugin
-  obsolete, fixing auto resize dialog issue.
-  (#3449498, request #3455602 Alan Ezust)
+- Remove empty root node in OptionGroupPane
+  (#3608324, #3608327: Marco Hunsicker)
 
-- jEdit is now always using continuous layout in JSplitPane (Matthieu Casanova)
+- More accurate treatment of ALT_KEY_PRESSED_DISABLED (#3604532: Makarius)
 
-- Fixed keyboard handling of comboboxes in jedit's option panes.
-  (#3415064 Alan Ezust)
+- New view option: "Abbreviate paths with environment variables when possible".
+  (#3606329 Alan Ezust)
 
-- Changed menus to use Mac-specific symbols for accelerator keys when using OS X
-  and the native look & feel (patch #1950147 Nathan Gray)
+- Made view option, "alternate toolbar placement" the default for jEdit.
 
-- Added an option (on by default) to use the native Quartz renderer on
-  Mac OS X (Evan Wright)
+- Emacs macros and keymap updates. (Brian Clapper)
 
-- Fixed keyboard handling of drop-down menus in File System Browser.
-  (#1571578 Alan Ezust)
+- Use separate (shorter) label for "whole word search" in the search bar.
+  (Shlomy Reinstein)
 
-- Fixed "Use textarea colors" for dockables created in non-metal L&F.
-  (#1794400 Alan Ezust)
+- Added a right click popup menu with a copy action in the Error dialog
+  (#3557023 Matthieu Casanova)
 
-- New option in Saving and Backup pane: Use File System Browser dir for
-  Save-As (#1591441 Alan Ezust)
+- Avoid trouble with horizontal scrolling (Patch #3134788, EdorFaus)
 
-- RegisterViewer: set initial focus to registerList, added key bindings for
-  inserting content, clearing a register and leaving the registerList
-  (#3437779 Martin Raspe)
+- Enable ContextMenu via keyboard to VFS-BrowserView (#3560239, Thomas Meyer)
 
-- RegisterViewer: close the floating window after inserting a clip, to make
-  behaviour consistent with Paste Previous window (#3478916 Jarek Czekalski)
+- Added a possibility to suppress synchronization of the filter in search
+  dialog, using a hidden setting in jedit.props: search.dontSyncFilter.
+  (Jarek Czekalski)
 
-- Show a preview of the window rather than a low-resolution icon when minimizing
-  on Mac OS X (#3529980 Evan Wright)
+- Added mnemonics for popup menus in File System Browser (Commands, Plugins,
+  Favorites). (Jarek Czekalski)
 
 }}}
 {{{ Miscellaneous
 
-- New FileOpenerService, Offered by FastOpen 2.5, SmartOpen 1.1.
-  Used by ErrorList 2.0 (#3481157 Alan Ezust)
+- Added Chinese translation (patch #3611777 cnvince)
 
-- jeditresource:/ URL handler now also checks jEditHome for files so
-  it can be used to link to core documentation. (#3565139 Alan Ezust)
+- Made the plugin manager loading much faster (up to 3 time faster)
+  (Matthieu Casanova)
 
-- Macros folder can now be localized with properties
-  macros.folder.[foldername].label (Matthieu Casanova)
+- New macro in Files section: "Open Selection In Desktop" (Jarek Czekalski)
 
-- Pasting a VFSFile as String dataflavor will now paste the full path instead of
-  the name of the file (Matthieu Casanova)
+- Open Selection macro improvements. An attempt is made to use current
+  VFS browser directory as a parent for the highlighted filename.
+  In case of no selection the path under caret is used. (Jarek Czekalski)
 
-- The EditingOptionPane has now an option to remember the user choice about
-  large file treatment (Matthieu Casanova)
+- Fixed unreasonable quadratic operations which could be observable on
+  big search&replace-all. (Patch #3533838 by Thomas Meyer)
 
-- OS/2 tasks were removed from the Java installer as OS/2 does not
-  have a working Java 6 implementation and probably never will have
-  (Björn "Vampire" Kautler)
+- Avoided unreasonable memory consumption by duplicate String instances
+  that could be allocated for each occurrence in a big
+  search&replace-all. (Patch #3528619 by Thomas Meyer)
 
-- jEdit support for keymaps (Matthieu Casanova)
+- Fix high memory usage for large search&replace all operations.
+  (Patch #3531515 by Thomas Meyer)
 
-- User Settings directory migrated to %APPDATA%/jEdit on Windows
-  (#2510763 Alan Ezust)
+- Fix memory usage of Buffer.calculateHash() (patch# 3560429, Thomas Meyer)
 
-- Added support for "Find Previous" when searching in multiple files
-  (Evan Wright)
+- Make_Bug_Report macro now use logs edit mode to have a little coloring
+  in the result (Matthieu Casanova)
 
-- Applied patch to Get_Class_Name macro from lxdyglt to find
-  classname for inner classes. (#3301598 Dale Anson)
+- Beep on output option in Activity log settings
+  (request #3551931 Jarek Czekalski)
 
-- Fixed some edge cases in the Make_Get_and_Set_Methods macro, properly handle
-  comments, multi-line variable declarations and multiple initializers.
-  (Dale Anson)
-
-- Soft wrap now works at non-whitespace line breaks within some natural
-  language texts; Japanese for example.
-  (patch #2483695 Kazutoshi Satoda)
-
-- Introduced glyph caching to lower CPU usage on text rendering and
-  line wrapping. (Kazutoshi Satoda)
-
-- Changed calculation of wrap margin to be based on an average character
-  width instead of a width of a space which gave very narrow wrap margin
-  for proportional fonts. (Kazutoshi Satoda)
-
-- Updated Move Lines Up and Down macros to move whole lines regardless of
-  selection. (Dale Anson)
+- New Plugin Manager option: Disable obsolete plugins (#2931321 Alan Ezust)
 
 }}}
 

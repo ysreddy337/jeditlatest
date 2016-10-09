@@ -1,6 +1,6 @@
 /*
  * EncodingsOptionPane.java - Encodings options panel
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2006 Björn Kautler
@@ -52,7 +52,7 @@ import static org.gjt.sp.jedit.MiscUtilities.getEncodings;
  * @author Björn Kautler
  * @author Matthieu Casanova
  * @since jEdit 4.3pre6
- * @version $Id: EncodingsOptionPane.java 20572 2011-12-07 21:43:12Z kpouer $
+ * @version $Id: EncodingsOptionPane.java 21831 2012-06-18 22:54:17Z ezust $
  */
 public class EncodingsOptionPane extends AbstractOptionPane
 {

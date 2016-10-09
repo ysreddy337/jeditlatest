@@ -1,6 +1,6 @@
 /*
  * ServiceManager.java - Handles services.xml files in plugins
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2003 Slava Pestov
@@ -37,7 +37,7 @@ import org.gjt.sp.util.Log;
 /**
  * @since jEdit 4.2pre1
  * @author Slava Pestov
- * @version $Id: ServiceListHandler.java 16676 2009-12-18 14:44:32Z shlomy $
+ * @version $Id: ServiceListHandler.java 21831 2012-06-18 22:54:17Z ezust $
  */
 class ServiceListHandler extends DefaultHandler
 {

@@ -1,6 +1,6 @@
 /*
  * ActionSet.java - A set of actions
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2001, 2003 Slava Pestov
@@ -139,7 +139,7 @@ import org.gjt.sp.util.Log;
  *
  * @author Slava Pestov
  * @author John Gellene (API documentation)
- * @version $Id: ActionSet.java 20759 2012-01-12 11:06:22Z kpouer $
+ * @version $Id: ActionSet.java 21831 2012-06-18 22:54:17Z ezust $
  * @since jEdit 4.0pre1
  */
 public class ActionSet extends JEditActionSet<EditAction> implements Comparable

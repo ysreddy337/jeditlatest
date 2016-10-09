@@ -1,6 +1,6 @@
 /*
  * View.java - jEdit view
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1998, 2004 Slava Pestov
@@ -36,11 +36,15 @@ import java.io.StringReader;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Stack;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
@@ -127,7 +131,7 @@ import org.gjt.sp.util.StandardUtilities;
  *
  * @author Slava Pestov
  * @author John Gellene (API documentation)
- * @version $Id: View.java 22382 2012-10-15 03:29:48Z ezust $
+ * @version $Id: View.java 22815 2013-02-27 19:23:28Z ezust $
  */
 public class View extends JFrame implements InputHandlerProvider
 {
@@ -315,7 +319,7 @@ public class View extends JFrame implements InputHandlerProvider
 	{
 		addToolBar(group, DEFAULT_LAYER, toolBar);
 	}
-	
+
 	/**
 	 * Adds a tool bar to this view.
 	 * @param group The tool bar group to add to
@@ -640,7 +644,7 @@ public class View extends JFrame implements InputHandlerProvider
 	//}}}
 
 	//}}}
-	
+
 	//{{{ Buffers, edit panes, split panes
 
 	//{{{ splitHorizontally() method
@@ -679,7 +683,7 @@ public class View extends JFrame implements InputHandlerProvider
 
 		editPane.saveCaretInfo();
 		EditPane oldEditPane = editPane;
-		EditPane newEditPane = createEditPane(oldEditPane);
+		EditPane newEditPane = createEditPane(oldEditPane.getBufferSet(), oldEditPane.getBuffer());
 //		setEditPane(newEditPane);
 		newEditPane.loadCaretInfo();
 
@@ -957,6 +961,29 @@ public class View extends JFrame implements InputHandlerProvider
 			return editPane.getBuffer();
 	} //}}}
 
+	//{{{ getBuffers() method
+	/**
+	 * Returns all Buffers opened in this View.
+	 * @since jEdit 5.1
+	 */
+	public Buffer[] getBuffers()
+	{
+		BufferSetManager mgr = jEdit.getBufferSetManager();
+		Collection<Buffer> retval = new HashSet<Buffer>();
+		for (EditPane ep: getEditPanes())
+		{
+			BufferSet bs = ep.getBufferSet();
+			Collections.addAll(retval, bs.getAllBuffers());
+			// If scope is not editpane, then all buffersets
+			// are the same and we got what we need.
+			if (mgr.getScope() != BufferSet.Scope.editpane)
+				break;
+		}
+		Buffer[] bufs = new Buffer[retval.size()];
+		retval.toArray(bufs);
+		return bufs;
+	}//}}}
+
 	//{{{ setBuffer() method
 	/**
 	 * Sets the current edit pane's buffer.
@@ -964,38 +991,7 @@ public class View extends JFrame implements InputHandlerProvider
 	 */
 	public void setBuffer(Buffer buffer)
 	{
-		setBuffer(buffer,false);
-	} //}}}
-
-	//{{{ setBuffer() method
-	/**
-	 * Sets the current edit pane's buffer.
-	 * @param buffer The buffer
-	 * @param disableFileStatusCheck Disables file status checking
-	 * regardless of the state of the checkFileStatus property
-	 */
-	public void setBuffer(Buffer buffer, boolean disableFileStatusCheck)
-	{
-		setBuffer(buffer, disableFileStatusCheck, true);
-	} //}}}
-
-	//{{{ setBuffer() method
-	/**
-	 * Sets the current edit pane's buffer.
-	 * @param buffer The buffer
-	 * @param disableFileStatusCheck Disables file status checking
-	 * regardless of the state of the checkFileStatus property
-	 * @param focus Whether the textarea should request focus
-	 * @since jEdit 4.3pre13
-	 */
-	public void setBuffer(Buffer buffer, boolean disableFileStatusCheck, boolean focus)
-	{
-		editPane.setBuffer(buffer, focus);
-		int check = jEdit.getIntegerProperty("checkFileStatus");
-		if(!disableFileStatusCheck && (check == GeneralOptionPane.checkFileStatus_all ||
-						  check == GeneralOptionPane.checkFileStatus_operations ||
-						  check == GeneralOptionPane.checkFileStatus_focusBuffer))
-			jEdit.checkBufferStatus(this, true);
+		editPane.setBuffer(buffer);
 	} //}}}
 
 	//{{{ goToBuffer() method
@@ -1302,7 +1298,7 @@ public class View extends JFrame implements InputHandlerProvider
 	} //}}}
 
 	// {{{ closeAllMenus()
-	/** closes any popup menus that may have been opened 
+	/** closes any popup menus that may have been opened
 	    @since jEdit 4.4pre1
 	*/
 	public void closeAllMenus()
@@ -1310,7 +1306,7 @@ public class View extends JFrame implements InputHandlerProvider
 		MenuSelectionManager.defaultManager().clearSelectedPath();
 		KeyboardFocusManager.getCurrentKeyboardFocusManager().clearGlobalFocusOwner();
 	} // }}}
-	
+
 	//{{{ Package-private members
 	View prev;
 	View next;
@@ -1323,7 +1319,7 @@ public class View extends JFrame implements InputHandlerProvider
 		plainView = config.plainView;
 
 		enableEvents(AWTEvent.KEY_EVENT_MASK);
-		
+
 		// OS X users expect a preview of the window rather than an icon
 		if (!OperatingSystem.isMacOS())
 			setIconImage(GUIUtilities.getEditorIcon());
@@ -1402,6 +1398,12 @@ public class View extends JFrame implements InputHandlerProvider
 		}
 	} //}}}
 
+	//{{{ isFullScreenMode method
+	public boolean isFullScreenMode() 
+	{
+		return fullScreenMode;
+	}//}}}
+	
 	//{{{ toggleFullScreen() method
 	public void toggleFullScreen()
 	{
@@ -1568,7 +1570,7 @@ public class View extends JFrame implements InputHandlerProvider
 		mainPanel.add(mainContent, BorderLayout.CENTER);
 		if (c instanceof JSplitPane)
 		{
-			splitPane = (JSplitPane)c;	
+			splitPane = (JSplitPane)c;
 		}
 		else
 		{
@@ -1618,7 +1620,7 @@ public class View extends JFrame implements InputHandlerProvider
 			}
 		}
 
-		setBuffer(buffer,false, focus);
+		editPane.setBuffer(buffer, focus);
 		return editPane;
 	} //}}}
 
@@ -1982,20 +1984,14 @@ loop:		while (true)
 	} //}}}
 
 	//{{{ createEditPane() methods
-	private EditPane createEditPane(Buffer buffer)
+	private EditPane createEditPane(@Nonnull Buffer buffer)
 	{
-		EditPane editPane = new EditPane(this, null, buffer);
-		JEditTextArea textArea = editPane.getTextArea();
-		textArea.addFocusListener(new FocusHandler());
-		textArea.addCaretListener(new CaretHandler());
-		textArea.addScrollListener(new ScrollHandler());
-		EditBus.send(new EditPaneUpdate(editPane,EditPaneUpdate.CREATED));
-		return editPane;
+		return createEditPane(null, buffer);
 	}
 
-	private EditPane createEditPane(EditPane oldEditPane)
+	private EditPane createEditPane(@Nullable BufferSet bufferSetSource, @Nonnull Buffer buffer)
 	{
-		EditPane editPane = new EditPane(this, oldEditPane.getBufferSet(), oldEditPane.getBuffer());
+		EditPane editPane = new EditPane(this, bufferSetSource, buffer);
 		JEditTextArea textArea = editPane.getTextArea();
 		textArea.addFocusListener(new FocusHandler());
 		textArea.addCaretListener(new CaretHandler());
@@ -2018,6 +2014,7 @@ loop:		while (true)
 
 		EditBus.send(new ViewUpdate(this,ViewUpdate.EDIT_PANE_CHANGED));
 	} //}}}
+
 
 	//{{{ handleBufferUpdate() method
 	@EBHandler
@@ -2056,7 +2053,26 @@ loop:		while (true)
 		}
 	} //}}}
 
+	//{{{ handleViewUpdate() method
+	@EBHandler
+	public void handleViewUpdate(ViewUpdate msg)
+	{
+		// only have my view handle each update message
+		if (msg.getView() == null || msg.getView() != this) return;
+		final int check = jEdit.getIntegerProperty("checkFileStatus");
+		if ((check == 0) || !jEdit.isStartupDone()) return;
+		// "buffer visit" also includes checking the buffer when you change editpanes.
+		if ((msg.getWhat() == ViewUpdate.EDIT_PANE_CHANGED) &&
+			((check & GeneralOptionPane.checkFileStatus_focusBuffer) > 0))
+			jEdit.checkBufferStatus(View.this, true);
+		else if ((msg.getWhat() == ViewUpdate.ACTIVATED) &&
+			(check & GeneralOptionPane.checkFileStatus_focus) > 0)
+				jEdit.checkBufferStatus(View.this,
+					(check != GeneralOptionPane.checkFileStatus_focus));
+	}//}}}
+
 	//{{{ closeDuplicateBuffers() method
+	/** Used if exclusive buffersets are enabled */
 	private void closeDuplicateBuffers(EditPaneUpdate epu)
 	{
 		if (!jEdit.getBooleanProperty("buffersets.exclusive"))
@@ -2071,7 +2087,7 @@ loop:		while (true)
 		if (view != this)
 			return;
 		final Buffer b = ep.getBuffer();
-
+		if (b.isDirty()) return;
 		jEdit.visit(new JEditVisitorAdapter()
 		{
 			@Override
@@ -2186,32 +2202,21 @@ loop:		while (true)
 		@Override
 		public void windowActivated(WindowEvent evt)
 		{
-			boolean editPaneChanged =
-				jEdit.getActiveViewInternal() != View.this;
+			boolean appFocus = false;
+			boolean viewChanged = false;
+			View oldView = jEdit.getActiveViewInternal();
+			// check if view is changed
+			if (oldView != View.this) viewChanged = true;
+			/* ACTIVATED currently means whenever the View gets focus.
+			Ideally it should be only when the View changes or we are
+			focusing on a View after previously using in another application.
+			Currently, we also get ACTIVATED messages after a closed jEdit dialog.
+			I consider this a bug which we should fix some day. */
+			if (evt.getOppositeWindow() == null) appFocus = true;
 			jEdit.setActiveView(View.this);
-
-			// People have reported hangs with JDK 1.4; might be
-			// caused by modal dialogs being displayed from
-			// windowActivated()
-			EventQueue.invokeLater(new Runnable()
-			{
-				@Override
-				public void run()
-				{
-					int check = jEdit.getIntegerProperty("checkFileStatus");
-					if(check == GeneralOptionPane.checkFileStatus_focus ||
-					   check == GeneralOptionPane.checkFileStatus_all)
-						jEdit.checkBufferStatus(View.this,false);
-					else if(check == GeneralOptionPane.checkFileStatus_focusBuffer)
-						jEdit.checkBufferStatus(View.this,true);
-				}
-			});
-
-			if (editPaneChanged)
-			{
-				EditBus.send(new ViewUpdate(View.this,ViewUpdate
-					.ACTIVATED));
-			}
+//			Log.log(Log.DEBUG, this, "appFocus:" + appFocus + " viewChanged:" + viewChanged);
+			if (appFocus || viewChanged)
+				EditBus.send(new ViewUpdate(View.this, ViewUpdate.ACTIVATED));
 		}
 
 		@Override
@@ -2284,7 +2289,7 @@ loop:		while (true)
 				setLocationRelativeTo(parent);
 			else
 			{
-				if(OperatingSystem.isX11() && Debug.GEOMETRY_WORKAROUND) 
+				if(OperatingSystem.isX11() && Debug.GEOMETRY_WORKAROUND)
 					new GUIUtilities.UnixWorkaround(this,"view",desired,config.extState);
 				else
 				{
@@ -2324,5 +2329,5 @@ loop:		while (true)
 		}
 	}//}}}
 	 //}}}
-	
+
 }

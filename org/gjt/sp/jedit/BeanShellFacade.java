@@ -1,6 +1,6 @@
 /*
  * BeanShellFacade.java - A BeanShell facade
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2007 Matthieu Casanova
@@ -238,8 +238,6 @@ public abstract class BeanShellFacade<T>
 		}
 		catch(Exception e)
 		{
-			unwrapException(e);
-			// never called
 			return null;
 		}
 		finally

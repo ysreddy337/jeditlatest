@@ -1,6 +1,6 @@
 /*
  * ParserRule.java - Parser rule for the token marker
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1999 mike dillon
@@ -32,7 +32,7 @@ import java.util.regex.PatternSyntaxException;
 /**
  * A parser rule.
  * @author mike dillon, Slava Pestov
- * @version $Id: ParserRule.java 19474 2011-03-22 11:35:42Z kpouer $
+ * @version $Id: ParserRule.java 21831 2012-06-18 22:54:17Z ezust $
  */
 public class ParserRule
 {

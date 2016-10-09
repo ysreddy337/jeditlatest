@@ -1,5 +1,5 @@
 /* MigrationService.java
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright © 2011 Matthieu Casanova
@@ -21,8 +21,6 @@
 package org.jedit.core;
 
 /** A Migration service.
- * There is currently only one concrete implementation of this interface and no
- * general way to add new MigrationServices yet.
  * <br />
  * The goal of migration is usually to replace old properties or data files
  * with a new set, located elsewhere. The fact is that depending on where
@@ -32,8 +30,9 @@ package org.jedit.core;
  * The service and interface exists primarily so you don't need to add a compilation
  * dependency of the org.gjt.sp.jEdit class to your MigrationService class. <br />
  * <br />
- * Concrete instances need to gurantee that the migration itself is only done
+ * Concrete instances need to guarantee that the migration itself is only done
  * once.
+ * @see org.jedit.migration.OneTimeMigrationService
  *
  * @author Matthieu Casanova
  */

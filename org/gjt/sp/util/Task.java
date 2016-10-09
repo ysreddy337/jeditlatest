@@ -1,6 +1,6 @@
 /*
  * jEdit - Programmer's Text Editor
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2010 Matthieu Casanova
@@ -40,9 +40,9 @@ public abstract class Task implements Runnable, ProgressObserver
 	 * The thread in which the task is running.
 	 * It is set automatically when the task starts.
 	 */
-	private Thread thread;
+	private volatile Thread thread;
 
-	private SwingWorker.StateValue state;
+	private volatile SwingWorker.StateValue state;
 
 	private volatile boolean cancellable = true;
 
@@ -148,7 +148,6 @@ public abstract class Task implements Runnable, ProgressObserver
 		if (cancellable && thread != null)
 			thread.interrupt();
 	} //}}}
-
 
 	@Override
 	public String toString()

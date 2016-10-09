@@ -1,6 +1,6 @@
 /*
  * MouseActionsProvider.java
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2006 Matthieu Casanova
@@ -25,7 +25,7 @@ import java.awt.event.MouseEvent;
 
 /**
  * @author Matthieu Casanova
- * @version $Id: MouseActionsProvider.java 15577 2009-06-25 05:55:16Z ezust $
+ * @version $Id: MouseActionsProvider.java 21831 2012-06-18 22:54:17Z ezust $
  */
 public interface MouseActionsProvider
 {

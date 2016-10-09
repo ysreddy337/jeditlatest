@@ -1,6 +1,6 @@
 /*
  * TextAreaMouseHandler.java - standalone mouse handler for textarea
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2006 Matthieu Casanova
@@ -33,7 +33,7 @@ import java.awt.*;
 /** Standalone TextArea MouseHandler.
  *
  * @author Matthieu Casanova
- * @version $Id: TextAreaMouseHandler.java 19363 2011-02-14 11:59:42Z kpouer $
+ * @version $Id: TextAreaMouseHandler.java 22883 2013-03-23 17:58:56Z thomasmey $
  */
 public class TextAreaMouseHandler extends MouseInputAdapter
 {
@@ -206,7 +206,7 @@ public class TextAreaMouseHandler extends MouseInputAdapter
 		{
 			Point p = textArea.offsetToXY(dragStart);
 			// defer scrolling until mouserelease if result is off-screen
-			textArea.moveCaretPosition(dragStart, (p.x < 0) ? textArea.NO_SCROLL : textArea.NORMAL_SCROLL);
+			textArea.moveCaretPosition(dragStart, (p.x < 0) ? TextArea.NO_SCROLL : TextArea.NORMAL_SCROLL);
 		}
 
 		if(!(textArea.isMultipleSelectionEnabled()
@@ -383,7 +383,7 @@ public class TextAreaMouseHandler extends MouseInputAdapter
 			if(dot != textArea.getCaretPosition())
 			{
 				// defer scroll to mouserelease if result is offscreen left without dragging that direction
-				textArea.moveCaretPosition(dot, (p.x < 0 && x > 1) ? textArea.NO_SCROLL : textArea.NORMAL_SCROLL);
+				textArea.moveCaretPosition(dot, (p.x < 0 && x > 1) ? TextArea.NO_SCROLL : TextArea.NORMAL_SCROLL);
 			}
 			else if(p.x < 0 && x < 1)
 			{

@@ -1,6 +1,6 @@
 /*
  * RegisterViewer.java - Dockable view of register contents
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2004, 2005 Nicholas O'Leary
@@ -32,8 +32,8 @@ import org.gjt.sp.jedit.*;
 import org.gjt.sp.jedit.EditBus.EBHandler;
 import org.gjt.sp.jedit.Registers.Register;
 import org.gjt.sp.jedit.msg.RegisterChanged;
-import org.gjt.sp.jedit.msg.PropertiesChanged;
 //}}}
+
 /** Dockable view of register contents */
 public class RegisterViewer extends JPanel
 	implements DockableWindow, DefaultFocusComponent
@@ -153,6 +153,12 @@ public class RegisterViewer extends JPanel
 	//{{{ Private members
 
 	//{{{ Instance variables
+	/** contains either a
+	 *  - String object (no Register is registered yet,
+	 *                   "view-registers.none") or
+	 *  - Character objects ("name" of the register; char value must be between 0 and 255,
+	 *                       see Registers.java)
+	 */
 	private JList registerList;
 	private JTextArea contentTextArea;
 	private DocumentHandler documentHandler;
@@ -413,7 +419,7 @@ public class RegisterViewer extends JPanel
 		{
 			view.getTextArea().requestFocus();
 			view.toFront();
-	  	}
+		}
 	}//}}}
 
 	//{{{ TabHandler Class
@@ -422,7 +428,7 @@ public class RegisterViewer extends JPanel
 		public void actionPerformed(ActionEvent e)
 		{
 			registerList.requestFocusInWindow();
-	  	}
+		}
 	}//}}}
 
 	//{{{ InsertHandler Class
@@ -431,7 +437,7 @@ public class RegisterViewer extends JPanel
 		public void actionPerformed(ActionEvent e)
 		{
 			insertRegister();
-	  	}
+		}
 	}//}}}
 
 	//{{{ ClearHandler Class
@@ -441,6 +447,6 @@ public class RegisterViewer extends JPanel
 		{
 			clearSelectedIndex();
 
-	  	}
+		}
 	}//}}}
 }

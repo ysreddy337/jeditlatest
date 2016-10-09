@@ -1,6 +1,6 @@
 /*
  * RolloverButton.java - Class for buttons that implement rollovers
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2002 Kris Kopicki
@@ -44,7 +44,7 @@ import org.gjt.sp.jedit.OperatingSystem;
  *
  * Note: You should not call <code>setBorder()</code> on your buttons,
  * as they probably won't work properly.
- * @version $Id: RolloverButton.java 21506 2012-03-29 17:58:53Z ezust $
+ * @version $Id: RolloverButton.java 21831 2012-06-18 22:54:17Z ezust $
  */
 public class RolloverButton extends JButton
 {

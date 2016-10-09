@@ -1,6 +1,6 @@
 /*
  * BufferListSet.java - Buffer list matcher
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1999, 2004 Slava Pestov
@@ -32,7 +32,7 @@ import org.gjt.sp.util.StandardUtilities;
 /**
  * A file set for searching a user-specified list of buffers.
  * @author Slava Pestov
- * @version $Id: BufferListSet.java 21027 2012-01-30 21:41:40Z kpouer $
+ * @version $Id: BufferListSet.java 22454 2012-11-10 11:15:08Z thomasmey $
  */
 public abstract class BufferListSet implements SearchFileSet
 {
@@ -99,7 +99,7 @@ public abstract class BufferListSet implements SearchFileSet
 	//{{{ getCode() method
 	public String getCode()
 	{
-		// not supported for arbitriary filesets
+		// not supported for arbitrary filesets
 		return null;
 	} //}}}
 

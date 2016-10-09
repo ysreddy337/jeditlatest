@@ -1,6 +1,6 @@
 /*
  * CombinedOptions.java - Combined options dialog
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:
  *
  * Copyright (C) 2011 Alan Ezust
@@ -52,6 +52,7 @@ public class CombinedOptions extends TabbedOptionDialog
 	public static CombinedOptions combinedOptions(Frame parent) 
 	{
 		int startingIndex = jEdit.getIntegerProperty("optional.last.tab", 0);
+		if (startingIndex > 1) startingIndex = 0;
 		return new CombinedOptions(parent, startingIndex);
 	}
 	

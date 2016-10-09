@@ -1,6 +1,6 @@
 /*
  * KeywordMap.java - Fast keyword->id map
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1998, 2002 Slava Pestov
@@ -32,7 +32,7 @@ import java.util.ArrayList;
  * text substrings without the overhead of creating a new string object.
  *
  * @author Slava Pestov, Mike Dillon
- * @version $Id: KeywordMap.java 14461 2009-01-25 12:04:15Z kpouer $
+ * @version $Id: KeywordMap.java 21831 2012-06-18 22:54:17Z ezust $
  */
 public class KeywordMap
 {

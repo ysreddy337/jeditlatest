@@ -1,6 +1,6 @@
 /*
  * PluginList.java - Plugin list downloaded from server
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2001, 2003 Slava Pestov
@@ -40,7 +40,7 @@ import org.gjt.sp.jedit.*;
 /**
  * Plugin list downloaded from server.
  * @since jEdit 3.2pre2
- * @version $Id: PluginList.java 21741 2012-05-31 17:42:05Z k_satoda $
+ * @version $Id: PluginList.java 22357 2012-10-13 04:58:01Z ezust $
  */
 class PluginList
 {
@@ -70,7 +70,7 @@ class PluginList
 		this.task = task;
 		readPluginList(true);
 	}
-	
+
 	void readPluginList(boolean allowRetry)
 	{
 		String mirror = buildMirror(id);
@@ -119,7 +119,7 @@ class PluginList
 		InputStream in = null, inputStream = null;
 		try
 		{
-			if (cachedURL != gzipURL) 
+			if (cachedURL != gzipURL)
 				Log.log(Log.MESSAGE, this, "Using cached pluginlist");
 			inputStream = new URL(cachedURL).openStream();
 			XMLReader parser = XMLReaderFactory.createXMLReader();
@@ -142,7 +142,7 @@ class PluginList
 			parser.setEntityResolver(handler);
 			parser.setErrorHandler(handler);
 			parser.parse(isrc);
-				
+
 		}
 		catch (Exception e)
 		{
@@ -162,12 +162,12 @@ class PluginList
 		}
 		finally
 		{
-			IOUtilities.closeQuietly(in);
-			IOUtilities.closeQuietly(inputStream);
+			IOUtilities.closeQuietly((Closeable)in);
+			IOUtilities.closeQuietly((Closeable)inputStream);
 		}
-		
+
 	}
-	
+
 	/** Caches it locally */
 	void downloadPluginList()
 	{
@@ -182,7 +182,7 @@ class PluginList
 		 **/
 		try
 		{
-			
+
 			task.setStatus(jEdit.getProperty("plugin-manager.list-download"));
 			URL downloadURL = new URL(gzipURL);
 			HttpURLConnection c = (HttpURLConnection)downloadURL.openConnection();
@@ -218,18 +218,18 @@ class PluginList
 					, "plugin-manager.list-download.disconnected"
 					, new Object[]{e.getMessage()});
 			Log.log (Log.ERROR, this, "CacheRemotePluginList: error", e);
-		}	
+		}
 		catch (Exception e)
 		{
 			Log.log (Log.ERROR, this, "CacheRemotePluginList: error", e);
 		}
 		finally
 		{
-			IOUtilities.closeQuietly(out);
-			IOUtilities.closeQuietly(is);
+			IOUtilities.closeQuietly((Closeable)out);
+			IOUtilities.closeQuietly((Closeable)is);
 		}
 	}
-	
+
 	//{{{ addPlugin() method
 	void addPlugin(Plugin plugin)
 	{

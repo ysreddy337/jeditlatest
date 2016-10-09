@@ -1,5 +1,5 @@
 /*
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2006 Matthieu Casanova
@@ -19,6 +19,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 package org.gjt.sp.jedit;
+
+import java.io.Closeable;
 
 import org.gjt.sp.util.Log;
 import org.gjt.sp.util.XMLUtilities;
@@ -137,7 +139,7 @@ class JEditRegisterSaver implements RegisterSaver
 		}
 		finally
 		{
-			IOUtilities.closeQuietly(out);
+			IOUtilities.closeQuietly((Closeable)out);
 		}
 	} //}}}
 

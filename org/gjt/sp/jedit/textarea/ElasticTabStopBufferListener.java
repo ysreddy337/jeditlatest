@@ -1,6 +1,6 @@
 /*
  * jEdit - Programmer's Text Editor
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright © 2010 jEdit contributors
@@ -60,7 +60,7 @@ public class ElasticTabStopBufferListener extends BufferAdapter
 	public void contentInserted(JEditBuffer buffer, int startLine, int offset,
 			int numLines, int length) 
 	{
-		if(!buffer.getBooleanProperty("elasticTabstops"))
+		if(!buffer.elasticTabstopsOn)
 		{
 			return;
 		}
@@ -135,7 +135,6 @@ public class ElasticTabStopBufferListener extends BufferAdapter
 					if(!singleTabInserted)
 					{	
 						innerContainingBlock.updateColumnBlockLineOffset(startLine, length, false);
-						ColumnBlockLine containingLine = innerContainingBlock.getLines().elementAt(startLine-innerContainingBlock.startLine);
 						startingLine = innerContainingBlock.startLine;
 						innerContainingBlock.setTabSizeDirtyStatus(true,false);
 						endLine = innerContainingBlock.endLine;
@@ -227,11 +226,10 @@ public class ElasticTabStopBufferListener extends BufferAdapter
 	public void contentRemoved(JEditBuffer buffer, int startLine, int offset,
 		int numLines, int length)
 	{
-		if(!buffer.getBooleanProperty("elasticTabstops"))
+		if(!buffer.elasticTabstopsOn)
 		{
 			return;
 		}
-		String charDeleted;
 		boolean isASimpleChar = false;
 		ColumnBlock rootBlock = buffer.getColumnBlock();
 		if(rootBlock==null)
@@ -374,20 +372,20 @@ public class ElasticTabStopBufferListener extends BufferAdapter
 			//deletion lies below all column blocks
 			else
 			{
-				 startLineToBuild = -1;
-				 endLineToBuild = -1;
-				 //firstBlockToBeUpdated = null;
-				 firstBlockToBeRemoved = null;
-				 lastBlockToBeRemoved = null;
+				startLineToBuild = -1;
+				endLineToBuild = -1;
+				//firstBlockToBeUpdated = null;
+				firstBlockToBeRemoved = null;
+				lastBlockToBeRemoved = null;
 			}
 			//once we reach here we have three things to do
 			//1)delete columnBlocks using firstBlockToBeDeleted and lastBlockToBeDeleted
-			Vector blocksToBeRemoved =null;
+			Vector<Node> blocksToBeRemoved =null;
 			if(firstBlockToBeRemoved!=null)
 			{
 				int startIndex = rootBlock.getChildren().indexOf(firstBlockToBeRemoved);
-				blocksToBeRemoved = new Vector();
-				if(lastBlockToBeRemoved==null)
+				blocksToBeRemoved = new Vector<Node>();
+				if(lastBlockToBeRemoved == null)
 				{
 					throw new IllegalArgumentException("Deletion not handled properly");
 				}
@@ -396,7 +394,7 @@ public class ElasticTabStopBufferListener extends BufferAdapter
 				{
 					blocksToBeRemoved.add(rootBlock.getChildren().get(i));
 				}
-					
+
 			}	
 			//2)update startLine/endLine in column blocks using firstBlockToBeUpdated
 			if(numLines>0)
@@ -452,7 +450,6 @@ public class ElasticTabStopBufferListener extends BufferAdapter
 				if(!singleTabDeleted)
 				{	
 					innerContainingBlock.updateColumnBlockLineOffset(startLine, -1*length, false);
-					ColumnBlockLine containingLine = innerContainingBlock.getLines().elementAt(startLine-innerContainingBlock.startLine);
 					startingLine = innerContainingBlock.startLine;
 					endLine = innerContainingBlock.endLine;
 					innerContainingBlock.setTabSizeDirtyStatus(true,false);
@@ -508,7 +505,7 @@ public class ElasticTabStopBufferListener extends BufferAdapter
 	//{{{ preContentInserted() method
 	public void preContentInserted(JEditBuffer buffer, int startLine, int offset, int numLines, int length)
 	{
-		if(!buffer.getBooleanProperty("elasticTabstops"))
+		if(!buffer.elasticTabstopsOn)
 		{
 			return;
 		}
@@ -521,7 +518,7 @@ public class ElasticTabStopBufferListener extends BufferAdapter
 	public void preContentRemoved(JEditBuffer buffer, int startLine, int offset,
 		int numLines, int length) 
 	{
-		if(!buffer.getBooleanProperty("elasticTabstops"))
+		if(!buffer.elasticTabstopsOn)
 		{
 			return;
 		}

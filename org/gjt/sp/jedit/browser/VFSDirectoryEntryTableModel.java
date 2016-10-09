@@ -1,6 +1,6 @@
 /*
  * VFSDirectoryEntryTableModel.java - VFS directory entry table model
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2003, 2005 Slava Pestov
@@ -36,7 +36,7 @@ import org.gjt.sp.util.StandardUtilities;
 
 /**
  * @author Slava Pestov
- * @version $Id: VFSDirectoryEntryTableModel.java 14450 2009-01-24 22:56:40Z kpouer $
+ * @version $Id: VFSDirectoryEntryTableModel.java 21831 2012-06-18 22:54:17Z ezust $
  * @since jEdit 4.2pre1
  */
 public class VFSDirectoryEntryTableModel extends AbstractTableModel

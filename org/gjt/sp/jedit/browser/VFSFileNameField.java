@@ -1,6 +1,6 @@
 /*
  * VFSFileNameField.java - File name field with completion
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2003, 2005 Slava Pestov
@@ -31,11 +31,12 @@ import org.gjt.sp.jedit.io.*;
 import org.gjt.sp.jedit.MiscUtilities;
 
 import org.gjt.sp.util.Log;
+import org.gjt.sp.util.TaskManager;
 //}}}
 
 /**
  * @author Slava Pestov
- * @version $Id: VFSFileNameField.java 19318 2011-02-01 04:22:08Z vanza $
+ * @version $Id: VFSFileNameField.java 22851 2013-03-17 11:03:48Z thomasmey $
  * @since jEdit 4.2pre1 (public since 4.5pre1)
  */
 public class VFSFileNameField extends HistoryTextField
@@ -204,7 +205,7 @@ public class VFSFileNameField extends HistoryTextField
 				return;
 
 			browser.setDirectory(dir);
-			VFSManager.waitForRequests();
+			TaskManager.instance.waitForIoTasks();
 
 			if(index == -1)
 			{
@@ -223,7 +224,7 @@ public class VFSFileNameField extends HistoryTextField
 					return;
 
 				browser.setDirectory(dir);
-				VFSManager.waitForRequests();
+				TaskManager.instance.waitForIoTasks();
 
 				currentText = currentText.substring(index + 1);
 			}
@@ -274,7 +275,7 @@ public class VFSFileNameField extends HistoryTextField
 		VFS vfs = VFSManager.getVFSForPath(parent);
 		if((vfs.getCapabilities() & VFS.LOW_LATENCY_CAP) != 0)
 		{
-			VFSManager.waitForRequests();
+			TaskManager.instance.waitForIoTasks();
 			setText(name);
 			browser.getBrowserView().getTable().doTypeSelect(
 				name,browser.getMode() == VFSBrowser

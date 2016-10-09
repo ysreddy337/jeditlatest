@@ -108,6 +108,8 @@ public abstract class OperatingSystem
 			String osName = System.getProperty("os.name");
 			if(osName.indexOf("Windows") != -1)
 				os = new Windows();
+			else if(osName.indexOf("OS/2") != -1)
+				os = new HalfAnOS();
 			else if(osName.indexOf("VMS") != -1)
 				os = new VMS();
 			else
@@ -196,7 +198,7 @@ public abstract class OperatingSystem
 				out.write("\n");
 				out.write("# Launch application.\n");
 				out.write("\n");
-				out.write("exec \"${JAVA}\" -jar \""
+				out.write("exec \"${JAVA}\" -Dawt.useSystemAAFontSettings=on -Dswing.aatext=true -jar \""
 					  + installDir + File.separator
 					  + "jedit.jar\" -reuseview \"$@\"\n");
 				out.close();
@@ -350,6 +352,14 @@ public abstract class OperatingSystem
 		public OSTask[] getOSTasks(Install installer)
 		{
 			return new OSTask[] { /* new JEditLauncherOSTask(installer) */ };
+		}
+	}
+
+	public static class HalfAnOS extends OperatingSystem
+	{
+		public String getInstallDirectory(String name, String version)
+		{
+			return "C:\\" + name + " " + version;
 		}
 	}
 

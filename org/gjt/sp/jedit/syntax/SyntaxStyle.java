@@ -1,6 +1,6 @@
 /*
  * SyntaxStyle.java - A simple text style class
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1999, 2003 Slava Pestov
@@ -28,7 +28,7 @@ import java.awt.Color;
  * A simple text style class. It can specify the color, italic flag,
  * and bold flag of a run of text.
  * @author Slava Pestov
- * @version $Id: SyntaxStyle.java 12504 2008-04-22 23:12:43Z ezust $
+ * @version $Id: SyntaxStyle.java 21831 2012-06-18 22:54:17Z ezust $
  */
 public class SyntaxStyle
 {

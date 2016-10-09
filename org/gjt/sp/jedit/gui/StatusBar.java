@@ -1,6 +1,6 @@
 /*
  * StatusBar.java - The status bar displayed at the bottom of views
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2001, 2004 Slava Pestov
@@ -52,11 +52,11 @@ import org.gjt.sp.util.*;
  * <li>Displaying memory status
  * </ul>
  *
- * @version $Id: StatusBar.java 21616 2012-04-30 08:32:24Z kpouer $
+ * @version $Id: StatusBar.java 22942 2013-04-22 11:27:52Z thomasmey $
  * @author Slava Pestov
  * @since jEdit 3.2pre2
  */
-public class StatusBar extends JPanel implements WorkThreadProgressListener
+public class StatusBar extends JPanel
 {
 	//{{{ StatusBar constructor
 	public StatusBar(View view)
@@ -93,6 +93,8 @@ public class StatusBar extends JPanel implements WorkThreadProgressListener
 		rectSelectWidget = _getWidget("rectSelect");
 		overwriteWidget = _getWidget("overwrite");
 		lineSepWidget = _getWidget("lineSep");
+
+		taskHandler = new TaskHandler();
 	} //}}}
 
 	//{{{ propertiesChanged() method
@@ -174,7 +176,7 @@ public class StatusBar extends JPanel implements WorkThreadProgressListener
 	public void addNotify()
 	{
 		super.addNotify();
-		VFSManager.getIOThreadPool().addProgressListener(this);
+		TaskManager.instance.addTaskListener(taskHandler);
 	} //}}}
 
 	//{{{ removeNotify() method
@@ -182,24 +184,21 @@ public class StatusBar extends JPanel implements WorkThreadProgressListener
 	public void removeNotify()
 	{
 		super.removeNotify();
-		VFSManager.getIOThreadPool().removeProgressListener(this);
+		TaskManager.instance.removeTaskListener(taskHandler);
 	} //}}}
 
-	//{{{ WorkThreadListener implementation
-
-	//{{{ statusUpdate() method
-	public void statusUpdate(final WorkThreadPool threadPool, int threadIndex)
+	//{{{ TaskListener implementation
+	private class TaskHandler implements TaskListener
 	{
-		SwingUtilities.invokeLater(new Runnable()
+		private final Runnable statusLineIo = new Runnable()
 		{
 			public void run()
 			{
 				// don't obscure existing message
-				if(message != null && !"".equals(message.getText().trim())
-					&& !currentMessageIsIO)
+				if(!currentMessageIsIO && message != null && !"".equals(message.getText().trim()))
 					return;
 
-				int requestCount = threadPool.getRequestCount();
+				int requestCount = TaskManager.instance.countIoTasks();
 				if(requestCount == 0)
 				{
 					setMessageAndClear(jEdit.getProperty(
@@ -220,12 +219,39 @@ public class StatusBar extends JPanel implements WorkThreadProgressListener
 					currentMessageIsIO = true;
 				}
 			}
-		});
-	} //}}}
+		};
 
-	//{{{ progressUpdate() method
-	public void progressUpdate(WorkThreadPool threadPool, int threadIndex)
-	{
+		//{{{ waiting() method
+		public void waiting(Task task)
+		{
+			SwingUtilities.invokeLater(statusLineIo);
+		} //}}}
+	
+		//{{{ running() method
+		public void running(Task task)
+		{
+		} //}}}
+	
+		//{{{ done() method
+		public void done(Task task)
+		{
+			SwingUtilities.invokeLater(statusLineIo);
+		} //}}}
+	
+		//{{{ statusUpdate() method
+		public void statusUpdated(Task task)
+		{
+		} //}}}
+
+		//{{{ maximumUpdated() method
+		public void maximumUpdated(Task task)
+		{
+		} //}}}
+
+		//{{{ valueUpdated() method
+		public void valueUpdated(Task task)
+		{
+		} //}}}
 	} //}}}
 
 	//}}}
@@ -417,6 +443,7 @@ public class StatusBar extends JPanel implements WorkThreadProgressListener
 
 	//{{{ Private members
 	private String currentBar;
+	private final TaskHandler taskHandler;
 	private final View view;
 	private final JPanel panel;
 	private final Box box;

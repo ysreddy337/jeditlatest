@@ -1,6 +1,6 @@
 /*
  * Abbrevs.java - Abbreviation manager
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1999, 2004 Slava Pestov
@@ -33,7 +33,7 @@ import org.gjt.sp.util.Log;
 /**
  * Abbreviation manager.
  * @author Slava Pestov
- * @version $Id: Abbrevs.java 12504 2008-04-22 23:12:43Z ezust $
+ * @version $Id: Abbrevs.java 21831 2012-06-18 22:54:17Z ezust $
  */
 public class Abbrevs
 {

@@ -1,6 +1,6 @@
 /*
  * ExtensionManager.java -
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2002, 2003 Slava Pestov
@@ -30,7 +30,7 @@ import org.gjt.sp.util.Log;
  * Manage the extensions for the gutter and the textarea.
  *
  * @author Slava Pestov
- * @version $Id: ExtensionManager.java 16346 2009-10-14 10:35:10Z kpouer $
+ * @version $Id: ExtensionManager.java 21831 2012-06-18 22:54:17Z ezust $
  */
 class ExtensionManager
 {

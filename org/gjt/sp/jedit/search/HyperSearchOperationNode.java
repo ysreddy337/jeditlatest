@@ -1,6 +1,6 @@
 /*
  * HyperSearchOperationNode.java - Top result node of a HyperSearch request
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1998, 1999, 2000, 2001, 2002 Slava Pestov
@@ -39,7 +39,7 @@ import javax.swing.tree.TreePath;
 
 /**
  * @author Slava Pestov
- * @version $Id: HyperSearchOperationNode.java 19386 2011-02-24 11:06:57Z kpouer $
+ * @version $Id: HyperSearchOperationNode.java 21831 2012-06-18 22:54:17Z ezust $
  */
 public class HyperSearchOperationNode
 {

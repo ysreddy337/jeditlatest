@@ -1,6 +1,6 @@
 /*
  * ColumnBlock.java 
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2010 Anshal Shukla
@@ -67,7 +67,7 @@ public class ColumnBlock extends Rect implements Node
 
 	@Override
 	//{{{ getChildren() method
-	public Vector getChildren()
+	public Vector<Node> getChildren()
 	{
 		return children;
 	}//}}}
@@ -330,7 +330,7 @@ public class ColumnBlock extends Rect implements Node
 	//{{{ throwException() method
 	private void throwException(int offset, int line)
 	{
-		throw new IllegalArgumentException("{ELSTIC TABSTOP}CORRUPT DATA@{"
+		throw new IllegalArgumentException("{ELASTIC TABSTOP}CORRUPT DATA@{"
 			+ System.currentTimeMillis() + "} & Thread : "
 			+ Thread.currentThread().getName()
 			+ " :Cannot find the size for tab at offset "

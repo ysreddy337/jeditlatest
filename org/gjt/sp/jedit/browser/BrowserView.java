@@ -1,6 +1,6 @@
 /*
  * BrowserView.java
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2000, 2003 Slava Pestov
@@ -29,7 +29,6 @@ import javax.swing.*;
 
 import java.awt.event.*;
 import java.awt.*;
-import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
@@ -43,7 +42,7 @@ import org.gjt.sp.util.ThreadUtilities;
 /**
  * VFS browser tree view.
  * @author Slava Pestov
- * @version $Id: BrowserView.java 21962 2012-07-31 16:44:29Z ezust $
+ * @version $Id: BrowserView.java 22045 2012-08-23 08:44:05Z kpouer $
  */
 class BrowserView extends JPanel
 {
@@ -70,6 +69,7 @@ class BrowserView extends JPanel
 
 		table = new VFSDirectoryEntryTable(this);
 		table.addMouseListener(new TableMouseHandler());
+		table.addKeyListener(new TableKeyListener());
 		table.setName("file");
 		JScrollPane tableScroller = new JScrollPane(table);
 		tableScroller.setMinimumSize(new Dimension(0,0));
@@ -510,6 +510,37 @@ class BrowserView extends JPanel
 						focusOnFileView();
 					}
 				}
+			}
+		}
+	} //}}}
+
+	//{{{ TableKeyListener class
+	private class TableKeyListener extends KeyAdapter
+	{
+		@Override
+		public void keyPressed(KeyEvent e)
+		{
+			switch(e.getKeyCode())
+			{
+				case KeyEvent.VK_CONTEXT_MENU:
+					if(popup != null && popup.isVisible())
+					{
+						popup.setVisible(false);
+						popup = null;
+						return;
+					}
+
+					int row = table.getSelectedRow();
+					Point pos = new Point(0, row * table.getRowHeight());
+					if(row == -1)
+						showFilePopup(null,table,pos);
+					else
+					{
+						if(!table.getSelectionModel().isSelectedIndex(row))
+							table.getSelectionModel().setSelectionInterval(row,row);
+						showFilePopup(getSelectedFiles(),table,pos);
+					}
+					break;
 			}
 		}
 	} //}}}

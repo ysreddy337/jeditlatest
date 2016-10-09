@@ -1,6 +1,6 @@
 /*
  * HyperSearchRequest.java - HyperSearch request, run in I/O thread
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1998, 1999, 2000, 2001, 2002 Slava Pestov
@@ -38,7 +38,7 @@ import org.gjt.sp.util.*;
 /**
  * HyperSearch results window.
  * @author Slava Pestov
- * @version $Id: HyperSearchRequest.java 19386 2011-02-24 11:06:57Z kpouer $
+ * @version $Id: HyperSearchRequest.java 22949 2013-04-23 18:53:15Z thomasmey $
  */
 class HyperSearchRequest extends Task
 {
@@ -103,10 +103,8 @@ class HyperSearchRequest extends Task
 				int maxResults = jEdit.getIntegerProperty("hypersearch.maxWarningResults");
 				for(int i = 0; i < files.length; i++)
 				{
-					if(jEdit.getBooleanProperty("hyperSearch-stopButton") ||
-						Thread.currentThread().isInterrupted())
+					if(Thread.currentThread().isInterrupted())
 					{
-						jEdit.setTemporaryProperty("hyperSearch-stopButton", "false");
 						Log.log(Log.MESSAGE, this, "Search stopped by user action (stop button)");
 						break;
 					}
@@ -138,7 +136,13 @@ class HyperSearchRequest extends Task
 
 					Buffer buffer = jEdit.openTemporary(null,null,file,false);
 					if(buffer != null)
+					{
+						// Wait for the buffer to load
+						if(!buffer.isLoaded())
+							TaskManager.instance.waitForIoTasks();
+
 						resultCount += doHyperSearch(buffer, 0, buffer.getLength());
+					}
 				}
 				Log.log(Log.MESSAGE, this, resultCount +" OCCURENCES");
 			}
@@ -222,7 +226,10 @@ class HyperSearchRequest extends Task
 	private int doHyperSearch(Buffer buffer, int start, int end)
 		throws Exception
 	{
-		setCancellable(false);
+		if(matcher instanceof BoyerMooreSearchMatcher)
+			setCancellable(true);
+		else
+			setCancellable(false);
 
 		HyperSearchFileNode hyperSearchFileNode = new HyperSearchFileNode(buffer.getPath());
 		DefaultMutableTreeNode bufferNode = new DefaultMutableTreeNode(hyperSearchFileNode);
@@ -241,8 +248,12 @@ class HyperSearchRequest extends Task
 	private int doHyperSearch(Buffer buffer, int start, int end,
 		DefaultMutableTreeNode bufferNode)
 	{
-		String noWordSep = (String) buffer.getMode().getProperty("noWordSep");
-		matcher.setNoWordSep(noWordSep);
+		if(matcher.wholeWord)
+		{
+			buffer.setMode();
+			String noWordSep = buffer.getStringProperty("noWordSep");
+			matcher.setNoWordSep(noWordSep);
+		}
 		int resultCount = 0;
 		JEditTextArea textArea = jEdit.getActiveView().getTextArea();
 		int caretLine = textArea.getBuffer() == buffer ? textArea.getCaretLine() : -1;
@@ -261,10 +272,15 @@ class HyperSearchRequest extends Task
 				boolean startOfLine = buffer.getLineStartOffset(
 					buffer.getLineOfOffset(offset)) == offset;
 
-				SearchMatcher.Match match = matcher.nextMatch(
-					buffer.getSegment(offset, end - offset),
-					startOfLine,endOfLine,counter == 0,
-					false);
+				SearchMatcher.Match match = null;
+				try {
+					match = matcher.nextMatch(
+						buffer.getSegment(offset, end - offset),
+						startOfLine,endOfLine,counter == 0,
+						false);
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+				}
 				if(match == null)
 					break;
 

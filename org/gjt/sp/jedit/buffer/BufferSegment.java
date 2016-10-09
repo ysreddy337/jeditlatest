@@ -1,5 +1,5 @@
 /*
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2007 Marcelo Vanzin
@@ -26,7 +26,7 @@ package org.gjt.sp.jedit.buffer;
  * "linked list" approach.
  *
  * @author Marcelo Vanzin
- * @version $Id: BufferSegment.java 12726 2008-05-29 20:21:14Z k_satoda $
+ * @version $Id: BufferSegment.java 21971 2012-08-02 20:32:37Z jarekczek $
  * @since jEdit 4.3pre15
  */
 class BufferSegment implements CharSequence

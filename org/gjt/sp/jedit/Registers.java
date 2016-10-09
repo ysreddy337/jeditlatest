@@ -1,6 +1,6 @@
 /*
  * Registers.java - Register manager
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1999, 2003 Slava Pestov
@@ -62,7 +62,7 @@ import org.gjt.sp.util.Log;
  *
  * @author Slava Pestov
  * @author John Gellene (API documentation)
- * @version $Id: Registers.java 20594 2011-12-09 17:53:47Z kpouer $
+ * @version $Id: Registers.java 21831 2012-06-18 22:54:17Z ezust $
  */
 public class Registers
 {

@@ -1,6 +1,6 @@
 /*
  * DirectoryProvider.java - File list menu
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2000, 2003 Slava Pestov
@@ -36,7 +36,7 @@ import org.gjt.sp.util.StandardUtilities;
 
 /**
  * @author Slava Pestov
- * @version $Id: DirectoryProvider.java 16207 2009-09-17 17:54:14Z shlomy $
+ * @version $Id: DirectoryProvider.java 21831 2012-06-18 22:54:17Z ezust $
  */
 public class DirectoryProvider implements DynamicMenuProvider
 {

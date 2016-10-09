@@ -1,5 +1,5 @@
 /*
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2000, 2003 Slava Pestov
@@ -38,7 +38,7 @@ import org.gjt.sp.util.Log;
  * A dialog for choosing fonts.
  *
  * @author Slava Pestov
- * @version $Id: FontSelectorDialog.java 17430 2010-03-07 03:16:20Z vanza $
+ * @version $Id: FontSelectorDialog.java 21971 2012-08-02 20:32:37Z jarekczek $
  * @since jEdit 4.4pre1
  */
 

@@ -1,6 +1,6 @@
 /*
  * SearchAndReplace.java - Search and replace
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1999, 2004 Slava Pestov
@@ -31,7 +31,6 @@ import javax.swing.JOptionPane;
 import org.gjt.sp.jedit.*;
 import org.gjt.sp.jedit.buffer.JEditBuffer;
 import org.gjt.sp.jedit.gui.TextAreaDialog;
-import org.gjt.sp.jedit.io.VFSManager;
 import org.gjt.sp.jedit.msg.PositionChanging;
 import org.gjt.sp.jedit.msg.SearchSettingsChanged;
 import org.gjt.sp.jedit.textarea.*;
@@ -64,7 +63,7 @@ import org.gjt.sp.util.*;
  *
  * @author Slava Pestov
  * @author John Gellene (API documentation)
- * @version $Id: SearchAndReplace.java 21996 2012-08-13 23:21:06Z ezust $
+ * @version $Id: SearchAndReplace.java 22949 2013-04-23 18:53:15Z thomasmey $
  */
 public class SearchAndReplace
 {
@@ -481,7 +480,7 @@ public class SearchAndReplace
 			record(view,"find(view)",false,true);
 
 			boolean repeat = false;
-loop:			for(;;)
+loop:		for(;;)
 			{
 				while(path != null)
 				{
@@ -510,7 +509,7 @@ loop:			for(;;)
 
 					// Wait for the buffer to load
 					if(!buffer.isLoaded())
-						VFSManager.waitForRequests();
+						TaskManager.instance.waitForIoTasks();
 
 					int start;
 
@@ -658,14 +657,17 @@ loop:			for(;;)
 			endOfLine = true;
 		}
 
-		String noWordSep = (String) buffer.getMode().getProperty("noWordSep");
-		matcher.setNoWordSep(noWordSep);
+		if(matcher.wholeWord)
+		{
+			String noWordSep = buffer.getStringProperty("noWordSep");
+			matcher.setNoWordSep(noWordSep);
+		}
 		SearchMatcher.Match match = matcher.nextMatch(text,
 			startOfLine,endOfLine,firstTime,reverse);
 		if(match != null)
 		{
 			jEdit.commitTemporary(buffer);
-			view.setBuffer(buffer,true);
+			view.setBuffer(buffer);
 			JEditTextArea textArea = view.getTextArea();
 
 			if(reverse)
@@ -892,7 +894,7 @@ loop:			for(;;)
 			initReplace();
 
 			String path = fileset.getFirstFile(view);
-loop:			while(path != null)
+loop:		while(path != null)
 			{
 				Buffer buffer = jEdit.openTemporary(
 					view,null,path,false);
@@ -912,7 +914,7 @@ loop:			while(path != null)
 
 				// Wait for buffer to finish loading
 				if(buffer.isPerformingIO())
-					VFSManager.waitForRequests();
+					TaskManager.instance.waitForIoTasks();
 
 				if(!buffer.isEditable())
 					continue loop;
@@ -1194,15 +1196,18 @@ loop:			while(path != null)
 		boolean smartCaseReplace)
 		throws Exception
 	{
-		String noWordSep = buffer.getStringProperty("noWordSep");
-		matcher.setNoWordSep(noWordSep);
+		if(matcher.wholeWord)
+		{
+			String noWordSep = buffer.getStringProperty("noWordSep");
+			matcher.setNoWordSep(noWordSep);
+		}
 		int occurCount = 0;
 
 		boolean endOfLine = (buffer.getLineEndOffset(
 			buffer.getLineOfOffset(end)) - 1 == end);
 
 		int offset = start;
-loop:		for(int counter = 0; ; counter++)
+loop:	for(int counter = 0; ; counter++)
 		{
 			boolean startOfLine = (buffer.getLineStartOffset(
 				buffer.getLineOfOffset(offset)) == offset);

@@ -1,6 +1,6 @@
 /*
  * jEdit - Programmer's Text Editor
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2010 jEdit contributors
@@ -25,6 +25,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.gjt.sp.jedit.bufferio.IoTask;
+
 /**
  * The TaskManager manage Tasks in the Threadpool, it knows all of them, and
  * sends events to TaskListeners.
@@ -33,16 +35,19 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 public class TaskManager
 {
+	/** A singleton instance of TaskManager */
 	public static final TaskManager instance = new TaskManager();
 
 	private final List<TaskListener> listeners;
 
 	private final List<Task> tasks;
+	private final Object ioWaitLock;
 
 	private TaskManager()
 	{
 		listeners = new CopyOnWriteArrayList<TaskListener>();
 		tasks = Collections.synchronizedList(new ArrayList<Task>());
+		ioWaitLock = new Object();
 	}
 
 	/**
@@ -56,6 +61,23 @@ public class TaskManager
 		return tasks.size();
 	}
 
+	/**
+	 * Return the number of IO tasks in queue.
+	 *
+	 * @return the number of IO tasks in queue
+	 * @since jEdit 5.1pre1
+	 */
+	public int countIoTasks()
+	{
+		int size = 0;
+		synchronized (tasks) {
+			for(Task task : tasks)
+				if(task instanceof IoTask)
+					size++;
+		}
+		return size;
+	}
+
 	public void addTaskListener(TaskListener listener)
 	{
 		if (!listeners.contains(listener))
@@ -67,12 +89,15 @@ public class TaskManager
 	public void removeTaskListener(TaskListener listener)
 	{
 		if (listeners.contains(listener))
+		{
 			listeners.remove(listener);
+		}
 	}
 
 	void fireWaiting(Task task)
 	{
 		tasks.add(task);
+
 		List<TaskListener> listeners = this.listeners;
 		for (TaskListener listener : listeners)
 		{
@@ -92,10 +117,21 @@ public class TaskManager
 	void fireDone(Task task)
 	{
 		tasks.remove(task);
+
 		List<TaskListener> listeners = this.listeners;
 		for (TaskListener listener : listeners)
 		{
 			listener.done(task);
+		}
+
+		if(task instanceof IoTask)
+		{
+			AwtRunnableQueue.INSTANCE.queueAWTRunner(false);
+
+			synchronized (ioWaitLock)
+			{
+				ioWaitLock.notifyAll();
+			}
 		}
 	}
 
@@ -143,6 +179,43 @@ public class TaskManager
 		}
 	}
 
+	/** Wait for all IO tasks to finish
+	 * @since jEdit 5.1pre1
+	 */
+	public void waitForIoTasks()
+	{
+		synchronized (ioWaitLock)
+		{
+			while(countIoTasks() > 0)
+			{
+				try
+				{
+					ioWaitLock.wait();
+				} catch (InterruptedException e)
+				{
+					Log.log(Log.ERROR,this,e);
+				}
+			}
+		}
+
+		AwtRunnableQueue.INSTANCE.queueAWTRunner(true);
+	}
+
+	/** cancel a task by its class
+	 * @since jEdit 5.1pre1
+	 */
+	public void cancelTasksByClass(Class<? extends Task> clazz)
+	{
+		synchronized (tasks)
+		{
+			for(Task task: tasks)
+			{
+				if(task.getClass().equals(clazz))
+					task.cancel();
+			}
+		}
+	}
+
 	/**
 	 * Encapsulate a runnable into a task.
 	 * It is done by the Threadpool when receiving a simple Runnable
@@ -167,6 +240,16 @@ public class TaskManager
 		private MyTask(Runnable runnable)
 		{
 			this.runnable = runnable;
+		}
+
+		public String getStatus()
+		{
+			return runnable.toString();
+		}
+
+		public String toString()
+		{
+			return runnable.toString();	
 		}
 
 		@Override

@@ -1,6 +1,6 @@
 /*
  * OptionGroup.java - Option pane group
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2000 mike dillon
@@ -33,7 +33,7 @@ import java.util.*;
  * option pane instances.
  *
  * @author Mike Dillon
- * @version $Id: OptionGroup.java 14444 2009-01-24 06:19:57Z shlomy $
+ * @version $Id: OptionGroup.java 21831 2012-06-18 22:54:17Z ezust $
  */
 public class OptionGroup
 {

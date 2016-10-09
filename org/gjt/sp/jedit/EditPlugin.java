@@ -1,6 +1,6 @@
 /*
  * EditPlugin.java - Abstract class all plugins must implement
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1999, 2003 Slava Pestov
@@ -26,6 +26,7 @@ import org.gjt.sp.jedit.browser.VFSBrowser;
 import org.gjt.sp.jedit.menu.EnhancedMenu;
 import org.gjt.sp.util.Log;
 
+import javax.annotation.Nullable;
 import javax.swing.*;
 import java.io.*;
 
@@ -214,7 +215,7 @@ plugin.QuickNotepadPlugin.author=John Gellene
 plugin.QuickNotepadPlugin.usePluginHome=true
 plugin.QuickNotepadPlugin.version=4.5
 plugin.QuickNotepadPlugin.docs=index.html
-
+# see jEdit.getBuild() to understand jEdit's version convention:
 plugin.QuickNotepadPlugin.depend.0=jedit 04.05.99.00
 plugin.QuickNotepadPlugin.depend.1=jdk 1.6
 plugin.QuickNotepadPlugin.description=This plugin provides a dockable "scratch pad" for writing and displaying notes, to do lists or similar items as unformatted text.
@@ -334,6 +335,7 @@ public abstract class EditPlugin
 	 * @see #getResourceAsOutputStream
 	 * @see #getResourcePath
 	 */
+	@Nullable
 	public File getPluginHome()
 	{
 		return getPluginHome(getClassName());
@@ -361,6 +363,7 @@ public abstract class EditPlugin
 	 * @see #getResourceAsOutputStream
 	 * @see #getResourcePath
 	 */
+	@Nullable
 	public static File getPluginHome(Class<? extends EditPlugin> clazz)
 	{
 		return getPluginHome(clazz.getName());
@@ -386,6 +389,7 @@ public abstract class EditPlugin
 	 * @see #getResourceAsOutputStream
 	 * @see #getResourcePath
 	 */
+	@Nullable
 	public static File getPluginHome(EditPlugin plugin)
 	{
 		return getPluginHome(plugin.getClassName());
@@ -402,6 +406,7 @@ public abstract class EditPlugin
 	 * @see #getResourceAsOutputStream
 	 * @see #getResourcePath
 	 */
+	@Nullable
 	private static File getPluginHome(String pluginClassName)
 	{
 		String settingsDirectory = jEdit.getSettingsDirectory();
@@ -668,6 +673,7 @@ public abstract class EditPlugin
 	 * @see #getResourceAsOutputStream
 	 * @see #getResourceAsStream
 	 */
+	@Nullable
 	private static File getResourcePath(String pluginClassName, String path)
 	{
 		File home = getPluginHome(pluginClassName);

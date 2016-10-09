@@ -22,7 +22,6 @@ package org.gjt.sp.jedit.gui;
 //{{{ Imports
 import javax.swing.event.*;
 import javax.swing.*;
-import java.awt.event.*;
 import java.awt.*;
 import org.gjt.sp.jedit.*;
 import org.gjt.sp.jedit.bufferset.BufferSet;
@@ -30,7 +29,7 @@ import org.gjt.sp.util.ThreadUtilities;
 //}}}
 
 /** BufferSwitcher class
-   @version $Id: BufferSwitcher.java 20764 2012-01-12 21:05:23Z jarekczek $
+   @version $Id: BufferSwitcher.java 22075 2012-08-26 23:13:58Z ezust $
 */
 public class BufferSwitcher extends JComboBox
 {
@@ -46,7 +45,7 @@ public class BufferSwitcher extends JComboBox
 
 		//setFont(new Font("Dialog",Font.BOLD,10));
 		setRenderer(new BufferCellRenderer());
-		setMaximumRowCount(jEdit.getIntegerProperty("bufferSwitcher.maxRowCount",10));
+		setMaximumRowCount(jEdit.getIntegerProperty("bufferSwitcher.maxRowCount", 10));
 		addPopupMenuListener(new PopupMenuListener()
 		{
 			@Override

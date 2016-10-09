@@ -1,6 +1,6 @@
 /*
  * PerspectiveManager.java - Saves view configuration
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2003 Slava Pestov
@@ -22,6 +22,7 @@
 
 package org.gjt.sp.jedit;
 
+import java.io.Closeable;
 import java.io.StreamTokenizer;
 import java.io.StringReader;
 import java.io.IOException;
@@ -39,7 +40,7 @@ import org.xml.sax.helpers.DefaultHandler;
 /** Manages persistence of open buffers and views across jEdit sessions.
  * @since jEdit 4.2pre1
  * @author Slava Pestov
- * @version $Id: PerspectiveManager.java 21398 2012-03-20 04:32:13Z ezust $
+ * @version $Id: PerspectiveManager.java 22357 2012-10-13 04:58:01Z ezust $
  */
 public class PerspectiveManager
 {
@@ -120,7 +121,7 @@ public class PerspectiveManager
 
 		if(perspectiveXML == null)
 			return;
-		
+
 		// backgrounded
 		if(jEdit.getBufferCount() == 0)
 			return;
@@ -185,7 +186,7 @@ public class PerspectiveManager
 				out.write(config.plainView ? "TRUE" : "FALSE");
 				out.write("\">");
 				out.write(lineSep);
-				
+
 				if (config.title != null)
 				{
 					out.write(lineSep);
@@ -218,7 +219,7 @@ public class PerspectiveManager
 
 				if (config.docking != null)
 					config.docking.saveLayout(PERSPECTIVE_FILENAME, i);
-				
+
 				out.write("</VIEW>");
 				out.write(lineSep);
 			}
@@ -235,7 +236,7 @@ public class PerspectiveManager
 		}
 		finally
 		{
-			IOUtilities.closeQuietly(out);
+			IOUtilities.closeQuietly((Closeable)out);
 		}
 	} //}}}
 
@@ -263,7 +264,7 @@ public class PerspectiveManager
 		boolean restoreFiles;
 		boolean restoreSplits;
 		String autoReload, autoReloadDialog;
-		
+
 		PerspectiveHandler(boolean restoreFiles)
 		{
 			this.restoreFiles = restoreFiles;
@@ -372,7 +373,7 @@ public class PerspectiveManager
 		{
 			charData.append(ch,start,length);
 		}
-		
+
 	}
 	//}}}
 }

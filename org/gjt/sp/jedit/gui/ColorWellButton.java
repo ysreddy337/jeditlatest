@@ -1,6 +1,6 @@
 /*
  * ColorWellButton.java - Shows color chooser when clicked
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2002 Slava Pestov
@@ -36,7 +36,7 @@ import org.gjt.sp.jedit.OperatingSystem;
  * You can get and set the currently selected color using
  * {@link #getSelectedColor()} and {@link #setSelectedColor(Color)}.
  * @author Slava Pestov
- * @version $Id: ColorWellButton.java 21502 2012-03-29 17:19:44Z ezust $
+ * @version $Id: ColorWellButton.java 21831 2012-06-18 22:54:17Z ezust $
  */
 public class ColorWellButton extends JButton
 {

@@ -1,6 +1,6 @@
 /*
  * ProgressObserver.java - Progression monitor
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2005 Matthieu Casanova
@@ -26,7 +26,7 @@ package org.gjt.sp.util;
  * Interface used to monitor things that can progress.
  *
  * @author Matthieu Casanova
- * @version $Id: ProgressObserver.java 12504 2008-04-22 23:12:43Z ezust $
+ * @version $Id: ProgressObserver.java 21831 2012-06-18 22:54:17Z ezust $
  * @since jEdit 4.3pre3
  */
 public interface ProgressObserver

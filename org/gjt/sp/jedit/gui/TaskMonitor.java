@@ -1,6 +1,6 @@
 /*
  * TaskMonitor
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright © 2010-2012 Matthieu Casanova
@@ -81,7 +81,6 @@ public class TaskMonitor extends JPanel implements TaskListener
 		panel.add(scroll);
 		updateTasksCount();
 
-		add(new IOProgressMonitor(), BorderLayout.NORTH);
 		add(panel);
 	} //}}}
 

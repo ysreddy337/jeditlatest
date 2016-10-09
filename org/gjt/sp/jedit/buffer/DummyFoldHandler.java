@@ -1,6 +1,6 @@
 /*
  * DummyFoldHandler.java - Fold handler used when folding is switched off
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2001 Slava Pestov
@@ -27,7 +27,7 @@ import javax.swing.text.Segment;
 /**
  * A fold handler that does nothing.
  * @author Slava Pestov
- * @version $Id: DummyFoldHandler.java 12504 2008-04-22 23:12:43Z ezust $
+ * @version $Id: DummyFoldHandler.java 22962 2013-04-30 13:55:18Z kpouer $
  * @since jEdit 4.0pre1
  */
 public class DummyFoldHandler extends FoldHandler
@@ -49,6 +49,7 @@ public class DummyFoldHandler extends FoldHandler
 	 * @return The fold level of the specified line
 	 * @since jEdit 4.0pre1
 	 */
+	@Override
 	public int getFoldLevel(JEditBuffer buffer, int lineIndex, Segment seg)
 	{
 		return 0;

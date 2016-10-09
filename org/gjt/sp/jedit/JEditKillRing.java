@@ -1,5 +1,5 @@
 /*
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2003, 2005 Slava Pestov
@@ -21,6 +21,7 @@
  */
 package org.gjt.sp.jedit;
 
+import java.io.Closeable;
 import java.io.File;
 import java.util.List;
 import java.util.LinkedList;
@@ -151,7 +152,7 @@ class JEditKillRing extends KillRing
 		}
 		finally
 		{
-			IOUtilities.closeQuietly(out);
+			IOUtilities.closeQuietly((Closeable)out);
 		}
 	} //}}}
 

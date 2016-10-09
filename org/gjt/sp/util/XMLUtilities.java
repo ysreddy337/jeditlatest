@@ -1,6 +1,6 @@
 /*
  * StandardUtilities.java - Miscelaneous XML utility functions.
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1999, 2006 Marcelo Vanzin, Slava Pestov
@@ -25,6 +25,7 @@
 package org.gjt.sp.util;
 
 //{{{ Imports
+import java.io.Closeable;
 import java.io.InputStream;
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -41,7 +42,7 @@ import org.xml.sax.helpers.XMLReaderFactory;
  * XML utility methods that only depend on the JDK.
  *
  * @author Marcelo Vanzin
- * @version $Id: XMLUtilities.java 19899 2011-09-02 07:36:54Z kpouer $
+ * @version $Id: XMLUtilities.java 22883 2013-03-23 17:58:56Z thomasmey $
  * @since 4.3pre6
  */
 public class XMLUtilities
@@ -152,7 +153,7 @@ public class XMLUtilities
 		}
 		finally
 		{
-			IOUtilities.closeQuietly(in);
+			IOUtilities.closeQuietly((Closeable)in);
 		}
 		return false;
 	} //}}}
@@ -169,7 +170,7 @@ public class XMLUtilities
 	 * by jEdit, but anyone is free to use the method if it sounds
 	 * usable.</p>
 	 */
-	public static InputSource findEntity(String systemId, String test, Class where)
+	public static InputSource findEntity(String systemId, String test, Class<?> where)
 	{
 		if (systemId != null && systemId.endsWith(test))
 		{

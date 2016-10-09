@@ -1,6 +1,6 @@
 /*
  * Marker.java - Named location in a buffer
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1998, 1999, 2000, 2001 Slava Pestov
@@ -36,7 +36,7 @@ import javax.swing.text.Position;
  *
  * @author Slava Pestov
  * @author John Gellene (API documentation)
- * @version $Id: Marker.java 21778 2012-06-10 01:15:15Z k_satoda $
+ * @version $Id: Marker.java 21831 2012-06-18 22:54:17Z ezust $
  */
 public class Marker
 {

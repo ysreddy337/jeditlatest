@@ -1,6 +1,6 @@
 /*
  * VFS.java - Virtual filesystem implementation
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2000, 2003 Slava Pestov
@@ -26,6 +26,7 @@ package org.gjt.sp.jedit.io;
 import java.awt.Color;
 import java.awt.Component;
 import java.io.*;
+import java.io.Closeable;
 import java.util.*;
 
 import java.util.regex.Pattern;
@@ -36,13 +37,12 @@ import org.gjt.sp.jedit.*;
 import org.gjt.sp.jedit.bufferio.BufferLoadRequest;
 import org.gjt.sp.jedit.bufferio.BufferSaveRequest;
 import org.gjt.sp.jedit.bufferio.BufferInsertRequest;
-import org.gjt.sp.jedit.bufferio.BufferIORequest;
 import org.gjt.sp.util.Log;
 import org.gjt.sp.util.ProgressObserver;
 import org.gjt.sp.util.IOUtilities;
 import org.gjt.sp.util.StandardUtilities;
+import org.gjt.sp.util.Task;
 import org.gjt.sp.util.ThreadUtilities;
-import org.gjt.sp.util.WorkThread;
 //}}}
 
 /**
@@ -104,7 +104,7 @@ import org.gjt.sp.util.WorkThread;
  * @see VFSManager#getVFSForProtocol(String)
  *
  * @author Slava Pestov
- * @author $Id: VFS.java 22457 2012-11-11 17:16:21Z ezust $
+ * @author $Id: VFS.java 22454 2012-11-10 11:15:08Z thomasmey $
  */
 public abstract class VFS
 {
@@ -442,9 +442,9 @@ public abstract class VFS
 	{
 		return new Object();
 	}
-	
+
 	/**
-	* Same as {@link #createVFSSession}, but may be called fromy any
+	* Same as {@link #createVFSSession}, but may be called from any
 	* thread. It first checks the <code>NON_AWT_SESSION_CAP</code>
 	* capability and enters EDT thread if necessary.
 	*/
@@ -489,7 +489,7 @@ public abstract class VFS
 		if((getCapabilities() & WRITE_CAP) == 0)
 			buffer.setReadOnly(true);
 
-		BufferIORequest request = new BufferLoadRequest(view, buffer, session, this, path);
+		Task request = new BufferLoadRequest(view, buffer, session, this, path);
 		if(buffer.isTemporary())
 			// this makes HyperSearch much faster
 			request.run();
@@ -497,7 +497,7 @@ public abstract class VFS
 			// BufferLoadRequest can cause UI interations (for example FTP connection dialog),
 			// so it should be runned in Dispatch thread
 			//ThreadUtilities.runInDispatchThread(request);
-			VFSManager.runInWorkThread(request);
+			ThreadUtilities.runInBackground(request);
 
 		return true;
 	} //}}}
@@ -530,7 +530,7 @@ public abstract class VFS
 		if(!path.equals(buffer.getPath()))
 			buffer.unsetProperty(Buffer.BACKED_UP);
 
-		VFSManager.runInWorkThread(new BufferSaveRequest(
+		ThreadUtilities.runInBackground(new BufferSaveRequest(
 			view,buffer,session,this,path));
 		return true;
 	} //}}}
@@ -549,7 +549,7 @@ public abstract class VFS
 	 * @param targetPath the target path.
 	 * If it is a path, it must exists, if it is a file, the parent must
 	 * exists
-	 * @param comp comp The component that will parent error dialog boxes
+	 * @param comp The component that will parent error dialog boxes
 	 * @param canStop could this copy be stopped ?
 	 * @return true if the copy was successful
 	 * @throws IOException  IOException If an I/O error occurs
@@ -576,7 +576,7 @@ public abstract class VFS
 	 * @param targetPath the target path.
 	 * If it is a path, it must exists, if it is a file, the parent must
 	 * exists
-	 * @param comp comp The component that will parent error dialog boxes
+	 * @param comp The component that will parent error dialog boxes
 	 * @param canStop could this copy be stopped ?
 	 * @param sendVFSUpdate true if you want to send a VFS update after the copy. False otherwise (if you do a lot
 	 *                      of copy)
@@ -643,8 +643,8 @@ public abstract class VFS
 		}
 		finally
 		{
-			IOUtilities.closeQuietly(in);
-			IOUtilities.closeQuietly(out);
+			IOUtilities.closeQuietly((Closeable)in);
+			IOUtilities.closeQuietly((Closeable)out);
 		}
 	}
 
@@ -655,7 +655,7 @@ public abstract class VFS
 	 *                  you should probably launch this command in a WorkThread
 	 * @param sourcePath the source path
 	 * @param targetPath the target path
-	 * @param comp comp The component that will parent error dialog boxes
+	 * @param comp The component that will parent error dialog boxes
 	 * @param canStop if true the copy can be stopped
 	 * @param sendVFSUpdate true if you want to send a VFS update after the copy. False otherwise (if you do a lot
 	 *                      of copy)
@@ -668,23 +668,35 @@ public abstract class VFS
 		throws IOException
 	{
 		VFS sourceVFS = VFSManager.getVFSForPath(sourcePath);
-		Object sourceSession = sourceVFS.createVFSSession(sourcePath, comp);
-		if (sourceSession == null)
-		{
-			Log.log(Log.WARNING, VFS.class, "Unable to get a valid session from " + sourceVFS +
-							" for path " + sourcePath);
-			return false;
-		}
 		VFS targetVFS = VFSManager.getVFSForPath(targetPath);
-		Object targetSession = targetVFS.createVFSSession(targetPath, comp);
-		if (targetSession == null)
+		Object sourceSession = null;
+		Object targetSession = null;
+		try
 		{
-			Log.log(Log.WARNING, VFS.class, "Unable to get a valid session from " + targetVFS +
-							" for path " + targetPath);
-			return false;
+			sourceSession = sourceVFS.createVFSSession(sourcePath, comp);
+			if (sourceSession == null)
+			{
+				Log.log(Log.WARNING, VFS.class, "Unable to get a valid session from " + sourceVFS +
+												" for path " + sourcePath);
+				return false;
+			}
+			targetSession = targetVFS.createVFSSession(targetPath, comp);
+			if (targetSession == null)
+			{
+				Log.log(Log.WARNING, VFS.class, "Unable to get a valid session from " + targetVFS +
+												" for path " + targetPath);
+				return false;
+			}
+			return copy(progress, sourceVFS, sourceSession, sourcePath, targetVFS, targetSession, targetPath,
+						comp,canStop, sendVFSUpdate);
 		}
-		return copy(progress, sourceVFS, sourceSession, sourcePath, targetVFS, targetSession, targetPath,
-			    comp,canStop, sendVFSUpdate);
+		finally
+		{
+			if (sourceSession != null)
+				sourceVFS._endVFSSession(sourceSession, comp);
+			if (targetSession != null)
+				targetVFS._endVFSSession(targetSession, comp);
+		}
 	}
 
 	/**
@@ -694,7 +706,7 @@ public abstract class VFS
 	 *                  you should probably launch this command in a WorkThread
 	 * @param sourcePath the source path
 	 * @param targetPath the target path
-	 * @param comp comp The component that will parent error dialog boxes
+	 * @param comp The component that will parent error dialog boxes
 	 * @param canStop if true the copy can be stopped
 	 * @return true if the copy was successful
 	 * @throws IOException IOException If an I/O error occurs
@@ -726,7 +738,7 @@ public abstract class VFS
 		if(session == null)
 			return false;
 
-		VFSManager.runInWorkThread(new BufferInsertRequest(
+		ThreadUtilities.runInBackground(new BufferInsertRequest(
 			view,buffer,session,this,path));
 		return true;
 	} //}}}
@@ -751,7 +763,7 @@ public abstract class VFS
 
 	//{{{ _listDirectory() method
 	/**
-	 * A convinience method that matches file names against globs, and can
+	 * A convenience method that matches file names against globs, and can
 	 * optionally list the directory recursively.
 	 * @param session The session
 	 * @param directory The directory. Note that this must be a full
@@ -934,7 +946,7 @@ public abstract class VFS
 	/**
 	 * Backs up the specified file. Default implementation in 5.0pre1
 	 * copies the file to the backup directory. Before 5.0pre1 it was
-	 * empty. 
+	 * empty.
 	 * @param session The VFS session
 	 * @param path The path
 	 * @param comp The component that will parent error dialog boxes
@@ -963,7 +975,7 @@ public abstract class VFS
 		{
 			// Usually that means there is no specified backup
 			// directory.
-			Log.log(Log.WARNING, VFS.class, "Backup of file " + 
+			Log.log(Log.WARNING, VFS.class, "Backup of file " +
 				path + " failed. Directory " + backupDir +
 				" does not exist.");
 			return;
@@ -974,7 +986,7 @@ public abstract class VFS
 		{
 			return;
 		}
-		
+
 		// do copy using VFS.copy
 		VFS vfsDst = VFSManager.getVFSForPath(backupFile.getPath());
 		Object sessionDst = vfsDst.createVFSSessionSafe(
@@ -989,7 +1001,7 @@ public abstract class VFS
 				vfsDst, sessionDst, backupFile.getPath(),
 				comp, true))
 			{
-				Log.log(Log.WARNING, VFS.class, "Backup of file " + 
+				Log.log(Log.WARNING, VFS.class, "Backup of file " +
 					path + " failed. Copy to " + backupFile +
 					" failed.");
 			}
@@ -998,7 +1010,7 @@ public abstract class VFS
 		{
 			vfsDst._endVFSSession(sessionDst, comp);
 		}
-		
+
 	} //}}}
 
 	//{{{ _createInputStream() method
@@ -1200,14 +1212,6 @@ public abstract class VFS
 			}
 		}
 
-		Thread ct = Thread.currentThread();
-		WorkThread wt = null;
-		if (ct instanceof WorkThread)
-		{
-			wt = (WorkThread) ct;
-		}
-
-
 		VFSFile[] _files = _listFiles(session,directory,
 			comp);
 		if(_files == null || _files.length == 0)
@@ -1215,7 +1219,7 @@ public abstract class VFS
 
 		for(int i = 0; i < _files.length; i++)
 		{
-			if (wt != null && wt.isAborted() || ct.isInterrupted())
+			if (Thread.currentThread().isInterrupted())
 				break;
 			VFSFile file = _files[i];
 			if (skipHidden && (file.isHidden() || MiscUtilities.isBackup(file.getName())))
@@ -1316,12 +1320,12 @@ public abstract class VFS
 		private Object session;
 		private String path;
 		private Component comp;
-		
+
 		public void run()
 		{
 			session = createVFSSession(path, comp);
 		}
-		
+
 		public Object get() { return session; }
 	} //}}}
 

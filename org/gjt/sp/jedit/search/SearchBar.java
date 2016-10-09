@@ -1,6 +1,6 @@
 /*
  * SearchBar.java - Search & replace toolbar
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2000, 2001, 2002 Slava Pestov
@@ -36,7 +36,7 @@ import org.gjt.sp.util.Log;
 
 /**
  * Incremental search tool bar.
- * @version $Id: SearchBar.java 20196 2011-11-03 16:55:44Z kpouer $
+ * @version $Id: SearchBar.java 22223 2012-09-20 07:22:28Z shlomy $
  */
 public class SearchBar extends JToolBar
 {
@@ -99,7 +99,7 @@ public class SearchBar extends JToolBar
 		hyperSearch.setRequestFocusEnabled(false);
 
 		add(wholeWord = new JCheckBox(jEdit.getProperty(
-			"search.word")));
+			"search.word.bar")));
 		wholeWord.addActionListener(actionHandler);
 		wholeWord.setMargin(margin);
 		wholeWord.setOpaque(false);

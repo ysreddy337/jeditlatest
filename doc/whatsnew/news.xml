@@ -4,12 +4,12 @@
      xmlns:xi="http://www.w3.org/2001/XInclude"
      xsi:noNamespaceSchemaLocation='http://www.docbook.org/xsd/4.4/docbook.xsd'>
 
-    <title> What's new in jEdit 5.0 </title>
+    <title> What's new in jEdit 5.1 </title>
     <articleinfo>
         <author>
             <othername>The jEdit all-volunteer development team</othername>
         </author>
-        <date> 2012 </date>
+        <date> 2013 </date>
     </articleinfo>
 
 
@@ -18,34 +18,31 @@
     but here are some of the major features of this version. </para>
 
     <itemizedlist>
-    <listitem><para> Localization - jEdit now supports switching
-    between default locale, French, German, Russian, Czech, and Japanese.
-    Some translations for those locales are provided, containing
-    common jEdit labels. It is also now possible to add new or contribute
-    to existing translation property files for jEdit core
-    as well as for plugins.
-    </para></listitem>
 
-    <listitem><para> Keymaps - named collections of shortcuts. Example keymaps
-    for Emacs, MacOS, German Keyboard, Intellij and classic jEdit are provided,
-    and users can create or customize them.
-    </para></listitem>
+      <listitem><para>VFS WorkThreads have been rewritten into Tasks, making it 
+      possible to completely remove the old "I/O Progress Monitor" and the 
+      wasteful space it took up in the Task Monitor. Old deprecated
+      classes related to WorkThread and WorkThreadPool have been removed.
+      </para></listitem>
 
-    <listitem><para> New Editing options: Disable or simplified automatic
-    indentation, and default response when opening a large file.
+      <listitem><para> New Plugin Manager option to check for and disable
+      obsolete plugins. 
+      Enabled by default, this will ensure that old unsupported plugins do not
+      interfere with the running operation of jEdit. </para> 
+    </listitem>
+    <listitem><para> Added another language to our list of translated languages:
+    English, French, German, Japanese, Czech, Russian, and now Chinese!
+    We are always looking for volunteers to help translate jEdit into Hindi,
+    Korean, or Spanish, or any other language, really! It is fairly easy
+    to add a new translation to jEdit or the plugins. 
     </para></listitem>
-
     
-    <listitem><para> Updated html/css edit modes with HTML5/CSS3 keywords.
-    Added a dozen new edit modes, updated a dozen more.
+    <listitem><para> There is now a new encoding Native2ASCII which collapses
+    unicode escapes in ISO-8859-1 files on read and expands characters that
+    cannot be encoded with ASCII as unicode escapes on write. This encoding is
+    the one Java properties files should be in. 
     </para></listitem>
-
-    <listitem><para> Scrolling - Many bugs (#2832769, #2998294, #3193168,
-    possibly others), related to soft wrap, multiline delete/cut, undo, and
-    folding, that could cause the text area to be confused about its location,
-    are fixed. This greatly improves the stability of jEdit. Thank you,
-    Thomas Meyer!!  </para></listitem>
-
-    </itemizedlist>
-<!-- :maxLineLen=80:wrap=hard: -->
+    
+</itemizedlist> 
+<!-- :maxLineLen=80:wrap=hard: --> 
 </article>

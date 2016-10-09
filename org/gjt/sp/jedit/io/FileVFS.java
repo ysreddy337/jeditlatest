@@ -1,6 +1,6 @@
 /*
  * FileVFS.java - Local filesystem VFS
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1998, 2005 Slava Pestov
@@ -25,6 +25,8 @@
 package org.gjt.sp.jedit.io;
 
 //{{{ Imports
+import java.io.Closeable;
+
 import javax.swing.filechooser.FileSystemView;
 import javax.swing.*;
 import java.awt.Component;
@@ -39,7 +41,7 @@ import org.gjt.sp.util.Log;
 /**
  * Local filesystem VFS.
  * @author Slava Pestov
- * @version $Id: FileVFS.java 21721 2012-05-27 09:03:56Z jarekczek $
+ * @version $Id: FileVFS.java 22774 2013-02-12 06:55:37Z ezust $
  */
 public class FileVFS extends VFS
 {
@@ -358,11 +360,12 @@ public class FileVFS extends VFS
 
 		File directory = new File(path);
 		File[] list = null;
-		if(directory.exists())
+		if(directory.exists()) 
+		{
 			if (fsView == null)
 				fsView = FileSystemView.getFileSystemView();
 			list = fsView.getFiles(directory,false);
-
+		}
 		if(list == null)
 		{
 			VFSManager.error(comp,path,"ioerror.directory-error-nomsg",null);
@@ -590,7 +593,7 @@ public class FileVFS extends VFS
 			}
 			finally
 			{
-				IOUtilities.closeQuietly(reader);
+				IOUtilities.closeQuietly((Closeable)reader);
 			}
 		}
 

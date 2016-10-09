@@ -5,7 +5,7 @@
 *
 * Copyright (C) 2003 Ollie Rutherfurd <oliver@jedit.org>
 *
-* $Id: Copy_Lines.bsh 20582 2011-12-08 21:26:00Z kpouer $
+* $Id: Copy_Lines.bsh 22664 2013-01-09 13:16:00Z kpouer $
 */
 
 copyLines()
@@ -18,7 +18,16 @@ copyLines()
 	}
 	start = textArea.getLineStartOffset(selections[0]);
 	stop = textArea.getLineEndOffset(selections[selections.length-1]);
-	String text = textArea.getText(start,stop-start);
+	int bufferLength = buffer.getLength();
+	String text;
+	if (stop > bufferLength)
+	{
+		text = textArea.getText(start,bufferLength - start) + '\n';
+	}
+	else
+	{
+		text = textArea.getText(start,stop-start);
+	}
 	java.awt.datatransfer.Transferable value = new java.awt.datatransfer.StringSelection(text);
 	Registers.getRegister('$').setTransferable(value);
 }

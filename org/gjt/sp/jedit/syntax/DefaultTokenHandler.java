@@ -1,6 +1,6 @@
 /*
  * DefaultTokenHandler.java - Builds a linked list of Token objects
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2002 Slava Pestov
@@ -28,7 +28,7 @@ import javax.swing.text.Segment;
  * Builds a linked list of tokens without any additional processing.
  *
  * @author Slava Pestov
- * @version $Id: DefaultTokenHandler.java 12504 2008-04-22 23:12:43Z ezust $
+ * @version $Id: DefaultTokenHandler.java 21831 2012-06-18 22:54:17Z ezust $
  * @since jEdit 4.1pre1
  */
 public class DefaultTokenHandler implements TokenHandler

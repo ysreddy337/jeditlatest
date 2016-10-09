@@ -1,6 +1,6 @@
 /*
  * XModeHandler.java - XML handler for mode files
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1999 mike dillon
@@ -39,7 +39,7 @@ import org.gjt.sp.util.XMLUtilities;
 
 /**
  * XML handler for mode definition files.
- * @version $Id: XModeHandler.java 21612 2012-04-28 16:49:03Z k_satoda $
+ * @version $Id: XModeHandler.java 21831 2012-06-18 22:54:17Z ezust $
  */
 public abstract class XModeHandler extends DefaultHandler
 {

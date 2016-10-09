@@ -1,6 +1,6 @@
 /*
  * RegexpIndentRule.java
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2005 Slava Pestov
@@ -36,7 +36,7 @@ import org.gjt.sp.jedit.syntax.TokenMarker;
 
 /**
  * @author Slava Pestov
- * @version $Id: RegexpIndentRule.java 21723 2012-05-27 14:34:13Z k_satoda $
+ * @version $Id: RegexpIndentRule.java 21831 2012-06-18 22:54:17Z ezust $
  */
 public class RegexpIndentRule implements IndentRule
 {

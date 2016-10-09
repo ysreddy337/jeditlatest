@@ -1,6 +1,6 @@
 /*
  * FileCellRenderer.java - renders table cells for the VFS browser
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1999 Jason Ginchereau
@@ -38,7 +38,7 @@ import org.gjt.sp.jedit.*;
 
 /**
  * Local filesystem VFS.
- * @version $Id: FileCellRenderer.java 19866 2011-08-29 16:09:14Z kpouer $
+ * @version $Id: FileCellRenderer.java 21831 2012-06-18 22:54:17Z ezust $
  */
 public class FileCellRenderer extends DefaultTableCellRenderer
 {

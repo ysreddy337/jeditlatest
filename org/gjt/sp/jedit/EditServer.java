@@ -1,6 +1,6 @@
 /*
  * EditServer.java - jEdit server
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1999, 2003 Slava Pestov
@@ -38,7 +38,8 @@ import org.gjt.sp.util.Log;
 /**
  * Inter-process communication.<p>
  *
- * The edit server protocol is very simple. <code>$HOME/.jedit/server</code>
+ * The edit server protocol is very simple.
+ * <code><i>jEditSettingsDir</i>/server</code>
  * is an ASCII file containing two lines, the first being the port number,
  * the second being the authorization key.<p>
  *
@@ -57,7 +58,7 @@ import org.gjt.sp.util.Log;
  * complicated stuff can be done too.
  *
  * @author Slava Pestov
- * @version $Id: EditServer.java 19727 2011-08-01 17:45:18Z kpouer $
+ * @version $Id: EditServer.java 22487 2012-11-18 00:59:11Z ezust $
  */
 public class EditServer extends Thread
 {
@@ -83,7 +84,7 @@ public class EditServer extends Thread
 			// Bind to any port on localhost; accept 2 simultaneous
 			// connection attempts before rejecting connections
 			socket = new ServerSocket(0, 2,
-				InetAddress.getByName("127.0.0.1"));
+				InetAddress.getByName(null));
 			authKey = new Random().nextInt(Integer.MAX_VALUE);
 			int port = socket.getLocalPort();
 
@@ -233,7 +234,7 @@ public class EditServer extends Thread
 				jEdit.newView(null,buffer);
 			}
 			else if(buffer != null)
-				view.setBuffer(buffer,false);
+				view.setBuffer(buffer);
 
 			return buffer;
 		}

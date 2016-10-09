@@ -1,6 +1,6 @@
 /*
  * EditAction.java - jEdit action listener
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1998, 2003 Slava Pestov
@@ -37,7 +37,7 @@ import java.awt.event.ActionListener;
  * @see ActionSet
  *
  * @author Slava Pestov
- * @version $Id: EditAction.java 20108 2011-10-18 12:16:38Z evanpw $
+ * @version $Id: EditAction.java 21831 2012-06-18 22:54:17Z ezust $
  */
 public abstract class EditAction extends JEditAbstractEditAction<View>
 {

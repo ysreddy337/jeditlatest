@@ -1,6 +1,6 @@
 /*
  * AntiAlias.java - a small helper class for AntiAlias settings.
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2006, 2010 Alan Ezust
@@ -64,7 +64,8 @@ public class AntiAlias
 	}
 
 	/** @return corresponding text antialias value from RenderingHints class */
-	public Object renderHint() {
+	public Object renderHint()
+	{
 		return renderHints[m_val];
 	}
 	

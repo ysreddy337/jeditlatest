@@ -1,6 +1,6 @@
 /*
  * MirrorList.java - Mirrors list
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2002 Kris Kopicki
@@ -38,7 +38,7 @@ import org.gjt.sp.util.Log;
 //}}}
 
 /**
- * @version $Id: MirrorList.java 17940 2010-06-01 13:27:24Z kpouer $
+ * @version $Id: MirrorList.java 22357 2012-10-13 04:58:01Z ezust $
  */
 public class MirrorList
 {
@@ -126,7 +126,7 @@ public class MirrorList
 		}
 		finally
 		{
-			IOUtilities.closeQuietly(inputStream);
+			IOUtilities.closeQuietly((Closeable)inputStream);
 		}
 	} //}}}
 
@@ -151,7 +151,7 @@ public class MirrorList
 		}
 		finally
 		{
-			IOUtilities.closeQuietly(inputStream);
+			IOUtilities.closeQuietly((Closeable)inputStream);
 		}
 	} //}}}
 

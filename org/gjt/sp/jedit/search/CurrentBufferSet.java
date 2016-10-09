@@ -1,6 +1,6 @@
 /*
  * CurrentBufferSet.java - Current buffer matcher
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1999, 2001 Slava Pestov
@@ -27,7 +27,7 @@ import org.gjt.sp.jedit.*;
 /**
  * A file set for searching the current buffer.
  * @author Slava Pestov
- * @version $Id: CurrentBufferSet.java 20610 2011-12-11 15:46:35Z evanpw $
+ * @version $Id: CurrentBufferSet.java 21831 2012-06-18 22:54:17Z ezust $
  */
 public class CurrentBufferSet implements SearchFileSet
 {

@@ -31,11 +31,13 @@ common.more=More
 common.insert=Insert
 common.add=Add
 common.remove=Remove
+common.removeCurrent=Remove Current
 common.moveUp=Move Up
 common.moveDown=Move Down
 common.clearAll=Clear All
 common.selectAll=Select All
 common.selectNone=Select None
+common.loading=Loading...
 
 lineSep.unix=Unix (\\n)
 lineSep.windows=DOS/Windows (\\r\\n)
@@ -742,7 +744,7 @@ badurl.message=The following URL is invalid: {0}\n\
 
 #{{{ Go to line dialog
 goto-line.title=Go To Line
-goto-line.message=Go to line:
+goto-line.message=Go to line ({0} - {1}):
 #}}}
 
 #{{{ Word count dialog
@@ -842,7 +844,8 @@ search.beanshell-replace-btn=Return value of a BeanShell snippet
 search.settings=Settings:
 search.keep=Keep dialog
 search.keep.mnemonic=k
-search.word=Whole word
+search.word=Whole word (q)
+search.word.bar=Whole word
 search.word.mnemonic=q
 search.case=Ignore case
 search.case.mnemonic=i
@@ -888,6 +891,7 @@ search.synchronize.tooltip=Sets filter and directory to current buffer's extensi
 search.findBtn=Find
 search.findBtn.mnemonic=f
 search.replaceBtn=Replace
+search.replaceBtn.mnemonic=p
 search.replaceAndFindBtn=Replace & Find
 search.replaceAndFindBtn.mnemonic=r
 search.replaceAllBtn=Replace All
@@ -1204,7 +1208,7 @@ view.title.select=Please enter a title for this view:
 buffer-options.title=Buffer Options
 buffer-options.caption=This dialog box changes settings for the current buffer\n\
 	only. To change the default settings for an edit mode, see\n\
-	the Utilities->Global Options->Editing dialog.
+	the Global Options->Editing pane.
 buffer-options.loading-saving=Loading and Saving
 buffer-options.lineSeparator=Line separator:
 buffer-options.encoding=Character encoding:
@@ -1236,11 +1240,10 @@ options.general.checkModStatus.prompt=prompt
 options.general.checkModStatus.reload=automatically reload and notify user
 options.general.checkModStatus.silentReload=autoreload without notification
 options.general.checkModStatusUpon=Check for file change upon:
-options.general.checkModStatusUpon.focus=application focus
-options.general.checkModStatusUpon.all=application focus, visiting the buffer or saving any buffer
-options.general.checkModStatusUpon.operations=visiting the buffer or saving any buffer
-options.general.checkModStatusUpon.focusBuffer=visiting or saving the buffer
-options.general.checkModStatusUpon.none=saving the buffer
+options.general.checkModStatusUpon.focus=view focus (check all buffers)
+options.general.checkModStatusUpon.all=view focus or visiting the buffer
+options.general.checkModStatusUpon.visitBuffer=visiting the buffer
+options.general.checkModStatusUpon.none=none
 options.general.recentFiles=Recent files to remember:
 options.general.hypersearch.maxWarningResults=Max Hypersearch Results:
 options.general.sortRecent=Sort recent file list
@@ -1292,7 +1295,7 @@ options.appearance.decorateFrames=Draw window borders using Swing look & feel
 options.appearance.decorateDialogs=Draw dialog box borders using Swing look & feel
 
 options.appearance.localization.section.label=Localization
-options.appearance.usedefaultlocale.label=Use defaut locale
+options.appearance.usedefaultlocale.label=Use default locale
 options.appearance.lang.label=Language (change is effective on restart)
 #}}}
 
@@ -1352,7 +1355,7 @@ options.editing.noWordSep=Extra word characters:
 options.editing.camelCasedWords=Separate "CamelCased" words
 options.editing.noTabs=Soft (emulated with spaces) tabs
 options.editing.elasticTabstops=Indent using elastic tabstops
-options.editing.elasticTabstops.tooltip=(Experimental) - may cause instability in jEdit.
+options.editing.elasticTabstops.tooltip=Columns in lines above and below a "cell" are kept aligned on tab stops that can grow or shrink depending on the width of the cell.
 options.editing.deepIndent=Deep indent
 options.editing.autoIndent=Automatic indentation
 options.editing.largefilemode.title=Large file mode
@@ -1374,10 +1377,8 @@ options.encodings.label=Encodings
 options.encodings.selectEncodings=Select the encodings that should be shown in encoding dialogs:
 options.encodings.available=Available encoding(s)
 options.encodings.selected=Selected encoding(s)
-options.encodings.available.tooltip=<html>Encodings in this column will <b>not</b> be listed in encoding dialogs.\
-  Drag them to the right column to activate them</html>
-options.encodings.selected.tooltip=Encodings in this column be shown in encoding dialogs.\
-  Drag them to the left column to hide them
+options.encodings.available.tooltip=<html>Encodings in this column will <b>not</b> be shown as choices in encoding comboboxes. Drag them to the right column to show them. </html>
+options.encodings.selected.tooltip=<html>Encodings in this column will be shown as choices in encoding comboboxes of jEdit's GUI. Drag them to the left column to hide them.</html>
 #}}}
 
 #{{{ Gutter pane
@@ -1414,6 +1415,7 @@ options.mouse.dragAndDrop=Drag and drop in text area
 options.mouse.joinNonWordChars=Double-click drag joins non-alphanumeric characters
 options.mouse.middleMousePaste=Quick copy using middle mouse button
 options.mouse.ctrlForRectangularSelection=Switch to rectangular selection while Ctrl is pressed
+options.mouse.singleClickToOpen=Single-click to open files and folders
 options.mouse.gutter.foldClick=Click in gutter:
 options.mouse.gutter.SfoldClick=Shift-click in gutter:
 options.mouse.gutter.toggle-fold=Collapse/expand fold
@@ -1432,6 +1434,10 @@ options.plugin-manager.location=Install plugins in:
 options.plugin-manager.settings-dir=jEdit settings directory
 options.plugin-manager.app-dir=jEdit application directory
 options.plugin-manager.none=Plugin Central default
+options.plugin-manager.disable-obsolete=Disable obsolete plugins
+options.plugin-manager.list-cache.minutes=Cache plugin list for: (minutes)
+options.plugin-manager.no-plugin-available=No plugin available
+options.plugin-manager.no-plugin-uptodate=All plugins are up to date
 #}}}
 
 #{{{ Printing pane
@@ -1500,6 +1506,7 @@ options.shortcuts.label=Shortcuts
 options.shortcuts.select.label=Edit Shortcuts:
 options.shortcuts.select.tooltip=You can select globals, macros, or plugin shortcuts
 options.shortcuts.name=Command
+options.shortcuts.actionset=Action set
 options.shortcuts.shortcut1=Primary shortcut
 options.shortcuts.shortcut2=Alternative shortcut
 options.shortcuts.filter.label=Filter:
@@ -1596,8 +1603,7 @@ options.textarea.electricBorders=Electric (auto scroll) borders
 options.textarea.stdNextPrevWord=Go to next/previous word commands eat whitespace
 options.textarea.antiAlias=Anti Aliased smooth text
 options.textarea.antiAlias.tooltip=Slows down display on some systems
-options.textarea.fracFontMetrics=Fractional font metrics (for better smooth \
-	text display)
+options.textarea.fracFontMetrics=Fractional font metrics
 options.textarea.fracFontMetrics.tooltip=Not recommended with subpixel antialiasing
 options.textarea.stripTrailingEOL=Hide final end of line (if any)
 options.textarea.completeFromAllBuffers=Complete words from all open buffers (default is \
@@ -1634,6 +1640,7 @@ options.view.viewLayout=View layout
 options.view.floatableToolbars=Floatable Toolbars
 options.view.alternateDockingLayout=Alternate docked window placement
 options.view.alternateToolBarLayout=Alternate tool bar placement
+options.view.abbreviatePaths=Abbreviate paths with environment variables when possible
 options.view.showFullPath=Show full path of buffer in title bar
 options.view.showSearchbar=Always show search bar
 options.view.beepOnSearchAutoWrap=Beep when searching automatically wraps
@@ -1645,10 +1652,6 @@ options.view.fullScreenIncludesMenu=Show the menu bar in full-screen mode
 options.view.fullScreenIncludesToolbar=Show the toolbars in full-screen mode
 options.view.fullScreenIncludesStatus=Show the status bar in full-screen mode
 options.bufferset.scope=BufferSet scope:
-options.editpane.bufferset.contain=New BufferSets contain:
-options.editpane.bufferset.newbufferset.copy=copy of current BufferSet
-options.editpane.bufferset.newbufferset.empty=an empty buffer
-options.editpane.bufferset.newbufferset.currentbuffer=current buffer only
 #}}}
 
 
@@ -1845,7 +1848,7 @@ vfs.browser.next.label=Next Directory
 #}}}
 
 #{{{ Commands menu
-vfs.browser.commands.label=Commands
+vfs.browser.commands.label=$Commands
 vfs.browser.commands.encoding.label=Encoding
 vfs.browser.commands.encoding.auto-detect=Auto-detect
 
@@ -1856,14 +1859,14 @@ vfs.browser.open-split.label=New Split
 #}}}
 
 #{{{ Plugins menu
-vfs.browser.plugins.label=Plugins
+vfs.browser.plugins.label=$Plugins
 vfs.browser.plugins.plugin-manager.label=Plugin Manager...
 vfs.browser.plugins.plugin-options.label=Plugin Options...
 vfs.browser.plugins.no-plugins.label=No Plugins
 #}}}
 
 #{{{ Favorites menu
-vfs.browser.favorites.label=Favorites
+vfs.browser.favorites.label=Fa$vorites
 vfs.browser.favorites.add-to-favorites.label=Add to Favorites
 vfs.browser.favorites.edit-favorites.label=Edit Favorites
 vfs.browser.favorites.no-favorites.label=No Favorites
@@ -1883,13 +1886,11 @@ vfs.browser.recurse-favorites.title=Cannot Add Favorites to Itself
 vfs.browser.recurse-favorites.message=The favorites list cannot be added to itself.
 
 vfs.browser.delete-confirm.title=Delete File Confirmation
-vfs.browser.delete-confirm.message=Are you sure you want to delete the following {1}?\n\n\
-	{0}
+vfs.browser.delete-confirm.message=Are you sure you want to delete the following {1}?
 
 vfs.browser.delete-favorites.title=Delete From Favorites
 vfs.browser.delete-favorites.message=Are you sure you want to remove the following files \
-	from the favorites?\n\n\
-	{0}
+	from the favorites?
 
 vfs.browser.rename.title=Rename File
 vfs.browser.rename.message=Enter a new name for {0}:
@@ -1953,6 +1954,7 @@ install-plugins.depend.message=One or more of the plugins you are installing\n\
 	installed if you continue.
 
 plugin-manager.status.loaded=Loaded
+plugin-manager.status.disabled=Unsupported
 plugin-manager.status.not-loaded=Not loaded
 plugin-manager.status.error=Error
 
@@ -2046,6 +2048,9 @@ log-viewer.message.message.label=Message
 log-viewer.message.notice.label=Notice
 log-viewer.message.warning.label=Warning
 log-viewer.message.error.label=Error
+# This one should be actually placed in Debugging options, but
+# we don't have such a pane yet
+debug.beepOnOutput.label=Beep on output
 #}}}
 
 logs-remove-all-errors.label=Remove all errors
@@ -2173,7 +2178,7 @@ macro.rs.DeleteCurrent.Deleted.message=Deleted:
 #}}}
 
 #{{{ Glob Close
-macro.rs.GlobClose.GlobPattern.label=Glob Pattern:
+macro.rs.GlobClose.GlobPattern.label=Glob Pattern (e.g. *.txt or /usr/include/*):
 macro.rs.GlobClose.ErrorGlobPattern.error=Error in glob pattern:
 #}}}
 
@@ -2418,9 +2423,6 @@ macros.folder.Editing.label=Editing
 
 Editing/Duplicate_Lines_Above.label=Duplicate Lines Above
 Editing/Duplicate_Lines_Below.label=Duplicate Lines Below
-Editing/Emacs_Ctrl-K.label=Emacs Ctrl-K
-Editing/Emacs_Next_Line.label=Emacs Next Line
-Editing/Emacs_Previous_Line.label=Emacs Previous Line
 Editing/Go_to_Column.label=Go To Column
 Editing/Greedy_Backspace.label=Greedy Backspace
 Editing/Greedy_Delete.label=Greedy Delete
@@ -2433,6 +2435,32 @@ Editing/Move_Lines_Up.label=Move Lines Up
 Editing/Open_Line_Above.label=Open Line Above
 Editing/Open_Line_Below.label=Open Line Below
 Editing/Toggle_Fold.label=Toggle Fold
+#}}}
+
+#{{{ Emacs
+macros.folder.Emacs.label=Emacs
+Emacs/Emacs_Align_Decls.label=Emacs Align Decls
+Emacs/Emacs_Backward_Sentence.label=Emacs Backward Sentence
+Emacs/Emacs_Capitalize_Word.label=Emacs Capitalize Word
+Emacs/Emacs_Center_Line.label=Emacs Center Line
+Emacs/Emacs_Ctrl-K.label=Emacs Ctrl-K
+Emacs/Emacs_Downcase_Word.label=Emacs Downcase Word
+Emacs/Emacs_Exchange_Point_and_Mark.label=Emacs Exchange Point and Mark
+Emacs/Emacs_Fixup_Whitespace.label=Emacs Fixup Whitespace
+Emacs/Emacs_Forward_Sentence.label=Emacs Forward Sentence
+Emacs/Emacs_Insert_File.label=Emacs Insert File
+Emacs/Emacs_Kill_Line.label=Emacs Kill Line
+Emacs/Emacs_Kill_Region.label=Emacs Kill Region
+Emacs/Emacs_Kill_Ring_Save.label=Emacs Kill Ring Save
+Emacs/Emacs_Kill_Sentence.label=Emacs Kill Sentence
+Emacs/Emacs_Next_Line.label=Emacs Next Line
+Emacs/Emacs_Open_Line.label=Emacs Open Line
+Emacs/Emacs_Previous_Line.label=Emacs Previous Line
+Emacs/Emacs_Set_Mark.label=Emacs Set Mark
+Emacs/Emacs_Set_Wrap=Emacs Set Wrap
+Emacs/Emacs_Transpose_Chars.label=Emacs Transpose Chars
+Emacs/Emacs_Transpose_Lines.label=Emacs Transpose Lines
+Emacs/Emacs_Upcase_Word.label=Emacs Upcase Word
 #}}}
 
 #{{{ Files

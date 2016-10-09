@@ -1,6 +1,6 @@
 /*
  * jEdit - Programmer's Text Editor
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright © 2011 Matthieu Casanova
@@ -23,7 +23,6 @@ package org.gjt.sp.jedit.gui.statusbar;
 
 //{{{ Imports
 import org.gjt.sp.jedit.*;
-import org.gjt.sp.jedit.gui.DockableWindowManager;
 import org.gjt.sp.util.Task;
 import org.gjt.sp.util.TaskListener;
 import org.gjt.sp.util.TaskManager;

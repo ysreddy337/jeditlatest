@@ -1,6 +1,6 @@
 /*
  * HyperSearchFileNode.java - HyperSearch file node
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2005 Slava Pestov
@@ -31,7 +31,7 @@ import org.gjt.sp.jedit.jEdit;
 /**
  * HyperSearch results window.
  * @author Slava Pestov
- * @version $Id: HyperSearchFileNode.java 13284 2008-08-12 18:41:18Z k_satoda $
+ * @version $Id: HyperSearchFileNode.java 21831 2012-06-18 22:54:17Z ezust $
  */
 public class HyperSearchFileNode implements HyperSearchNode
 {

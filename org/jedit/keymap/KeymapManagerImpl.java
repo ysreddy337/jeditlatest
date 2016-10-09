@@ -1,6 +1,6 @@
 /*
  * jEdit - Programmer's Text Editor
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright © 2011 Matthieu Casanova
@@ -24,6 +24,7 @@ package org.jedit.keymap;
 //{{{ Imports
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -55,7 +56,7 @@ public class KeymapManagerImpl implements KeymapManager
 	 */
 	private static File userKeymapFolder;
 	private final File systemKeymapFolder;
-	
+
 
 	//{{{ KeymapManagerImpl() constructor
 	public KeymapManagerImpl(IPropertyManager propertyManager,
@@ -73,7 +74,7 @@ public class KeymapManagerImpl implements KeymapManager
 						      JOptionPane.ERROR_MESSAGE);
 			System.exit(10);
 		}
-		this.userKeymapFolder = userKeymapFolder;
+		KeymapManagerImpl.userKeymapFolder = userKeymapFolder;
 	} //}}}
 
 	//{{{ getKeymap() method
@@ -176,8 +177,8 @@ public class KeymapManagerImpl implements KeymapManager
 		}
 		finally
 		{
-			IOUtilities.closeQuietly(in);
-			IOUtilities.closeQuietly(out);
+			IOUtilities.closeQuietly((Closeable)in);
+			IOUtilities.closeQuietly((Closeable)out);
 		}
 		return false;
 	} //}}}

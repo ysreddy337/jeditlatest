@@ -1,6 +1,6 @@
 /*
  * LineManager.java - Manages line info, line start offsets, positions
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2001, 2004 Slava Pestov
@@ -37,7 +37,7 @@ import org.gjt.sp.util.Log;
  * called through, implements such protection.
  *
  * @author Slava Pestov
- * @version $Id: LineManager.java 21685 2012-05-19 15:38:08Z jarekczek $
+ * @version $Id: LineManager.java 21831 2012-06-18 22:54:17Z ezust $
  * @since jEdit 4.2pre3
  */
 public class LineManager

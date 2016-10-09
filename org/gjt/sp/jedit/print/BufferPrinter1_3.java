@@ -1,6 +1,6 @@
 /*
  * BufferPrinter1_3.java - Main class that controls printing
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2001 Slava Pestov
@@ -83,7 +83,7 @@ public class BufferPrinter1_3
 	public static void print(final View view, final Buffer buffer, boolean selection)
 	{
 		job = getPrintJob();
-		job.setJobName(MiscUtilities.abbreviate(buffer.getPath()));
+		job.setJobName(MiscUtilities.abbreviateView(buffer.getPath()));
 		boolean header = jEdit.getBooleanProperty("print.header");
 		boolean footer = jEdit.getBooleanProperty("print.footer");
 		boolean lineNumbers = jEdit.getBooleanProperty("print.lineNumbers");

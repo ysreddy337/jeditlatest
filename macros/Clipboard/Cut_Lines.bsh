@@ -6,10 +6,12 @@
 * Copyright (C) 2003 Ollie Rutherfurd <oliver@jedit.org>
 * Copyright (c) 2008 encorejane@users.sourceforge.net
 *
-* $Id: Cut_Lines.bsh 11860 2008-02-24 23:43:28Z ezust $
+* $Id: Cut_Lines.bsh 22664 2013-01-09 13:16:00Z kpouer $
 */
 
 cutLines(){
+	if (buffer.getLength() == 0)
+		return;
 	selections = textArea.getSelectedLines();
 	
 	if(selections.length == 0){

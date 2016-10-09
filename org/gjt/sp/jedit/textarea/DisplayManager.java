@@ -1,6 +1,6 @@
 /*
  * DisplayManager.java - Low-level text display
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2001, 2005 Slava Pestov
@@ -35,7 +35,7 @@ import org.gjt.sp.util.Log;
  * 
  * @since jEdit 4.2pre1
  * @author Slava Pestov
- * @version $Id: DisplayManager.java 22366 2012-10-13 22:21:34Z ezust $
+ * @version $Id: DisplayManager.java 22670 2013-01-12 12:29:48Z thomasmey $
  */
 public class DisplayManager
 {
@@ -655,6 +655,8 @@ public class DisplayManager
 
 		if(!screenLineMgr.isScreenLineCountValid(line))
 		{
+			// reset chunk cache here
+			textArea.chunkCache.reset();
 			int newCount = textArea.chunkCache.getLineSubregionCount(line);
 
 			assert newCount > 0;

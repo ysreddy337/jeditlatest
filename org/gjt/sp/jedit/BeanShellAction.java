@@ -1,6 +1,6 @@
 /*
  * BeanShellAction.java - BeanShell action
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2000, 2003 Slava Pestov
@@ -39,7 +39,7 @@ import org.gjt.sp.util.Log;
  * @see ActionSet
  *
  * @author Slava Pestov
- * @version $Id: BeanShellAction.java 13516 2008-09-03 19:40:47Z k_satoda $
+ * @version $Id: BeanShellAction.java 22715 2013-01-25 00:05:02Z daleanson $
  */
 public class BeanShellAction extends EditAction
 {
@@ -93,6 +93,8 @@ public class BeanShellAction extends EditAction
 		try
 		{
 			View view = GUIUtilities.getView(comp);
+			if (view == null)
+				view = jEdit.getActiveView();
 
 			// undocumented hack to allow browser actions to work.
 			// XXX - clean up in 4.3

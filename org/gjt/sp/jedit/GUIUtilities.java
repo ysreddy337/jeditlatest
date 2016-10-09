@@ -1,6 +1,6 @@
 /*
  * GUIUtilities.java - Various GUI utility functions
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1999, 2004 Slava Pestov
@@ -45,6 +45,7 @@ import java.util.*;
 import java.util.List;
 import java.lang.ref.SoftReference;
 
+import javax.swing.AbstractButton;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -87,7 +88,7 @@ import java.awt.event.*;
  * </ul>
  *
  * @author Slava Pestov
- * @version $Id: GUIUtilities.java 21469 2012-03-28 17:33:10Z ezust $
+ * @version $Id: GUIUtilities.java 21920 2012-07-03 15:35:12Z kpouer $
  */
 public class GUIUtilities
 {
@@ -294,7 +295,7 @@ public class GUIUtilities
 	public static JPopupMenu loadPopupMenu(ActionContext context, String name)
 	{
 		return loadPopupMenu(context, name, null, null);
-	}
+	} //}}}
 
 	//{{{ loadPopupMenu() method
 	/**
@@ -341,6 +342,7 @@ public class GUIUtilities
 
 		return menu;
 	} //}}}
+
 	//{{{ addServiceContextMenuItems() method
 	/**
 	 * @return a list of menu items defined by services.
@@ -611,7 +613,33 @@ public class GUIUtilities
 		}
 	} //}}}
 
-	//}}}
+	//{{{ setAutoMnemonic() method
+	/**
+	 * Sets the mnemonic for the given button using jEdit convention,
+	 * taking the letter after the dollar.
+	 * @param button The button to set the mnemonic for.
+	 * @since jEdit 5.1
+	 */
+	public static void setAutoMnemonic(AbstractButton button)
+	{
+		String label = button.getText();
+		char mnemonic;
+		int index = label.indexOf('$');
+		if (index != -1 && label.length() - index > 1)
+		{
+			mnemonic = Character.toLowerCase(label.charAt(index + 1));
+			label = label.substring(0, index).concat(label.substring(++index));
+		}
+		else
+		{
+			mnemonic = '\0';
+		}
+		if (mnemonic != '\0')
+		{
+			button.setMnemonic(mnemonic);
+			button.setText(label);
+		}
+	} //}}}
 
 	//}}}
 
@@ -2120,7 +2148,7 @@ public class GUIUtilities
 	 * For non-Frame's use {@link GUIUtilities#saveGeometry(Window,String)}
 	 *
 	 * @author Björn Kautler
-	 * @version $Id: GUIUtilities.java 21469 2012-03-28 17:33:10Z ezust $
+	 * @version $Id: GUIUtilities.java 21920 2012-07-03 15:35:12Z kpouer $
 	 * @since jEdit 4.3pre6
 	 * @see GUIUtilities#saveGeometry(Window,Container,String)
 	 */

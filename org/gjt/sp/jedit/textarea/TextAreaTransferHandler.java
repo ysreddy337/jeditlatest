@@ -1,6 +1,6 @@
 /*
  * TextAreaTransferHandler.java - Drag and drop support
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2004 Slava Pestov
@@ -24,13 +24,15 @@ package org.gjt.sp.jedit.textarea;
 
 //{{{ Imports
 import org.gjt.sp.jedit.*;
+import org.gjt.sp.jedit.bufferio.IoTask;
 import org.gjt.sp.jedit.bufferset.BufferSetManager;
 import org.gjt.sp.jedit.browser.VFSBrowser;
 import org.gjt.sp.jedit.io.FileVFS;
 import org.gjt.sp.jedit.io.VFS;
 import org.gjt.sp.jedit.io.VFSManager;
+import org.gjt.sp.util.AwtRunnableQueue;
 import org.gjt.sp.util.Log;
-import org.gjt.sp.util.WorkRequest;
+import org.gjt.sp.util.ThreadUtilities;
 
 import javax.swing.*;
 import java.awt.datatransfer.DataFlavor;
@@ -43,7 +45,7 @@ import java.util.List;
 
 /**
  * @author Slava Pestov
- * @version $Id: TextAreaTransferHandler.java 19698 2011-07-23 12:22:01Z shlomy $
+ * @version $Id: TextAreaTransferHandler.java 22943 2013-04-22 11:44:40Z thomasmey $
  */
 public class TextAreaTransferHandler extends TransferHandler
 {
@@ -231,7 +233,7 @@ public class TextAreaTransferHandler extends TransferHandler
 						}
 						else
 						{
-							VFSManager.runInAWTThread(new DraggedURLLoader(textArea,uri.getPath()));
+							AwtRunnableQueue.INSTANCE.runAfterIoTasks(new DraggedURLLoader(textArea,uri.getPath()));
 						}
 						found = true;
 					}
@@ -287,7 +289,7 @@ public class TextAreaTransferHandler extends TransferHandler
 						str0 = str0.substring(7);
 					}
 
-					VFSManager.runInWorkThread(new DraggedURLLoader(textArea, str0));
+					ThreadUtilities.runInBackground(new DraggedURLLoader(textArea, str0));
 				}
 				found = true;
 
@@ -482,17 +484,18 @@ public class TextAreaTransferHandler extends TransferHandler
 	} //}}}
 
 	//{{{ DraggedURLLoader class
-	private static class DraggedURLLoader extends WorkRequest
+	private static class DraggedURLLoader extends IoTask
 	{
 		private final JEditTextArea textArea;
 		private final String url;
 		
 		DraggedURLLoader(JEditTextArea textArea, String url)
 		{
+			super();
 			this.textArea = textArea;
 			this.url = url;
 		}
-		public void run()
+		public void _run()
 		{
 			EditPane editPane = EditPane.get(textArea);
 			jEdit.openFile(editPane,url);

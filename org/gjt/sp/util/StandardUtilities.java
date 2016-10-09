@@ -1,6 +1,6 @@
 /*
  * StandardUtilities.java - Various miscallaneous utility functions
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1999, 2006 Matthieu Casanova, Slava Pestov
@@ -26,6 +26,7 @@ package org.gjt.sp.util;
 
 
 //{{{ Imports
+import javax.annotation.Nullable;
 import javax.swing.text.Segment;
 
 import java.security.MessageDigest;
@@ -39,7 +40,7 @@ import java.util.Stack;
  * Several tools that depends on JDK only.
  *
  * @author Matthieu Casanova
- * @version $Id: StandardUtilities.java 20108 2011-10-18 12:16:38Z evanpw $
+ * @version $Id: StandardUtilities.java 22936 2013-04-19 13:26:30Z kpouer $
  * @since 4.3pre5
  */
 public class StandardUtilities
@@ -476,6 +477,7 @@ loop:		for(int i = 0; i < str.length(); i++)
 		{
 		}
 
+		@Override
 		public int compare(E obj1, E obj2)
 		{
 			return compareStrings(obj1.toString(),
@@ -489,7 +491,7 @@ loop:		for(int i = 0; i < str.length(); i++)
 	 * as opposed to calling <code>o1.equals(o2)</code>.
 	 * @since jEdit 4.3pre6
 	 */
-	public static boolean objectsEqual(Object o1, Object o2)
+	public static boolean objectsEqual(@Nullable Object o1, @Nullable Object o2)
 	{
 		if(o1 == null)
 		{
@@ -735,18 +737,28 @@ loop:		for(int i = 0; i < str.length(); i++)
 	/**
 	 * Returns the md5sum for given string. Or dummy byte array on error
 	 * Suppress NoSuchAlgorithmException because MD5 algorithm always present in JRE
-	 * @param s Given string
+	 * @param charSequence Given string
 	 * @return md5 sum of given string
 	 */
-	public static byte[] md5(String s) {
-		final byte[] dummy = new byte[1];
-		try {
+	public static byte[] md5(CharSequence charSequence)
+	{
+		try
+		{
 			MessageDigest digest = MessageDigest.getInstance("MD5");
-			digest.update(s.getBytes());
+			byte[] ba = new byte[2];
+			for(int i = 0, n = charSequence.length(); i < n; i++)
+			{
+				char cp = charSequence.charAt(i);
+				ba[0] = (byte)(cp & 0xff);
+				ba[1] = (byte)(cp >> 8 & 0xff);
+				digest.update(ba);
+			}
 			return digest.digest();
-		} catch (NoSuchAlgorithmException e) {
+		}
+		catch (NoSuchAlgorithmException e)
+		{
 			Log.log(Log.ERROR, StandardUtilities.class, "Can't Calculate MD5 hash!", e);
-			return dummy;
+			return new byte[1];
 		}
 	}
 	// }}}

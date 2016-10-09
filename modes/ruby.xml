@@ -34,7 +34,7 @@
 		<!-- Ruby comment (Inline Documentation ) -->
 		<SPAN TYPE="COMMENT2">
 			<BEGIN>=begin</BEGIN>
-			<END>=end</END>
+			<END AT_LINE_START="TRUE">=end</END>
 		</SPAN>
 
 		<!-- Class and instance vars -->
@@ -192,7 +192,7 @@
 			 document will terminate highlighting; I couldn't make it smarter. -->
 		<SPAN_REGEXP HASH_CHAR="&lt;&lt;" TYPE="LITERAL1" DELEGATE="doubleQuoteLiteral">
 			<BEGIN>&lt;&lt;-?"([\p{Graph}]+)"</BEGIN>
-			<END>$1</END>
+			<END REGEXP="TRUE">^\S*$1$</END>
 		</SPAN_REGEXP>
 
 		<!-- Here documents <<'FOO' <<-'FOO' -->
@@ -201,7 +201,7 @@
 			 document will terminate highlighting; I couldn't make it smarter. -->
 		<SPAN_REGEXP HASH_CHAR="&lt;&lt;" TYPE="LITERAL1">
 			<BEGIN>&lt;&lt;-?'([\p{Graph}]+)'</BEGIN>
-			<END>$1</END>
+			<END REGEXP="TRUE">^\S*$1$</END>
 		</SPAN_REGEXP>
 
 		<!-- Here documents <<FOO <<-FOO -->
@@ -210,7 +210,7 @@
 			 document will terminate highlighting; I couldn't make it smarter. -->
 		<SPAN_REGEXP HASH_CHAR="&lt;&lt;" TYPE="LITERAL1" DELEGATE="doubleQuoteLiteral">
 			<BEGIN>&lt;&lt;-?([A-Za-z_]+)</BEGIN>
-			<END>$1</END>
+			<END REGEXP="TRUE">^\S*$1$</END>
 		</SPAN_REGEXP>
 
 		<!-- Shell command strings -->
@@ -356,15 +356,17 @@
 		<SPAN AT_WORD_START="TRUE" TYPE="LITERAL4">
 		  <BEGIN>:'</BEGIN> <END>'</END>
 		</SPAN>
+		<!-- bang = '!'
+		     :"hello world#{bang}" -->
+		<SPAN AT_WORD_START="TRUE" TYPE="LITERAL4" DELEGATE="doubleQuoteSymbol">
+		  <BEGIN>:"</BEGIN> <END>"</END>
+		</SPAN>
 
 		<!-- %s$Hello world$ -->
 		<SPAN_REGEXP HASH_CHAR="%s" TYPE="LITERAL4">
 		  <BEGIN>%s([^\p{Alnum}])</BEGIN>
 		  <END>$1</END>
     </SPAN_REGEXP>
-    <!-- Delegate contents of #{} expression in a double quoted symbol to MAIN so that
-    it will be syntax highlighted as well -->
-    
 		<KEYWORDS>
 			<KEYWORD1>BEGIN</KEYWORD1>
 			<KEYWORD1>END</KEYWORD1>
@@ -384,6 +386,8 @@
 			<KEYWORD1>in</KEYWORD1>
 			<KEYWORD1>module</KEYWORD1>
 			<KEYWORD1>next</KEYWORD1>
+			<KEYWORD1>print</KEYWORD1>
+			<KEYWORD1>puts</KEYWORD1>
 			<KEYWORD1>redo</KEYWORD1>
 			<KEYWORD1>rescue</KEYWORD1>
 			<KEYWORD1>retry</KEYWORD1>
@@ -451,6 +455,8 @@
 		<MARK_FOLLOWING TYPE="KEYWORD4">#@</MARK_FOLLOWING>
 		<MARK_FOLLOWING TYPE="NULL">#$</MARK_FOLLOWING>
 	</RULES>
+	<!-- Delegate contents of #{} expression in a double quoted symbol to MAIN so that
+	     it will be syntax highlighted as well -->
 	<RULES DEFAULT="LITERAL4" SET="doubleQuoteSymbol" ESCAPE="\">
       <SPAN DELEGATE="MAIN" TYPE="OPERATOR">
       <BEGIN>#{</BEGIN>

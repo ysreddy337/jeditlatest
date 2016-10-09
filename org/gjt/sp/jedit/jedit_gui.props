@@ -450,7 +450,7 @@ utils=vfs.browser \
       last-action \
       - \
       buffer-options \
-      combined-options \
+      global-options \
       - \
       %quick-options
 
@@ -592,6 +592,7 @@ about.text.contributors=Slava Pestov\n\
 	Chris Sullins\n\
 	Christoph Daniel Schulze\n\
 	Claude Eisenhut\n\
+	cnvince\n\
 	Cullen Linn\n\
 	Dakshinamurthy Karra\n\
 	Dale Anson\n\
@@ -710,6 +711,7 @@ about.text.contributors=Slava Pestov\n\
 	Rex Young\n\
 	Richard Ashwell\n\
 	Richard Beton\n\
+	Richard The\n\
 	Rick Gibbs\n\
 	Rick Owen\n\
 	Rob Watson\n\
@@ -815,6 +817,8 @@ options.appearance.lang.de=Deutsch
 options.appearance.lang.ja=日本語
 options.appearance.lang.cs=Česky
 options.appearance.lang.ru=Русский
+#Chinese
+options.appearance.lang.zh=中文
 #}}}
 
 #{{{ Context Menu pane
@@ -894,6 +898,9 @@ options.view.code=new ViewOptionPane();
 fullScreenIncludesMenu=true
 fullScreenIncludesToolbars=true
 fullScreenIncludesStatus=true
+
+# Enable subpixel antialiasing by default in textarea.
+view.antiAlias=subpixel HRGB
 #}}}
 
 #{{{ File System Browser panes

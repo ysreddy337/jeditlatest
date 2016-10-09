@@ -1,6 +1,6 @@
 /*
  * ScrollLineCount.java
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2005 Slava Pestov
@@ -102,7 +102,7 @@ class ScrollLineCount extends Anchor
 		int scrollLines = 0;
 		int physicalLine = startLine;
 		int numLinesVisible = 0;
-		
+
 		for(int i = 0, n = numLines; i < n; i++, physicalLine++)
 		{
 			if(getDisplayManager().isLineVisible(physicalLine))

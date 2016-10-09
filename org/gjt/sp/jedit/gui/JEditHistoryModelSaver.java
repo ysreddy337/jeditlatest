@@ -1,6 +1,6 @@
 /*
  * JEditHistoryModelSaver.java -
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2006 Matthieu Casanova
@@ -98,7 +98,7 @@ public class JEditHistoryModelSaver implements HistoryModelSaver
 		}
 		finally
 		{
-			IOUtilities.closeQuietly(in);
+			IOUtilities.closeQuietly((Closeable)in);
 		}
 		return models;
 	} //}}}
@@ -166,7 +166,7 @@ public class JEditHistoryModelSaver implements HistoryModelSaver
 		}
 		finally
 		{
-			IOUtilities.closeQuietly(out);
+			IOUtilities.closeQuietly((Closeable)out);
 		}
 
 		historyModTime = file2.lastModified();

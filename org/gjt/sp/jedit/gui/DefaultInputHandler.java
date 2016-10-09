@@ -1,6 +1,6 @@
 /*
  * DefaultInputHandler.java - Default implementation of an input handler
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1999, 2003 Slava Pestov
@@ -32,7 +32,7 @@ import org.gjt.sp.jedit.*;
 /** The default input handler maps sequences of keystrokes into actions and inserts key typed events into the text area.
  *
  * @author Slava Pestov
- * @version $Id: DefaultInputHandler.java 21502 2012-03-29 17:19:44Z ezust $
+ * @version $Id: DefaultInputHandler.java 21831 2012-06-18 22:54:17Z ezust $
  */
 public class DefaultInputHandler extends InputHandler
 {

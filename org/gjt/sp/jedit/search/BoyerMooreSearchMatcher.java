@@ -1,7 +1,7 @@
 /*
  * BoyerMooreSearchMatcher.java - Literal pattern String matcher utilizing the
  *         Boyer-Moore algorithm
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1999, 2000 mike dillon
@@ -27,7 +27,7 @@ package org.gjt.sp.jedit.search;
 
 /**
  * Implements literal search using the Boyer-Moore algorithm.
- * @version $Id: BoyerMooreSearchMatcher.java 22393 2012-10-19 01:25:28Z ezust $
+ * @version $Id: BoyerMooreSearchMatcher.java 22941 2013-04-22 11:06:59Z thomasmey $
  */
 public class BoyerMooreSearchMatcher extends SearchMatcher
 {
@@ -72,7 +72,7 @@ public class BoyerMooreSearchMatcher extends SearchMatcher
 	@Override
 	public SearchMatcher.Match nextMatch(CharSequence text,
 		boolean start, boolean end, boolean firstTime,
-		boolean reverse)
+		boolean reverse) throws InterruptedException
 	{
 		int pos = match(text,reverse);
 
@@ -110,11 +110,15 @@ public class BoyerMooreSearchMatcher extends SearchMatcher
 	 *  algorithm may be found on Moore's website at:
 	 *
 	 *   http://www.cs.utexas.edu/users/moore/best-ideas/string-searching/
+	 * @throws InterruptedException 
 	 *
 	 * @since jEdit 4.3pre5
 	 */
-	public int match(CharSequence text, boolean reverse)
+	public int match(CharSequence text, boolean reverse) throws InterruptedException
 	{
+		if(Thread.interrupted())
+			throw new InterruptedException();
+
 		//{{{
 		// lazily create skip and suffix arrays for either the
 		// search pattern, or the reversed search pattern
@@ -171,6 +175,9 @@ public class BoyerMooreSearchMatcher extends SearchMatcher
 		SEARCH:
 		while (anchor + pattern_end < text.length())
 		{
+			if(Thread.interrupted())
+				throw new InterruptedException();
+
 			for (pos = pattern_end; pos >= 0; --pos)
 			{
 				ch = text.charAt(pos + anchor);

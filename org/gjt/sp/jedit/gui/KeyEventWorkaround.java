@@ -1,6 +1,6 @@
 /*
  * KeyEventWorkaround.java - Works around bugs in Java event handling
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2000, 2005 Slava Pestov
@@ -35,7 +35,7 @@ import org.gjt.sp.util.Log;
  * Java's keyboard handling is crap, to put it mildly.
  *
  * @author Slava Pestov
- * @version $Id: KeyEventWorkaround.java 21504 2012-03-29 17:45:22Z ezust $
+ * @version $Id: KeyEventWorkaround.java 22842 2013-03-14 21:38:44Z elberry $
  */
 public class KeyEventWorkaround
 {
@@ -297,8 +297,11 @@ public class KeyEventWorkaround
 
 			if(!Debug.ALTERNATIVE_DISPATCHER)
 			{
-				if(((modifiers & InputEvent.CTRL_MASK) != 0
-					^ (modifiers & InputEvent.ALT_MASK) != 0)
+				if((modifiers & InputEvent.CTRL_MASK) != 0
+					&& (modifiers & InputEvent.ALT_MASK) == 0
+					|| (modifiers & InputEvent.CTRL_MASK) == 0
+					&& (modifiers & InputEvent.ALT_MASK) != 0
+					&& !Debug.ALT_KEY_PRESSED_DISABLED
 					|| (modifiers & InputEvent.META_MASK) != 0)
 				{
 					return null;

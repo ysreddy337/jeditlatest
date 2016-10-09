@@ -1,6 +1,6 @@
 /*
  * DeepIndentRule.java
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2006 Matthieu Casanova
@@ -37,7 +37,7 @@ import javax.swing.text.Segment;
  * Deep indent rule.
  *
  * @author Matthieu Casanova
- * @version $Id: DeepIndentRule.java 21723 2012-05-27 14:34:13Z k_satoda $
+ * @version $Id: DeepIndentRule.java 21831 2012-06-18 22:54:17Z ezust $
  */
 public class DeepIndentRule implements IndentRule
 {

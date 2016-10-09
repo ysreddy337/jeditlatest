@@ -1,6 +1,6 @@
 /*
  * ParserRuleSet.java - A set of parser rules
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1999 mike dillon
@@ -31,7 +31,7 @@ import java.util.regex.Pattern;
 /**
  * A set of parser rules.
  * @author mike dillon
- * @version $Id: ParserRuleSet.java 19477 2011-03-22 12:25:14Z kpouer $
+ * @version $Id: ParserRuleSet.java 22883 2013-03-23 17:58:56Z thomasmey $
  */
 public class ParserRuleSet
 {
@@ -165,7 +165,6 @@ public class ParserRuleSet
 				rules = new ArrayList<ParserRule>();
 				ruleMap.put(key,rules);
 			}
-			int ruleAmount = rules.size();
 			rules.add(r);
 		}
 	} //}}}

@@ -1,6 +1,6 @@
 /*
  * ActionContext.java - For code sharing between jEdit and VFSBrowser
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1998, 2003 Slava Pestov
@@ -33,7 +33,7 @@ package org.gjt.sp.jedit;
  *
  * @since jEdit 4.2pre1
  * @author Slava Pestov
- * @version $Id: ActionContext.java 19264 2011-01-25 11:37:31Z kpouer $
+ * @version $Id: ActionContext.java 21831 2012-06-18 22:54:17Z ezust $
  */
 public abstract class ActionContext extends JEditActionContext<EditAction, ActionSet>
 {

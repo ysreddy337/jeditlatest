@@ -1,6 +1,6 @@
 /*
  * AbstractInputHandler.java - Manages key bindings and executes actions
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2006 Matthieu Casanova
@@ -39,7 +39,7 @@ import org.gjt.sp.jedit.gui.ShortcutPrefixActiveEvent;
  * The abstract input handler manage the keyboard handling.
  * The entry point is
  * {@link #processKeyEvent(java.awt.event.KeyEvent, int, boolean)}
- * 
+ *
  * @author Matthieu Casanova
  * @version $Id: FoldHandler.java 5568 2006-07-10 20:52:23Z kpouer $
  */
@@ -60,7 +60,7 @@ public abstract class AbstractInputHandler<E extends JEditAbstractEditAction>
 	{
 		repeatCount = 1;
 	} //}}}
-	
+
 	//{{{ addKeyBinding() method
 	/**
 	 * Adds a key binding to this input handler. The key binding is
@@ -143,8 +143,8 @@ public abstract class AbstractInputHandler<E extends JEditAbstractEditAction>
 
 	//{{{ removeKeyBinding() method
 	/**
-	 * Removes a key binding from this input handler. This is not yet
-	 * implemented.
+	 * Removes a key binding from this input handler.
+	 *
 	 * @param keyBinding The key binding
 	 */
 	public void removeKeyBinding(String keyBinding)
@@ -284,7 +284,7 @@ public abstract class AbstractInputHandler<E extends JEditAbstractEditAction>
 	{
 		return readNextChar != null;
 	} //}}}
-	
+
 	//{{{ setBindings() method
 	/**
 	 * Replace the set of key bindings.
@@ -294,7 +294,7 @@ public abstract class AbstractInputHandler<E extends JEditAbstractEditAction>
 	{
 		this.bindings = this.currentBindings = bindings;
 	} //}}}
-	
+
 	//{{{ setCurrentBindings() method
 	public void setCurrentBindings(Hashtable bindings)
 	{
@@ -323,7 +323,7 @@ public abstract class AbstractInputHandler<E extends JEditAbstractEditAction>
 	 * {@link org.gjt.sp.jedit.View#ACTION_BAR} or {@link org.gjt.sp.jedit.View#TEXT_AREA}
 	 * @param global tell if the event comes from the DefaultKeyboardFocusManager or not
 	 */
-	public abstract void processKeyEvent(KeyEvent evt, int from, boolean global); 
+	public abstract void processKeyEvent(KeyEvent evt, int from, boolean global);
 	//}}}
 
 	//{{{ sendShortcutPrefixOff() method
@@ -335,9 +335,9 @@ public abstract class AbstractInputHandler<E extends JEditAbstractEditAction>
 			shortcutOn = false;
 		}
 	} //}}}
-	
+
 	public abstract void invokeAction(String action);
-	
+
 	public abstract void invokeAction(E action);
 
 	//{{{ toString() method
@@ -387,7 +387,7 @@ public abstract class AbstractInputHandler<E extends JEditAbstractEditAction>
 	 * @param evt the keyboard event
 	 * @param from the source, it can be {@link org.gjt.sp.jedit.View#VIEW},
 	 * {@link org.gjt.sp.jedit.View#ACTION_BAR} or {@link org.gjt.sp.jedit.View#TEXT_AREA}
-	 * @param mode the mode is "press" or "type" and is used for debug only  
+	 * @param mode the mode is "press" or "type" and is used for debug only
 	 * @param global tell if the event comes from the DefaultKeyboardFocusManager or not
 	 */
 	protected void processKeyEventKeyStrokeHandling(KeyEvent evt, int from, String mode, boolean global)
@@ -414,13 +414,13 @@ public abstract class AbstractInputHandler<E extends JEditAbstractEditAction>
 			}
 		}
 	} //}}}
-	
+
 	//{{{ Private members
 
 	// Stores prefix name in bindings hashtable
 	public static Object PREFIX_STR = "PREFIX_STR";
 	protected boolean shortcutOn = false;
-	
+
 
 	protected Hashtable bindings;
 	protected Hashtable currentBindings;

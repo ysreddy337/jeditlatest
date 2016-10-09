@@ -1,6 +1,6 @@
 /*
  * ManagePanel.java - Manages plugins
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2002 Kris Kopicki
@@ -267,19 +267,31 @@ public class ManagePanel extends JPanel
 		{
 			pluginCacheEntry = pluginJAR.generateCache();
 		}
-		Properties cachedProperties = pluginCacheEntry.cachedProperties;
-
-		String jars = cachedProperties.getProperty("plugin." + pluginCacheEntry.pluginClass + ".jars");
-
-		if (jars != null)
+		if(pluginCacheEntry == null)
 		{
-			String dir = MiscUtilities.getParentOfPath(pluginJAR.getPath());
-			StringTokenizer st = new StringTokenizer(jars);
-			while (st.hasMoreTokens())
+			// this happens when, for some reason, two versions
+			// of a plugin are installed, e.g when XSLT.jar and
+			// xslt.jar are both in $JEDIT_HOME/jars on Linux.
+			Log.log(Log.WARNING, ManagePanel.class,
+					"couldn't load plugin "+pluginJAR.getPath()
+					+" (most likely other version exists)");
+		}
+		else
+		{
+			Properties cachedProperties = pluginCacheEntry.cachedProperties;
+
+			String jars = cachedProperties.getProperty("plugin." + pluginCacheEntry.pluginClass + ".jars");
+
+			if (jars != null)
 			{
-				String _jarPath = MiscUtilities.constructPath(dir, st.nextToken());
-				if (new File(_jarPath).exists())
-					jarList.add(_jarPath);
+				String dir = MiscUtilities.getParentOfPath(pluginJAR.getPath());
+				StringTokenizer st = new StringTokenizer(jars);
+				while (st.hasMoreTokens())
+				{
+					String _jarPath = MiscUtilities.constructPath(dir, st.nextToken());
+					if (new File(_jarPath).exists())
+						jarList.add(_jarPath);
+				}
 			}
 		}
 		jarList.add(jarName);
@@ -291,9 +303,12 @@ public class ManagePanel extends JPanel
 	//{{{ Entry class
 	static class Entry
 	{
-		static final String ERROR = "error";
 		static final String LOADED = "loaded";
 		static final String NOT_LOADED = "not-loaded";
+		/** Partially loaded, and marked as "error" due to unsatisfied depends. */
+		static final String ERROR = "error";
+		/** Not loaded, marked Unsupported in plugin manager. */
+		static final String DISABLED = "disabled";
 
 		final String status;
 		/** The jar path. */
@@ -323,7 +338,9 @@ public class ManagePanel extends JPanel
 			jars = new LinkedList<String>();
 			this.jar = jar;
 			jars.add(this.jar);
-			status = NOT_LOADED;
+			if (jEdit.getBooleanProperty("plugin." + MiscUtilities.getFileName(jar) + ".disabled"))
+				status = DISABLED;
+			else status = NOT_LOADED;
 		}
 
 		/**
@@ -457,7 +474,8 @@ public class ManagePanel extends JPanel
 			switch (columnIndex)
 			{
 				case 0:
-					return Boolean.valueOf(!entry.status.equals(Entry.NOT_LOADED));
+					return Boolean.valueOf(!entry.status.equals(Entry.NOT_LOADED) &&
+							!entry.status.equals(Entry.DISABLED));
 				case 1:
 					if(entry.name == null)
 					{
@@ -726,7 +744,7 @@ public class ManagePanel extends JPanel
 			boolean isSelected, boolean hasFocus, int row, int column)
 		{
 			Entry entry = pluginModel.getEntry(row);
-			if (entry.status.equals(Entry.ERROR))
+			if (entry.status.equals(Entry.ERROR) || entry.status.equals(Entry.DISABLED))
 				tcr.setForeground(Color.red);
 			else
 				tcr.setForeground(UIManager.getColor("Table.foreground"));
@@ -831,7 +849,7 @@ public class ManagePanel extends JPanel
 			try
 			{
 				OutputStream os = vfs._createOutputStream(session, vfsURL, ManagePanel.this);
-				writer = new BufferedWriter(new OutputStreamWriter(os));
+				writer = new BufferedWriter(new OutputStreamWriter(os, "utf-8"));
 				writer.write(sb.toString());
 			}
 			catch (Exception e)
@@ -840,7 +858,7 @@ public class ManagePanel extends JPanel
 			}
 			finally
 			{
-				IOUtilities.closeQuietly(writer);
+				IOUtilities.closeQuietly((Closeable)writer);
 			}
 
 		}
@@ -901,7 +919,7 @@ public class ManagePanel extends JPanel
 			for(int i = 0; i < selected.length; i++)
 			{
 				Entry entry = pluginModel.getEntry(selected[i]);
-				if (entry.status.equals(Entry.NOT_LOADED))
+				if (entry.status.equals(Entry.NOT_LOADED) || entry.status.equals(Entry.DISABLED))
 				{
 					if (entry.jar != null)
 					{
@@ -1024,7 +1042,16 @@ public class ManagePanel extends JPanel
 					{
 						pluginCacheEntry = pluginJAR.generateCache();
 					}
-					if (pluginCacheEntry.pluginClass == null)
+					if(pluginCacheEntry == null)
+					{
+						// this happens when, for some reason, two versions
+						// of a plugin are installed, e.g when XSLT.jar and
+						// xslt.jar are both in $JEDIT_HOME/jars on Linux.
+						Log.log(Log.WARNING, ManagePanel.class,
+								"couldn't load plugin "+pluginJAR.getPath()
+								+" (most likely other version exists)");
+					}
+					if (pluginCacheEntry == null || pluginCacheEntry.pluginClass == null)
 					{
 						// Not a plugin
 						jarlibs.put(new File(notLoadedJars[i]).getName(), notLoadedJars[i]);

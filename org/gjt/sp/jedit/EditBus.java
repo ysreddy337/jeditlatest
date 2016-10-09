@@ -1,6 +1,6 @@
 /*
  * EditBus.java - The EditBus
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1999 Slava Pestov
@@ -80,7 +80,7 @@ import org.gjt.sp.util.ThreadUtilities;
  *
  * @author Slava Pestov
  * @author John Gellene (API documentation)
- * @version $Id: EditBus.java 21724 2012-05-27 14:37:27Z jarekczek $
+ * @version $Id: EditBus.java 21831 2012-06-18 22:54:17Z ezust $
  *
  * @since jEdit 2.2pre6
  */

@@ -1,6 +1,6 @@
 /*
  * KeyEventTranslator.java - Hides some warts of AWT event API
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2003, 2005 Slava Pestov
@@ -37,7 +37,7 @@ import org.gjt.sp.util.StandardUtilities;
  * warts in the AWT key event API.
  *
  * @author Slava Pestov
- * @version $Id: KeyEventTranslator.java 21504 2012-03-29 17:45:22Z ezust $
+ * @version $Id: KeyEventTranslator.java 21831 2012-06-18 22:54:17Z ezust $
  */
 public class KeyEventTranslator
 {

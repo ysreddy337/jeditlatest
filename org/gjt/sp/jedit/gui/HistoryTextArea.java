@@ -1,6 +1,6 @@
 /*
  * HistoryTextArea.java - Text area with a history
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2004 Slava Pestov
@@ -37,7 +37,7 @@ import org.gjt.sp.jedit.*;
 /**
  * Text area with a history.
  * @author Slava Pestov
- * @version $Id: HistoryTextArea.java 13415 2008-08-24 09:03:09Z k_satoda $
+ * @version $Id: HistoryTextArea.java 22466 2012-11-13 07:11:13Z ezust $
  */
 public class HistoryTextArea extends JTextArea
 {
@@ -164,6 +164,10 @@ public class HistoryTextArea extends JTextArea
 						evt.isShiftDown());
 					evt.consume();
 				}
+				break;
+			case KeyEvent.VK_CONTEXT_MENU:
+				controller.showPopupMenu(evt.isShiftDown());
+				evt.consume();
 				break;
 			}
 		}

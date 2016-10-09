@@ -1,6 +1,6 @@
 /*
  * Buffer.java - jEdit buffer
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1998, 2005 Slava Pestov
@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.Vector;
 
 import javax.swing.*;
+import javax.swing.SwingWorker.StateValue;
 import javax.swing.text.Segment;
 
 import org.gjt.sp.jedit.browser.VFSBrowser;
@@ -42,6 +43,7 @@ import org.gjt.sp.jedit.buffer.FoldHandler;
 import org.gjt.sp.jedit.buffer.JEditBuffer;
 import org.gjt.sp.jedit.bufferio.BufferAutosaveRequest;
 import org.gjt.sp.jedit.bufferio.BufferIORequest;
+import org.gjt.sp.jedit.bufferio.IoTask;
 import org.gjt.sp.jedit.bufferio.MarkersSaveRequest;
 import org.gjt.sp.jedit.bufferset.BufferSet;
 import org.gjt.sp.jedit.gui.DockableWindowManager;
@@ -50,13 +52,13 @@ import org.gjt.sp.jedit.io.VFS;
 import org.gjt.sp.jedit.io.VFSFile;
 import org.gjt.sp.jedit.io.VFSManager;
 import org.gjt.sp.jedit.msg.BufferUpdate;
-import org.gjt.sp.jedit.options.GeneralOptionPane;
 import org.gjt.sp.jedit.syntax.ModeProvider;
 import org.gjt.sp.jedit.syntax.ParserRuleSet;
 import org.gjt.sp.jedit.syntax.TokenHandler;
 import org.gjt.sp.jedit.syntax.TokenMarker;
 import org.gjt.sp.jedit.visitors.JEditVisitorAdapter;
 import org.gjt.sp.jedit.visitors.SaveCaretInfoVisitor;
+import org.gjt.sp.util.AwtRunnableQueue;
 import org.gjt.sp.util.IntegerArray;
 import org.gjt.sp.util.Log;
 import org.gjt.sp.util.StandardUtilities;
@@ -90,7 +92,7 @@ import org.gjt.sp.util.ThreadUtilities;
 
  *
  * @author Slava Pestov
- * @version $Id: Buffer.java 22147 2012-09-03 18:51:56Z k_satoda $
+ * @version $Id: Buffer.java 22965 2013-05-02 09:49:17Z kpouer $
  */
 public class Buffer extends JEditBuffer
 {
@@ -259,11 +261,8 @@ public class Buffer extends JEditBuffer
 
 				// If the buffer is temporary, we don't need to
 				// call finishLoading() because it sets the FoldHandler
-				// and reload markers. But we always need to set the edit
-				// mode that is necessary for HyperSearch on directories
-				if (getFlag(TEMPORARY))
-					setMode();
-				else
+				// and reload markers.
+				if (!getFlag(TEMPORARY))
 					finishLoading();
 
 				setLoading(false);
@@ -302,7 +301,7 @@ public class Buffer extends JEditBuffer
 		if(getFlag(TEMPORARY))
 			runnable.run();
 		else
-			VFSManager.runInAWTThread(runnable);
+			AwtRunnableQueue.INSTANCE.runAfterIoTasks(runnable);
 
 		return true;
 	} //}}}
@@ -356,7 +355,7 @@ public class Buffer extends JEditBuffer
 
 		setFlag(AUTOSAVE_DIRTY,false);
 
-		VFSManager.runInWorkThread(new BufferAutosaveRequest(
+		ThreadUtilities.runInBackground(new BufferAutosaveRequest(
 			null,this,null,VFSManager.getFileVFS(),
 			autosaveFile.getPath()));
 	} //}}}
@@ -610,7 +609,7 @@ public class Buffer extends JEditBuffer
 		}
 
 		// Once save is complete, do a few other things
-		VFSManager.runInAWTThread(new Runnable()
+		AwtRunnableQueue.INSTANCE.runAfterIoTasks(new Runnable()
 			{
 				public void run()
 				{
@@ -622,11 +621,6 @@ public class Buffer extends JEditBuffer
 					updateMarkersFile(view);
 				}
 			});
-
-		int check = jEdit.getIntegerProperty("checkFileStatus");
-		if(!disableFileStatusCheck && (check == GeneralOptionPane.checkFileStatus_all ||
-					       check == GeneralOptionPane.checkFileStatus_operations))
-			jEdit.checkBufferStatus(view,false);
 
 		return true;
 	} //}}}
@@ -725,6 +719,19 @@ public class Buffer extends JEditBuffer
 		setFlag(AUTORELOAD, value);
 		autoreloadOverridden = isAutoreloadPropertyOverriden();
 	} //}}}
+//
+//	//{{{ getIoTask() method
+//	public IoTask getIoTask()
+//	{
+//		return ioTask;
+//	} //}}}
+//
+//	//{{{ setIoTask() method
+//	public void setIoTask(IoTask task)
+//	{
+//		assert(ioTask == null || ioTask != null && ioTask.getState() == StateValue.DONE);
+//		this.ioTask = task;
+//	} //}}}
 
 	//{{{ getAutoReloadDialog() method
 	/**
@@ -808,7 +815,7 @@ public class Buffer extends JEditBuffer
 	  */
 	public String getPath(Boolean shortVersion)
 	{
-		return shortVersion ? MiscUtilities.abbreviate(path) : getPath();
+		return shortVersion ? MiscUtilities.abbreviateView(path) : getPath();
 	} //}}}
 
 
@@ -1155,8 +1162,9 @@ public class Buffer extends JEditBuffer
 		if (mode != null)
 		{
 			int largeBufferSize = jEdit.getIntegerProperty("largeBufferSize", 4000000);
-			if (!getFlag(TEMPORARY) && getLength() > largeBufferSize && largeBufferSize != 0)
+			if (!getFlag(TEMPORARY) && getLength() > largeBufferSize && largeBufferSize > 0)
 			{
+				mode.loadIfNecessary();
 				boolean contextInsensitive = mode.getBooleanProperty("contextInsensitive");
 				String largeFileMode = jEdit.getProperty("largefilemode", "ask");
 				
@@ -1593,7 +1601,7 @@ public class Buffer extends JEditBuffer
 	@Override
 	public String toString()
 	{
-		return name + " (" + MiscUtilities.abbreviate(directory) + ')';
+		return name + " (" + MiscUtilities.abbreviateView(directory) + ')';
 	} //}}}
 
 	//{{{ addBufferUndoListener() method
@@ -1846,6 +1854,9 @@ public class Buffer extends JEditBuffer
 
 	private Socket waitSocket;
 	private List<BufferUndoListener> undoListeners;
+//
+//	/** the current ioTask of this buffer */
+//	private volatile IoTask ioTask;
 	//}}}
 
 	//{{{ setPath() method
@@ -1908,7 +1919,7 @@ public class Buffer extends JEditBuffer
 
 			// show this message when all I/O requests are
 			// complete
-			VFSManager.runInAWTThread(new Runnable()
+			AwtRunnableQueue.INSTANCE.runAfterIoTasks(new Runnable()
 			{
 				public void run()
 				{
@@ -2033,7 +2044,7 @@ public class Buffer extends JEditBuffer
 		final byte[] dummy = new byte[1];
 		if (!jEdit.getBooleanProperty("useMD5forDirtyCalculation"))
 			return dummy;
-		return StandardUtilities.md5(getText());
+		return StandardUtilities.md5(getSegment(0, getLength()));
 	}
 
 	/** Update the buffer's members with the current hash and length,

@@ -1,6 +1,6 @@
 /*
  * JEditTextArea.java - jEdit's text component
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1999, 2005 Slava Pestov
@@ -49,7 +49,7 @@ import org.gjt.sp.jedit.msg.PositionChanging;
  *
  * @author Slava Pestov
  * @author John Gellene (API documentation)
- * @version $Id: JEditTextArea.java 21772 2012-06-08 19:43:00Z jarekczek $
+ * @version $Id: JEditTextArea.java 22469 2012-11-14 08:05:15Z ezust $
  */
 public class JEditTextArea extends TextArea
 {
@@ -256,13 +256,16 @@ public class JEditTextArea extends TextArea
 	 */
 	public void showGoToLineDialog()
 	{
-		String line = GUIUtilities.input(view,"goto-line",null);
+		int maxLine = Integer.valueOf(buffer.getLineCount());
+		String line = GUIUtilities.input(view,"goto-line",new Integer[] {1, maxLine},null);
 		if(line == null)
 			return;
 
 		try
 		{
 			int lineNumber = Integer.parseInt(line) - 1;
+			if(lineNumber > --maxLine)
+				lineNumber = maxLine;
 			EditBus.send(new PositionChanging(this));
 			setCaretPosition(getLineStartOffset(lineNumber));
 		}

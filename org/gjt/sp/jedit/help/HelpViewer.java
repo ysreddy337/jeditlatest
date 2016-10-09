@@ -1,6 +1,6 @@
 /*
  * HelpViewerDialog.java - HTML Help viewer
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1999, 2005 Slava Pestov, Nicholas O'Leary
@@ -78,7 +78,7 @@ import static org.gjt.sp.jedit.help.HelpHistoryModel.HistoryEntry;
  * jEdit's searchable help viewer. It uses a Swing JEditorPane to display the HTML,
  * and implements a URL history.
  * @author Slava Pestov
- * @version $Id: HelpViewer.java 21419 2012-03-23 08:21:20Z kpouer $
+ * @version $Id: HelpViewer.java 21831 2012-06-18 22:54:17Z ezust $
  */
 public class HelpViewer extends JFrame implements HelpViewerInterface, HelpHistoryModelListener
 {

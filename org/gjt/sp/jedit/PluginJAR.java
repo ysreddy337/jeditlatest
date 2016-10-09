@@ -1,6 +1,6 @@
 /*
  * PluginJAR.java - Controls JAR loading and unloading
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1999, 2004 Slava Pestov
@@ -26,6 +26,7 @@ package org.gjt.sp.jedit;
 import java.awt.EventQueue;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.Closeable;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
@@ -141,7 +142,7 @@ import static org.gjt.sp.jedit.EditBus.EBHandler;
  * @see ServiceManager
  *
  * @author Slava Pestov
- * @version $Id: PluginJAR.java 22145 2012-09-03 14:46:14Z kpouer $
+ * @version $Id: PluginJAR.java 22920 2013-04-06 15:03:55Z kerik-sf $
  * @since jEdit 4.2pre1
  */
 public class PluginJAR
@@ -1000,7 +1001,7 @@ public class PluginJAR
 		}
 		finally
 		{
-			IOUtilities.closeQuietly(din);
+			IOUtilities.closeQuietly((Closeable)din);
 		}
 	} //}}}
 
@@ -1025,7 +1026,7 @@ public class PluginJAR
 		catch(IOException io)
 		{
 			Log.log(Log.ERROR,PluginJAR.class,io);
-			IOUtilities.closeQuietly(dout);
+			IOUtilities.closeQuietly((Closeable)dout);
 			new File(jarCachePath).delete();
 		}
 	} //}}}
@@ -1130,7 +1131,7 @@ public class PluginJAR
 				Collection<Properties> values = localizationProperties.values();
 				for (Properties value : values)
 				{
-					jEdit.removePluginProps(value);
+					jEdit.removePluginLocalizationProps(value);
 				}
 			}
 			try
@@ -1204,7 +1205,7 @@ public class PluginJAR
 			Properties langProperties = localizationProperties.get(currentLanguage);
 			if (langProperties != null)
 			{
-				jEdit.addPluginProps(langProperties);
+				jEdit.addPluginLocalizationProps(langProperties);
 			}
 		}
 
@@ -1340,7 +1341,7 @@ public class PluginJAR
 				}
 				finally
 				{
-					IOUtilities.closeQuietly(in);
+					IOUtilities.closeQuietly((Closeable)in);
 				}
 			}
 			else if(name.endsWith(".class"))
@@ -1371,7 +1372,7 @@ public class PluginJAR
 					}
 					finally
 					{
-						IOUtilities.closeQuietly(in);
+						IOUtilities.closeQuietly((Closeable)in);
 					}
 				}
 				else
@@ -1390,7 +1391,7 @@ public class PluginJAR
 			Properties langProperties = localizationProperties.get(currentLanguage);
 			if (langProperties != null)
 			{
-				jEdit.addPluginProps(langProperties);
+				jEdit.addPluginLocalizationProps(langProperties);
 			}
 		}
 
@@ -1444,6 +1445,14 @@ public class PluginJAR
 			}
 		}
 
+		boolean isBeingLoaded = jEdit.getPluginJAR(getPath()) != null;
+		if(!isBeingLoaded)
+		{
+			Log.log(Log.DEBUG, PluginJAR.class,
+					"not loading actions, dockables, services "
+					+"because the plugin is not really being loaded");
+			return cache;
+		}
 		if(cache.actionsURI != null)
 		{
 			actions = new ActionSet(this,null,null,
@@ -1506,7 +1515,7 @@ public class PluginJAR
 
 		return cache;
 	} //}}}
-	
+
 	private static boolean continueLoading(String clazz, Properties cachedProperties)
 	{
 		if(jEdit.getPlugin(clazz) != null)
@@ -1700,7 +1709,7 @@ public class PluginJAR
 
 			cachedProperties = readMap(din);
 			localizationProperties = readLanguagesMap(din);
-			
+
 			pluginClass = readString(din);
 
 			return true;
@@ -1829,8 +1838,8 @@ public class PluginJAR
 			int languagesCount = din.readInt();
 			if (languagesCount == 0)
 				return Collections.emptyMap();
-			
-			
+
+
 			Map<String, Properties> languages = new HashMap<String, Properties>(languagesCount);
 			for (int i = 0;i<languagesCount;i++)
 			{

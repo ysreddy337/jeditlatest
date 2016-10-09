@@ -1,6 +1,6 @@
 /*
  * BufferChanging.java - Buffer changing (specialized Edit Pane update message)
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2006 Alan Ezust
@@ -35,7 +35,7 @@ import org.gjt.sp.util.Log;
  * Known plugins to be using this: BufferLocal, Navigator.
  * 
  * @since jEdit 4.3pre4
- * @version $Id: BufferChanging.java 16342 2009-10-14 10:07:18Z kpouer $
+ * @version $Id: BufferChanging.java 21831 2012-06-18 22:54:17Z ezust $
  */
 public class BufferChanging extends PositionChanging
 {

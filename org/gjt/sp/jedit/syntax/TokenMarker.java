@@ -1,6 +1,6 @@
 /*
  * TokenMarker.java - Tokenizes lines of text
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1998, 2003 Slava Pestov
@@ -40,7 +40,7 @@ import org.gjt.sp.util.StandardUtilities;
  * or font style for painting that token.
  *
  * @author Slava Pestov, mike dillon
- * @version $Id: TokenMarker.java 21285 2012-03-09 15:46:47Z k_satoda $
+ * @version $Id: TokenMarker.java 21831 2012-06-18 22:54:17Z ezust $
  *
  * @see org.gjt.sp.jedit.syntax.Token
  * @see org.gjt.sp.jedit.syntax.TokenHandler

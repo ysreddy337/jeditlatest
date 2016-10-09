@@ -1,6 +1,6 @@
 /*
  * AbbrevsOptionPane.java - Abbrevs options panel
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1999, 2000, 2001, 2002 Slava Pestov
@@ -41,7 +41,7 @@ import org.gjt.sp.util.StandardUtilities;
 /**
  * Abbrev editor.
  * @author Slava Pestov
- * @version $Id: AbbrevsOptionPane.java 20328 2011-11-13 05:59:59Z ezust $
+ * @version $Id: AbbrevsOptionPane.java 21831 2012-06-18 22:54:17Z ezust $
  */
 public class AbbrevsOptionPane extends AbstractOptionPane
 {

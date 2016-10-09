@@ -1,6 +1,6 @@
 /*
  * GlobalOptions.java - Global options dialog
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2002 Slava Pestov
@@ -30,7 +30,7 @@ import org.gjt.sp.jedit.msg.PropertiesChanging;
 import org.gjt.sp.jedit.*;
 //}}}
 /**
-   @deprecated - use CombinedOptions
+   A dialog that can open initially to one of the Global Option Panes.
 */
 public class GlobalOptions extends OptionsDialog
 {

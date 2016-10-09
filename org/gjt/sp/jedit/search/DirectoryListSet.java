@@ -1,6 +1,6 @@
 /*
  * DirectoryListSet.java - Directory list matcher
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1999, 2000, 2001 Slava Pestov
@@ -23,19 +23,17 @@
 package org.gjt.sp.jedit.search;
 
 //{{{ Imports
-import javax.swing.SwingUtilities;
 import java.awt.Component;
 import java.io.*;
 import org.gjt.sp.jedit.io.*;
 import org.gjt.sp.jedit.*;
-import org.gjt.sp.util.Log;
 import org.gjt.sp.util.StandardUtilities;
 //}}}
 
 /**
  * Recursive directory search.
  * @author Slava Pestov
- * @version $Id: DirectoryListSet.java 16365 2009-10-20 05:13:52Z vanza $
+ * @version $Id: DirectoryListSet.java 22454 2012-11-10 11:15:08Z thomasmey $
  */
 public class DirectoryListSet extends BufferListSet
 {
@@ -45,8 +43,6 @@ public class DirectoryListSet extends BufferListSet
 		this.directory = directory;
 		this.glob = glob;
 		this.recurse = recurse;
-		this.skipBinary = jEdit.getBooleanProperty("search.skipBinary.toggle");
-		this.skipHidden = jEdit.getBooleanProperty("search.skipHidden.toggle");
 	} //}}}
 
 
@@ -112,38 +108,12 @@ public class DirectoryListSet extends BufferListSet
 	@Override
 	protected String[] _getFiles(final Component comp)
 	{
+		boolean skipBinary, skipHidden;
 		skipBinary = jEdit.getBooleanProperty("search.skipBinary.toggle");
 		skipHidden = jEdit.getBooleanProperty("search.skipHidden.toggle");
 		final VFS vfs = VFSManager.getVFSForPath(directory);
 		Object session;
-		if(SwingUtilities.isEventDispatchThread())
-		{
-			session = vfs.createVFSSession(directory,comp);
-		}
-		else
-		{
-			final Object[] returnValue = new Object[1];
-
-			try
-			{
-				SwingUtilities.invokeAndWait(new Runnable()
-				{
-					public void run()
-					{
-						returnValue[0] = vfs.createVFSSession(directory,comp);
-					}
-				});
-			}
-			catch(Exception e)
-			{
-				Log.log(Log.ERROR,this,e);
-			}
-
-			session = returnValue[0];
-		}
-
-		if(session == null)
-			return null;
+		session = vfs.createVFSSessionSafe(directory, comp);
 
 		try
 		{
@@ -168,7 +138,5 @@ public class DirectoryListSet extends BufferListSet
 	private String directory;
 	private String glob;
 	private boolean recurse;
-	private boolean skipHidden;
-	private boolean skipBinary;
 	//}}}
 }

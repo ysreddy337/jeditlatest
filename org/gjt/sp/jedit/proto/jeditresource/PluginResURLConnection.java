@@ -1,6 +1,6 @@
 /*
  * PluginResURLConnection.java - jEdit plugin resource URL connection
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1999, 2000, 2001 Slava Pestov
@@ -34,8 +34,13 @@ import org.gjt.sp.jedit.MiscUtilities;
 import org.gjt.sp.jedit.PluginJAR;
 import org.gjt.sp.jedit.jEdit;
 
+import org.gjt.sp.util.Log;
+//}}}
+
+//{{{ class PluginResURLConnection
 public class PluginResURLConnection extends URLConnection
 {
+	//{{{ constructor
 	public PluginResURLConnection(URL url)
 		throws IOException
 	{
@@ -63,8 +68,9 @@ public class PluginResURLConnection extends URLConnection
 
 		if(plugin != null && resource.startsWith("/"))
 			resource = resource.substring(1);
-	}
+	}//}}}
 
+	//{{{ connect()
 	public void connect() throws IOException
 	{
 		if(!connected)
@@ -75,6 +81,7 @@ public class PluginResURLConnection extends URLConnection
 			}
 			else
 			{
+				boolean pluginFoundInPluginJARs = false;
 				PluginJAR[] plugins = jEdit.getPluginJARs();
 				for(int i = 0; i < plugins.length; i++)
 				{
@@ -82,9 +89,15 @@ public class PluginResURLConnection extends URLConnection
 					String jarName =MiscUtilities.getFileName(jar.getPath()).toLowerCase(); 
 					if(plugin.equalsIgnoreCase(jarName))
 					{
+						pluginFoundInPluginJARs = true;
 						in = jar.getClassLoader().getResourceAsStream(resource);
 						break;
 					}
+				}
+				if(!pluginFoundInPluginJARs){
+					Log.log(Log.DEBUG, PluginResURLConnection.class,
+							"reading resource from not loaded plugin "
+							+" => will always fail !");
 				}
 			}
 
@@ -98,15 +111,17 @@ public class PluginResURLConnection extends URLConnection
 			}
 			connected = true;
 		}
-	}
+	}//}}}
 
+	//{{{ getInputStream()
 	public InputStream getInputStream()
 		throws IOException
 	{
 		connect();
 		return in;
-	}
+	}//}}}
 
+	//{{{ getHeaderField()
 	public String getHeaderField(String name)
 	{
 		if(name.equals("content-type"))
@@ -128,10 +143,11 @@ public class PluginResURLConnection extends URLConnection
 		}
 		else
 			return null;
-	}
+	}//}}}
 
-	// private members
+	//{{{ private members
 	private InputStream in;
 	private String plugin;
 	private String resource;
-}
+	//}}}
+}//}}}

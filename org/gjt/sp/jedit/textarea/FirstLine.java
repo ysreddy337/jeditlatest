@@ -1,6 +1,6 @@
 /*
  * FirstLine.java
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2005 Slava Pestov
@@ -29,7 +29,7 @@ import org.gjt.sp.util.Log;
  * This Anchor is the first visible line of the textarea.
  *
  * @author Slava Pestov
- * @version $Id: FirstLine.java 22366 2012-10-13 22:21:34Z ezust $
+ * @version $Id: FirstLine.java 22670 2013-01-12 12:29:48Z thomasmey $
  */
 class FirstLine extends Anchor
 {
@@ -528,7 +528,6 @@ class FirstLine extends Anchor
 		if(this.skew != skew)
 		{
 			this.skew = skew;
-			//FIXME: Necessary?
 			setCallChanged(true);
 		}
 	}

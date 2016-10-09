@@ -1,6 +1,6 @@
 /*
  * BufferSaveRequest.java - I/O request
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2000, 2005 Slava Pestov
@@ -24,6 +24,7 @@ package org.gjt.sp.jedit.bufferio;
 
 //{{{ Imports
 import java.io.*;
+import java.io.Closeable;
 import java.util.zip.*;
 
 import org.gjt.sp.jedit.io.*;
@@ -35,7 +36,7 @@ import java.nio.charset.UnsupportedCharsetException;
 /**
  * A buffer save request.
  * @author Slava Pestov
- * @version $Id: BufferSaveRequest.java 22385 2012-10-15 03:59:45Z ezust $
+ * @version $Id: BufferSaveRequest.java 22357 2012-10-13 04:58:01Z ezust $
  */
 public class BufferSaveRequest extends BufferIORequest
 {
@@ -55,7 +56,7 @@ public class BufferSaveRequest extends BufferIORequest
 	} //}}}
 
 	//{{{ run() method
-	public void run()
+	public void _run()
 	{
 		/* if the VFS supports renaming files, we first
 		 * save to #<filename>#save#, then rename that
@@ -79,7 +80,7 @@ public class BufferSaveRequest extends BufferIORequest
 			setStatus(jEdit.getProperty("vfs.status.save",args));
 
 			// the entire save operation can be aborted...
-			setAbortable(true);
+			setCancellable(true);
 
 			path = vfs._canonPath(session,path,view);
 			if(!MiscUtilities.isURL(path))
@@ -139,9 +140,14 @@ public class BufferSaveRequest extends BufferIORequest
 					buffer.readUnlock();
 				}
 			}
+			catch(InterruptedException e)
+			{
+				buffer.setBooleanProperty(ERROR_OCCURRED,true);
+				Thread.currentThread().interrupt();
+			}
 			finally
 			{
-				IOUtilities.closeQuietly(out);
+				IOUtilities.closeQuietly((Closeable)out);
 			}
 
 			if(twoStageSave)
@@ -178,10 +184,6 @@ public class BufferSaveRequest extends BufferIORequest
 
 			buffer.setBooleanProperty(ERROR_OCCURRED,true);
 		}
-		catch(WorkThread.Abort a)
-		{
-			buffer.setBooleanProperty(ERROR_OCCURRED,true);
-		}
 		finally
 		{
 			try
@@ -202,10 +204,6 @@ public class BufferSaveRequest extends BufferIORequest
 				String[] pp = { e.toString() };
 				VFSManager.error(view,path,"ioerror.write-error",pp);
 
-				buffer.setBooleanProperty(ERROR_OCCURRED,true);
-			}
-			catch(WorkThread.Abort a)
-			{
 				buffer.setBooleanProperty(ERROR_OCCURRED,true);
 			}
 		}

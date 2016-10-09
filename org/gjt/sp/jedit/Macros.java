@@ -1,6 +1,6 @@
 /*
  * Macros.java - Macro manager
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1999, 2004 Slava Pestov
@@ -58,7 +58,7 @@ import java.util.regex.Pattern;
  * the methods in the {@link GUIUtilities} class instead.
  *
  * @author Slava Pestov
- * @version $Id: Macros.java 20414 2011-11-23 17:48:45Z daleanson $
+ * @version $Id: Macros.java 21831 2012-06-18 22:54:17Z ezust $
  */
 public class Macros
 {

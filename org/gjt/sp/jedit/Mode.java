@@ -1,6 +1,6 @@
 /*
  * Mode.java - jEdit editing mode
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1998, 1999, 2000 Slava Pestov
@@ -30,6 +30,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import org.gjt.sp.jedit.indent.DeepIndentRule;
@@ -47,7 +48,7 @@ import org.gjt.sp.util.StandardUtilities;
  * One instance of this class is created for each supported edit mode.
  *
  * @author Slava Pestov
- * @version $Id: Mode.java 21723 2012-05-27 14:34:13Z k_satoda $
+ * @version $Id: Mode.java 22949 2013-04-23 18:53:15Z thomasmey $
  */
 public class Mode
 {
@@ -75,7 +76,7 @@ public class Mode
 	{
 		try
 		{
-			filepathRE = null;
+			filepathMatcher = null;
 			String filenameGlob = (String)getProperty("filenameGlob");
 			if(filenameGlob != null && !filenameGlob.isEmpty())
 			{
@@ -93,15 +94,15 @@ public class Mode
 					// an optional path prefix to be able to match against full paths
 					filepathRE = String.format("(?:.*[/\\\\])?%s", filepathRE);
 				}
-				this.filepathRE = Pattern.compile(filepathRE, Pattern.CASE_INSENSITIVE);
+				this.filepathMatcher = Pattern.compile(filepathRE, Pattern.CASE_INSENSITIVE).matcher("");
 			}
 
-			firstlineRE = null;
+			firstlineMatcher = null;
 			String firstlineGlob = (String)getProperty("firstlineGlob");
 			if(firstlineGlob != null && !firstlineGlob.isEmpty())
 			{
-				firstlineRE = Pattern.compile(StandardUtilities.globToRE(firstlineGlob),
-							      Pattern.CASE_INSENSITIVE);
+				firstlineMatcher = Pattern.compile(StandardUtilities.globToRE(firstlineGlob),
+								Pattern.CASE_INSENSITIVE).matcher("");
 			}
 		}
 		catch(PatternSyntaxException re)
@@ -164,10 +165,7 @@ public class Mode
 	 */
 	public Object getProperty(String key)
 	{
-		Object value = props.get(key);
-		if(value != null)
-			return value;
-		return null;
+		return props.get(key);
 	} //}}}
 
 	//{{{ getBooleanProperty() method
@@ -213,24 +211,12 @@ public class Mode
 	public void setProperties(Map props)
 	{
 		if(props == null)
-			props = new Hashtable<String, Object>();
+			return;
 
 		ignoreWhitespace = !"false".equalsIgnoreCase(
 					(String)props.get("ignoreWhitespace"));
 
-		// need to carry over file name and first line globs because they are
-		// not given to us by the XMode handler, but instead are filled in by
-		// the catalog loader.
-		String filenameGlob = (String)this.props.get("filenameGlob");
-		String firstlineGlob = (String)this.props.get("firstlineGlob");
-		String filename = (String)this.props.get("file");
-		this.props = props;
-		if(filenameGlob != null)
-			props.put("filenameGlob",filenameGlob);
-		if(firstlineGlob != null)
-			props.put("firstlineGlob",firstlineGlob);
-		if(filename != null)
-			props.put("file",filename);
+		this.props.putAll(props);
 	} //}}}
 
 	//{{{ accept() method
@@ -261,9 +247,9 @@ public class Mode
 	 */
 	public boolean accept(String filePath, String fileName, String firstLine)
 	{
-		return acceptIdentical(filePath, fileName)
-		       || acceptFile(filePath, fileName)
-		       || acceptFirstLine(firstLine);
+		return acceptFile(filePath, fileName)
+				|| acceptIdentical(filePath, fileName)
+				|| acceptFirstLine(firstLine);
 	} //}}}
 
 	//{{{ acceptFilename() method
@@ -290,9 +276,11 @@ public class Mode
 	 */
 	public boolean acceptFile(String filePath, String fileName)
 	{
-		return filepathRE != null
-		       && (((filePath != null) && filepathRE.matcher(filePath).matches())
-			   || ((fileName != null) && filepathRE.matcher(fileName).matches()));
+		if (filepathMatcher == null)
+			return false;
+
+		return fileName != null && filepathMatcher.reset(fileName).matches() ||
+			filePath != null && filepathMatcher.reset(filePath).matches();
 	} //}}}
 
 	//{{{ acceptFilenameIdentical() method
@@ -321,10 +309,26 @@ public class Mode
 	 */
 	public boolean acceptIdentical(String filePath, String fileName)
 	{
-		return ((filePath != null) && filePath.equals(getProperty("filenameGlob"))
-		        && (filepathRE == null || filepathRE.matcher(filePath).matches()))
-		       || ((fileName != null) && fileName.equals(getProperty("filenameGlob"))
-		           && (filepathRE == null || filepathRE.matcher(fileName).matches()));
+		String filenameGlob = (String)getProperty("filenameGlob");
+		if(filenameGlob == null)
+			return false;
+
+		if(fileName != null && fileName.equalsIgnoreCase(filenameGlob))	
+			return true;
+
+		if (filePath != null) 
+		{
+			// get the filename from the path
+			// NOTE: can't use MiscUtilities.getFileName here as that breaks
+			// the stand-alone text area build.
+			int lastUnixPos = filePath.lastIndexOf('/');
+			int lastWindowsPos = filePath.lastIndexOf('\\');
+			int index = Math.max(lastUnixPos, lastWindowsPos);
+			String filename = filePath.substring(index + 1);
+			return filename != null && filename.equalsIgnoreCase(filenameGlob);
+		}
+
+		return false;
 	} //}}}
 
 	//{{{ acceptFirstLine() method
@@ -336,7 +340,10 @@ public class Mode
 	 */
 	public boolean acceptFirstLine(String firstLine)
 	{
-		return firstlineRE != null && firstlineRE.matcher(firstLine).matches();
+		if (firstlineMatcher == null)
+			return false;
+
+		return firstLine != null && firstlineMatcher.reset(firstLine).matches();
 	} //}}}
 
 	//{{{ getName() method
@@ -517,10 +524,10 @@ public class Mode
 	//}}}
 
 	//{{{ Private members
-	protected String name;
-	protected Map<String, Object> props;
-	private Pattern firstlineRE;
-	private Pattern filepathRE;
+	protected final String name;
+	protected final Map<String, Object> props;
+	private Matcher firstlineMatcher;
+	private Matcher filepathMatcher;
 	protected TokenMarker marker;
 	private List<IndentRule> indentRules;
 	private String electricKeys;

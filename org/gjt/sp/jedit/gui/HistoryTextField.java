@@ -1,6 +1,6 @@
 /*
  * HistoryTextField.java - Text field with a history
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1999, 2000, 2001 Slava Pestov
@@ -36,7 +36,7 @@ import org.gjt.sp.jedit.*;
 /** Text field with an arrow-key + drop-down accessable history.
  *
  * @author Slava Pestov
- * @version $Id: HistoryTextField.java 21502 2012-03-29 17:19:44Z ezust $
+ * @version $Id: HistoryTextField.java 22467 2012-11-13 07:20:25Z ezust $
  */
 public class HistoryTextField extends JTextField
 {
@@ -276,6 +276,10 @@ public class HistoryTextField extends JTextField
 					evt.consume();
 				}
 				break;
+			case KeyEvent.VK_CONTEXT_MENU:
+				controller.showPopupMenu(evt.isShiftDown());
+				evt.consume();
+				break;				
 			}
 		}
 

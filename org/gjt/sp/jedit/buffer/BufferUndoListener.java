@@ -1,6 +1,6 @@
 /*
  * BufferUndoListener.java - Buffer undo listener interface
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2009 Shlomy Reinstein
@@ -33,7 +33,7 @@ package org.gjt.sp.jedit.buffer;
  * <code>JEditBuffer.removeBufferUndoListener<code>, respectively.
  *
  * @author Shlomy Reinstein
- * @version $Id: BufferUndoListener.java 16098 2009-08-27 21:59:29Z shlomy $
+ * @version $Id: BufferUndoListener.java 21831 2012-06-18 22:54:17Z ezust $
  * @since jEdit 4.3pre18
  */
 public interface BufferUndoListener

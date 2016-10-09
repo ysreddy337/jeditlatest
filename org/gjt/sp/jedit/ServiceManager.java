@@ -1,6 +1,6 @@
 /*
  * ServiceManager.java - Handles services.xml files in plugins
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2003 Slava Pestov
@@ -94,7 +94,7 @@ import org.gjt.sp.jedit.buffer.FoldHandler;
  *
  * @since jEdit 4.2pre1
  * @author Slava Pestov
- * @version $Id: ServiceManager.java 21608 2012-04-25 22:20:35Z ezust $
+ * @version $Id: ServiceManager.java 22920 2013-04-06 15:03:55Z kerik-sf $
  */
 public class ServiceManager
 {
@@ -109,7 +109,18 @@ public class ServiceManager
 		ServiceListHandler dh = new ServiceListHandler(plugin,uri);
 		try
 		{
-			if (!XMLUtilities.parseXML(uri.openStream(), dh)
+			InputStream in = uri.openStream();
+			if(in == null)
+			{
+				// this happened when calling generateCache() in the context of 'find orphan jars'
+				// in org.gjt.sp.jedit.pluginmgr.ManagePanel.FindOrphan.actionPerformed(ActionEvent)
+				// because for not loaded plugins, the plugin will not be added to the list of pluginJars
+				// so the org.gjt.sp.jedit.proto.jeditresource.PluginResURLConnection will not find the plugin
+				// to read the resource from.
+				// Better log a small error message than a big stack trace
+				Log.log(Log.WARNING, ServiceManager.class, "Unable to open: " + uri);
+			}
+			else  if (!XMLUtilities.parseXML(uri.openStream(), dh)
 				&& cache != null)
 			{
 				cache.cachedServices = dh.getCachedServices();

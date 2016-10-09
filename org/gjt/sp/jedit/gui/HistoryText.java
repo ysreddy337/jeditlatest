@@ -1,6 +1,6 @@
 /*
  * HistoryText.java - Common code for text components with a history
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2004 Slava Pestov
@@ -34,7 +34,7 @@ import org.gjt.sp.jedit.*;
 /**
  * Controller (manager of models) for HistoryTextArea.
  * @author Slava Pestov
- * @version $Id: HistoryText.java 16341 2009-10-14 10:05:51Z kpouer $
+ * @version $Id: HistoryText.java 21831 2012-06-18 22:54:17Z ezust $
  */
 public class HistoryText
 {

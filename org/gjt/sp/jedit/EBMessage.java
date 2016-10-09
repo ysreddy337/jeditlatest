@@ -1,6 +1,6 @@
 /*
  * EBMessage.java - An EditBus message
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1999, 2002 Slava Pestov
@@ -34,7 +34,7 @@ package org.gjt.sp.jedit;
  *
  * @author Slava Pestov
  * @author John Gellene (API documentation)
- * @version $Id: EBMessage.java 12625 2008-05-11 12:07:29Z kpouer $
+ * @version $Id: EBMessage.java 21831 2012-06-18 22:54:17Z ezust $
  *
  * @since jEdit 2.2pre6
  */

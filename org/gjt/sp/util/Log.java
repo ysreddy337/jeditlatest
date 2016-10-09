@@ -1,6 +1,6 @@
 /*
  * Log.java - A class for logging events
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1999, 2003 Slava Pestov
@@ -23,6 +23,7 @@
 package org.gjt.sp.util;
 
 //{{{ Imports
+import java.awt.Toolkit;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -53,10 +54,11 @@ import static java.text.DateFormat.MEDIUM;
  *
  * Logging of exception tracebacks is supported.<p>
  *
- * This class can also optionally redirect standard output and error to the log.
+ * This class can also optionally redirect standard output and error
+ * to the log, see {@link #init}.
  *
  * @author Slava Pestov
- * @version $Id: Log.java 19450 2011-03-14 21:23:20Z shlomy $
+ * @version $Id: Log.java 22935 2013-04-17 17:24:33Z ezust $
  */
 public class Log
 {
@@ -107,9 +109,13 @@ public class Log
 	/**
 	 * Initializes the log.
 	 * @param stdio If true, standard output and error will be
-	 * sent to the log
+	 * intercepted and sent to the log. The <code>urgency</code>
+	 * for these implicit log entries is <code>NOTICE</code>
+	 * and <code>ERROR</code> accordingly. Note that in such a situation
+	 * <code>System.out.print()</code> calls will not appear on standard
+	 * output, if default output level is higher than <code>NOTICE</code>.
 	 * @param level Messages with this log level or higher will
-	 * be printed to the system console
+	 * be printed to the system console.
 	 * @since jEdit 3.2pre4
 	 */
 	public static void init(boolean stdio, int level)
@@ -179,6 +185,26 @@ public class Log
 		}
 
 		Log.stream = stream;
+	} //}}}
+
+	//{{{ get/setBeepOnOutput method
+	/**
+	 * @since jEdit 5.1pre1
+	 */
+	public static boolean getBeepOnOutput()
+	{
+		return beepOnOutput;
+	}
+
+	/**
+	 * When <code>beepOnOutput</code> is set, every output going to standard
+	 * error is signaled by a standard beep. This is intended for debugging
+	 * purposes, to allow for immediate problem detection.
+	 * @since jEdit 5.1pre1
+	 */
+	public static void setBeepOnOutput(boolean beepOnOutput)
+	{
+		Log.beepOnOutput = beepOnOutput;
 	} //}}}
 
 	//{{{ flushStream() method
@@ -286,7 +312,7 @@ public class Log
 			}
 		}
 		else if(source instanceof Class)
-			_source = ((Class)source).getName();
+			_source = ((Class<?>)source).getName();
 		else
 			_source = source.getClass().getName();
 		int index = _source.lastIndexOf('.');
@@ -335,6 +361,10 @@ public class Log
 	private static final DateFormat timeFormat;
 	private static final int MAX_THROWABLES = 10;
 	public static final List<Throwable> throwables;
+	// initialized externally through setBeepOnOutput method
+	private static boolean beepOnOutput = false;
+	// to prevent too much beeping we remember last beep time
+	private static long lastBeepTime = 0;
 	//}}}
 
 	//{{{ Class initializer
@@ -416,6 +446,17 @@ public class Log
 				realErr.println(fullMessage);
 			else
 				realOut.println(fullMessage);
+
+			if (beepOnOutput)
+			{
+				long time = System.currentTimeMillis();
+				
+				if (time - lastBeepTime > 1000)
+				{
+					Toolkit.getDefaultToolkit().beep();
+					lastBeepTime = System.currentTimeMillis();
+				}
+			}
 		}
 	} //}}}
 
@@ -483,7 +524,7 @@ public class Log
 		} //}}}
 
 		//{{{ getElementAt() method
-		public Object getElementAt(int index)
+		public String getElementAt(int index)
 		{
 			if(wrap)
 			{

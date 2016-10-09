@@ -1,6 +1,6 @@
 /*
  * DisplayTokenHandler.java - converts tokens to chunks
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:encoding=utf-8:
  *
  * Copyright (C) 2003 Slava Pestov
@@ -32,7 +32,7 @@ import java.text.CharacterIterator;
 
 /**
  * Creates {@link Chunk} objects that can be painted on screen.
- * @version $Id: DisplayTokenHandler.java 21688 2012-05-19 19:44:16Z k_satoda $
+ * @version $Id: DisplayTokenHandler.java 21831 2012-06-18 22:54:17Z ezust $
  */
 public class DisplayTokenHandler extends DefaultTokenHandler
 {

@@ -1,6 +1,6 @@
 /*
  * JEditBuffer.java - jEdit buffer
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1998, 2005 Slava Pestov
@@ -33,11 +33,13 @@ import org.gjt.sp.jedit.syntax.*;
 import org.gjt.sp.jedit.textarea.ColumnBlock;
 import org.gjt.sp.jedit.textarea.ColumnBlockLine;
 import org.gjt.sp.jedit.textarea.Node;
+import org.gjt.sp.jedit.textarea.Selection;
 import org.gjt.sp.jedit.textarea.TextArea;
 import org.gjt.sp.util.IntegerArray;
 import org.gjt.sp.util.Log;
 import org.gjt.sp.util.StandardUtilities;
 
+import javax.annotation.Nonnull;
 import javax.swing.text.Position;
 import javax.swing.text.Segment;
 import java.awt.*;
@@ -66,7 +68,7 @@ import java.util.regex.Pattern;
  * </ul>
  *
  * @author Slava Pestov
- * @version $Id: JEditBuffer.java 21754 2012-06-02 18:49:16Z jarekczek $
+ * @version $Id: JEditBuffer.java 22963 2013-04-30 14:07:57Z kpouer $
  *
  * @since jEdit 4.3pre3
  */
@@ -84,7 +86,7 @@ public class JEditBuffer
 	public static final String ENCODING = "encoding";
 
 	//{{{ JEditBuffer constructors
-	public JEditBuffer(Map props)
+
 	{
 		bufferListeners = new Vector<Listener>();
 		lock = new ReentrantReadWriteLock();
@@ -95,7 +97,10 @@ public class JEditBuffer
 		integerArray = new IntegerArray();
 		propertyLock = new Object();
 		properties = new HashMap<Object, PropValue>();
+	}
 
+	public JEditBuffer(Map props)
+	{
 		//{{{ need to convert entries of 'props' to PropValue instances
 		Set<Map.Entry> set = props.entrySet();
 		for (Map.Entry entry : set)
@@ -109,6 +114,8 @@ public class JEditBuffer
 			properties.put(ENCODING,new PropValue(System.getProperty("file.encoding"),false));
 		if(getProperty(LINESEP) == null)
 			properties.put(LINESEP,new PropValue(System.getProperty("line.separator"),false));
+
+		setFoldHandler(new DummyFoldHandler());
 	}
 
 	/**
@@ -117,16 +124,6 @@ public class JEditBuffer
 	 */
 	public JEditBuffer()
 	{
-		bufferListeners = new Vector<Listener>();
-		lock = new ReentrantReadWriteLock();
-		contentMgr = new ContentManager();
-		lineMgr = new LineManager();
-		positionMgr = new PositionManager(this);
-		undoMgr = new UndoManager(this);
-		integerArray = new IntegerArray();
-		propertyLock = new Object();
-		properties = new HashMap<Object, PropValue>();
-
 		properties.put("wrap",new PropValue("none",false));
 		properties.put("folding",new PropValue("none",false));
 		tokenMarker = new TokenMarker();
@@ -2055,6 +2052,7 @@ loop:		for(int i = 0; i < seg.count; i++)
 	 * Returns the current buffer's fold handler.
 	 * @since jEdit 4.2pre1
 	 */
+	@Nonnull
 	public FoldHandler getFoldHandler()
 	{
 		return foldHandler;
@@ -2065,7 +2063,7 @@ loop:		for(int i = 0; i < seg.count; i++)
 	 * Sets the buffer's fold handler.
 	 * @since jEdit 4.2pre2
 	 */
-	public void setFoldHandler(FoldHandler foldHandler)
+	public void setFoldHandler(@Nonnull FoldHandler foldHandler)
 	{
 		FoldHandler oldFoldHandler = this.foldHandler;
 
@@ -2106,12 +2104,14 @@ loop:		for(int i = 0; i < seg.count; i++)
 
 			undoInProgress = true;
 			fireBeginUndo();
-			int caret = undoMgr.undo();
-			if(caret == -1)
+			Selection[] s = undoMgr.undo();
+			if(s == null || s.length == 0)
 				textArea.getToolkit().beep();
 			else
-				textArea.setCaretPosition(caret);
-
+			{
+				textArea.setCaretPosition(s[s.length - 1].getEnd());
+				textArea.setSelection(s);
+			}
 			fireEndUndo();
 			fireTransactionComplete();
 		}
@@ -2146,11 +2146,14 @@ loop:		for(int i = 0; i < seg.count; i++)
 
 			undoInProgress = true;
 			fireBeginRedo();
-			int caret = undoMgr.redo();
-			if(caret == -1)
+			Selection[] s = undoMgr.redo();
+			if(s == null || s.length == 0)
 				textArea.getToolkit().beep();
 			else
-				textArea.setCaretPosition(caret);
+			{
+				textArea.setCaretPosition(s[s.length - 1].getEnd());
+				textArea.setSelection(s);
+			}
 
 			fireEndRedo();
 			fireTransactionComplete();
@@ -2741,6 +2744,7 @@ loop:		for(int i = 0; i < seg.count; i++)
 	private final ContentManager contentMgr;
 	private final LineManager lineMgr;
 	private final PositionManager positionMgr;
+	@Nonnull
 	private FoldHandler foldHandler;
 	private final IntegerArray integerArray;
 	private boolean undoInProgress;
@@ -2752,6 +2756,9 @@ loop:		for(int i = 0; i < seg.count; i++)
 	private boolean io;
 	private final Map<Object, PropValue> properties;
 	private final Object propertyLock;
+	/** This field should be read instead of "elasticTabstops" property
+	  * when efficiency matters. */
+	// synchronization done in TextArea.propertiesChanged()
 	public boolean elasticTabstopsOn = false;
 	private ColumnBlock columnBlock;
 

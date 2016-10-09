@@ -1,6 +1,6 @@
 /*
  * HyperSearchResults.java - HyperSearch results
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1998, 1999, 2000, 2001 Slava Pestov
@@ -44,12 +44,13 @@ import org.gjt.sp.jedit.*;
 import org.gjt.sp.util.EnhancedTreeCellRenderer;
 import org.gjt.sp.util.HtmlUtilities;
 import org.gjt.sp.util.SyntaxUtilities;
+import org.gjt.sp.util.TaskManager;
 //}}}
 
 /**
  * HyperSearch results window.
  * @author Slava Pestov
- * @version $Id: HyperSearchResults.java 20577 2011-12-08 09:19:23Z kpouer $
+ * @version $Id: HyperSearchResults.java 22942 2013-04-22 11:27:52Z thomasmey $
  */
 public class HyperSearchResults extends JPanel implements DefaultFocusComponent
 {
@@ -531,7 +532,7 @@ public class HyperSearchResults extends JPanel implements DefaultFocusComponent
 			}
 			else if(source == stop)
 			{
-				jEdit.setTemporaryProperty("hyperSearch-stopButton", "true");
+				TaskManager.instance.cancelTasksByClass(HyperSearchRequest.class);
 			}
 		}
 	} //}}}
@@ -584,13 +585,26 @@ public class HyperSearchResults extends JPanel implements DefaultFocusComponent
 				i += 2;
 			else
 				i = 0;
-			Match m;
+			Match m = null;
 			List<Integer> matches = new ArrayList<Integer>();
-			while ((m = matcher.nextMatch(s.substring(i), true, true, true, false)) != null)
+			try {
+				m = matcher.nextMatch(s.substring(i), true, true, true, false);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			}
+			while (m != null)
 			{
 				matches.add(i + m.start);
 				matches.add(i + m.end);
 				i += m.end;
+
+				try {
+					m = matcher.nextMatch(s.substring(i), true, true, true, false);
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+				} finally {
+					m = null;
+				}
 			}
 			return HtmlUtilities.highlightString(s, styleTag, matches);
 		}

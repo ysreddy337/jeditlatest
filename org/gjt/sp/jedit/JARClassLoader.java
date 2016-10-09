@@ -1,6 +1,6 @@
 /*
  * JARClassLoader.java - Loads classes from JAR files
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1999, 2003 Slava Pestov
@@ -43,7 +43,7 @@ import java.util.jar.Attributes.Name;
  * A class loader implementation that loads classes from JAR files. All
  * instances share the same set of classes.
  * @author Slava Pestov
- * @version $Id: JARClassLoader.java 18919 2010-11-04 10:52:55Z kpouer $
+ * @version $Id: JARClassLoader.java 21831 2012-06-18 22:54:17Z ezust $
  */
 public class JARClassLoader extends ClassLoader
 {

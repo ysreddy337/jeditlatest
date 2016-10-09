@@ -1,6 +1,6 @@
 /*
  * PanelWindowContainer.java - holds dockable windows
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2000, 2004 Slava Pestov
@@ -39,7 +39,7 @@ import javax.swing.border.Border;
 
 /** A panel that holds dockable windows.
  *
- * @version $Id: DockablePanel.java 21502 2012-03-29 17:19:44Z ezust $
+ * @version $Id: DockablePanel.java 21831 2012-06-18 22:54:17Z ezust $
  */
 class DockablePanel extends JPanel
 {

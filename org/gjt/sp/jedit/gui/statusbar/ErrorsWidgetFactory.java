@@ -1,6 +1,6 @@
 /*
  * ErrorsWidgetFactory.java - The error widget service
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2008-2011 Matthieu Casanova
@@ -23,6 +23,8 @@
 package org.gjt.sp.jedit.gui.statusbar;
 
 //{{{ Imports
+import org.gjt.sp.jedit.EditAction;
+import org.gjt.sp.jedit.Registers;
 import org.gjt.sp.jedit.View;
 import org.gjt.sp.jedit.jEdit;
 import org.gjt.sp.jedit.GUIUtilities;
@@ -210,6 +212,21 @@ public class ErrorsWidgetFactory implements StatusWidgetFactory
 			printStream = new PrintStream(byteArrayOutputStream);
 			throwables = Log.throwables.toArray();
 			textArea = new JEditEmbeddedTextArea();
+
+			JPopupMenu menu = new JPopupMenu();
+			JMenuItem copy = new JMenuItem(jEdit.getProperty("copy.label").replace("$",""));
+			copy.addActionListener(new ActionListener()
+			{
+				@Override
+				public void actionPerformed(ActionEvent e)
+				{
+					Registers.copy(textArea, '$');
+				}
+			});
+			menu.add(copy);
+			textArea.setRightClickPopup(menu);
+			textArea.setRightClickPopupEnabled(true);
+
 			textArea.getBuffer().setMode(jEdit.getMode("logs"));
 			if (throwables.length != 0)
 			{
@@ -233,7 +250,7 @@ public class ErrorsWidgetFactory implements StatusWidgetFactory
 			Box buttons = new Box(BoxLayout.X_AXIS);
 			buttons.add(Box.createGlue());
 
-			buttons.add(removeThisError = new JButton(jEdit.getProperty("grab-key.remove")));
+			buttons.add(removeThisError = new JButton(jEdit.getProperty("common.removeCurrent")));
 			buttons.add(Box.createHorizontalStrut(6));
 			buttons.add(removeAllErrors = new JButton(jEdit.getProperty("common.clearAll")));
 

@@ -1,6 +1,6 @@
 /*
  * TextArea.java - Abstract jEdit Text Area component
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1999, 2005 Slava Pestov
@@ -31,6 +31,7 @@ import java.util.TooManyListenersException;
 import java.text.BreakIterator;
 import java.text.CharacterIterator;
 
+import javax.annotation.Nonnull;
 import javax.swing.*;
 import javax.swing.event.*;
 import java.awt.event.*;
@@ -69,7 +70,7 @@ import org.gjt.sp.util.ThreadUtilities;
  *
  * @author Slava Pestov
  * @author kpouer (rafactoring into standalone text area)
- * @version $Id: TextArea.java 22366 2012-10-13 22:21:34Z ezust $
+ * @version $Id: TextArea.java 22670 2013-01-12 12:29:48Z thomasmey $
  */
 public abstract class TextArea extends JComponent
 {
@@ -1708,6 +1709,7 @@ forward_scan:	do
 	 * Returns the current selection.
 	 * @since jEdit 3.2pre1
 	 */
+	@Nonnull
 	public Selection[] getSelection()
 	{
 		return selectionManager.getSelection();
@@ -4842,7 +4844,7 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 			displayManager.invalidateScreenLineCounts();
 			displayManager.notifyScreenLineChanges();
 		}
-		chunkCache.invalidateAll();
+		chunkCache.reset();
 		gutter.repaint();
 		painter.repaint();
 	} //}}}

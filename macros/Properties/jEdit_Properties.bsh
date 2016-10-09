@@ -20,7 +20,7 @@
  * along with the jEdit application; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
- * $Id: jEdit_Properties.bsh 19599 2011-06-19 15:14:10Z kerik-sf $
+ * $Id: jEdit_Properties.bsh 22846 2013-03-16 18:37:31Z ezust $
  *
  * Checked for jEdit 4.0 API
  *
@@ -37,6 +37,7 @@ void writeJEditProperties()
     pw = new PrintWriter(sw);
     props.store(pw,"jedit properties");
     newbuf = jEdit.newFile(view);
+    newbuf.setMode("properties");
     newbuf.insert(0, sw.toString());
 }
 

@@ -1,6 +1,6 @@
 /*
  * AbstractBrowserTask
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright © 2010 Matthieu Casanova
@@ -32,7 +32,7 @@ import org.gjt.sp.util.ThreadUtilities;
 
 /**
  * @author Matthieu Casanova
- * @version $Id: AbstractBrowserTask.java 19705 2011-07-26 17:19:05Z kpouer $
+ * @version $Id: AbstractBrowserTask.java 22851 2013-03-17 11:03:48Z thomasmey $
  */
 abstract class AbstractBrowserTask extends Task
 {

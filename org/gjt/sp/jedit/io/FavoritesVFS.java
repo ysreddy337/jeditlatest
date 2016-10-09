@@ -1,6 +1,6 @@
 /*
  * FavoritesVFS.java - Stores frequently-visited directory locations
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2000, 2004 Slava Pestov
@@ -38,7 +38,7 @@ import org.gjt.sp.jedit.*;
  * favorite and clicking 'delete' in the browser just deletes the
  * favorite, and not the directory itself.
  * @author Slava Pestov
- * @version $Id: FavoritesVFS.java 21627 2012-05-04 16:58:22Z jarekczek $
+ * @version $Id: FavoritesVFS.java 22828 2013-03-05 19:40:05Z ezust $
  */
 public class FavoritesVFS extends VFS
 {
@@ -195,7 +195,7 @@ public class FavoritesVFS extends VFS
 				String p = favorite.getPath();
 				String l = favorite.getLabel();
 				jEdit.setProperty("vfs.favorite." + i, p);
-				if (p.equals(l) || MiscUtilities.abbreviate(p).equals(l))
+				if (p.equals(l) || MiscUtilities.abbreviateView(p).equals(l))
 					jEdit.unsetProperty("vfs.favorite." + i + ".label");
 				else 
 					jEdit.setProperty("vfs.favorite." + i + ".label", l);
@@ -236,7 +236,7 @@ public class FavoritesVFS extends VFS
 		Favorite(String path, int type)
 		{
 			super(path,path,PROTOCOL + ':' + path,type, 0L,false);
-			this.label = MiscUtilities.abbreviate(path);
+			this.label = MiscUtilities.abbreviateView(path);
 		}
 
 		public String getLabel()

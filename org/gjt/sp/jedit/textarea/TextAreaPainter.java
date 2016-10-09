@@ -1,6 +1,6 @@
 /*
  * TextAreaPainter.java - Paints the text area
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1999, 2005 Slava Pestov
@@ -54,7 +54,7 @@ import org.gjt.sp.util.Log;
  * @see TextArea
  *
  * @author Slava Pestov
- * @version $Id: TextAreaPainter.java 20109 2011-10-18 12:25:29Z evanpw $
+ * @version $Id: TextAreaPainter.java 23084 2013-07-27 16:11:13Z ezust $
  */
 public class TextAreaPainter extends JComponent implements TabExpander
 {
@@ -266,7 +266,7 @@ public class TextAreaPainter extends JComponent implements TabExpander
 	{
 		this.styles = styles;
 		styles[Token.NULL] = new SyntaxStyle(getForeground(),null,getFont());
-		textArea.chunkCache.invalidateAll();
+		textArea.chunkCache.reset();
 		repaint();
 	} //}}}
 
@@ -622,7 +622,7 @@ public class TextAreaPainter extends JComponent implements TabExpander
 	public final void setFoldLineStyle(SyntaxStyle[] foldLineStyle)
 	{
 		this.foldLineStyle = foldLineStyle;
-		textArea.chunkCache.invalidateAll();
+		textArea.chunkCache.reset();
 		repaint();
 	} //}}}
 
@@ -1477,16 +1477,19 @@ public class TextAreaPainter extends JComponent implements TabExpander
 
 			if(textArea.isOverwriteEnabled())
 			{
-				gfx.drawLine(caretX, y + lineHeight - 1,
-					     caretX + textArea.charWidth,
-					     y + lineHeight - 1);
+				if (thickCaret) 
+					gfx.fillRect(caretX, y + lineHeight - 4, textArea.charWidth, 3);
+				
+				else  gfx.drawLine(caretX, y + lineHeight - 1, 
+					caretX + textArea.charWidth, y + lineHeight - 1);
 			}
 			else if(blockCaret)
-				gfx.drawRect(caretX, y + charOffset, textArea.charWidth - 1, charHeight - 1);
+				gfx.drawRect(caretX, y + charOffset, 
+					textArea.charWidth - 1, charHeight - 1);
 			else
 			{
-				if (thickCaret)
-					gfx.drawRect(caretX, y + charOffset, 1, charHeight - 1);
+				if (thickCaret) 
+					gfx.fillRect(caretX, y + charOffset, 3, charHeight - 1);
 				else
 					gfx.drawLine(caretX, y + charOffset, caretX, 
 						     y + charOffset + charHeight - 1);

@@ -1,6 +1,6 @@
 /*
  * UndoManager.java - Buffer undo manager
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2001, 2005 Slava Pestov
@@ -23,7 +23,9 @@
 package org.gjt.sp.jedit.buffer;
 
 //{{{ Imports
+import org.gjt.sp.util.IntegerArray;
 import org.gjt.sp.util.Log;
+import org.gjt.sp.jedit.textarea.Selection;
 //}}}
 
 /**
@@ -34,7 +36,7 @@ import org.gjt.sp.util.Log;
  * called through, implements such protection.
  *
  * @author Slava Pestov
- * @version $Id: UndoManager.java 16728 2009-12-25 14:12:38Z shlomy $
+ * @version $Id: UndoManager.java 22171 2012-09-06 15:12:05Z ezust $
  * @since jEdit 4.0pre1
  */
 public class UndoManager
@@ -65,24 +67,24 @@ public class UndoManager
 	} //}}}
 
 	//{{{ undo() method
-	public int undo()
+	public Selection[] undo()
 	{
 		if(insideCompoundEdit())
 			throw new InternalError("Unbalanced begin/endCompoundEdit()");
 
 		if(undosLast == null)
-			return -1;
+			return null;
 		else
 		{
 			reviseUndoId();
 			undoCount--;
 
-			int caret = undosLast.undo();
+			Selection s[] = undosLast.undo(this);
 			redosFirst = undosLast;
 			undosLast = undosLast.prev;
 			if(undosLast == null)
 				undosFirst = null;
-			return caret;
+			return s;
 		}
 	} //}}}
 
@@ -93,24 +95,24 @@ public class UndoManager
 	} //}}}
 
 	//{{{ redo() method
-	public int redo()
+	public Selection[] redo()
 	{
 		if(insideCompoundEdit())
 			throw new InternalError("Unbalanced begin/endCompoundEdit()");
 
 		if(redosFirst == null)
-			return -1;
+			return null;
 		else
 		{
 			reviseUndoId();
 			undoCount++;
 
-			int caret = redosFirst.redo();
+			Selection[] s = redosFirst.redo(this);
 			undosLast = redosFirst;
 			if(undosFirst == null)
 				undosFirst = undosLast;
 			redosFirst = redosFirst.next;
-			return caret;
+			return s;
 		}
 	} //}}}
 
@@ -164,7 +166,6 @@ public class UndoManager
 	//{{{ contentInserted() method
 	public void contentInserted(int offset, int length, String text, boolean clearDirty)
 	{
-		Edit last = getLastEdit();
 		Edit toMerge = getMergeEdit();
 
 		if(!clearDirty && toMerge instanceof Insert
@@ -174,27 +175,25 @@ public class UndoManager
 			if(ins.offset == offset)
 			{
 				ins.str = text.concat(ins.str);
-				ins.length += length;
 				return;
 			}
-			else if(ins.offset + ins.length == offset)
+			else if(ins.offset + ins.str.length() == offset)
 			{
 				ins.str = ins.str.concat(text);
-				ins.length += length;
 				return;
 			}
 		}
 
-		Insert ins = new Insert(this,offset,length,text);
+		Insert ins = new Insert(offset,text);
 
 		if(clearDirty)
 		{
-			redoClearDirty = last;
+			redoClearDirty = getLastEdit();
 			undoClearDirty = ins;
 		}
 
 		if(compoundEdit != null)
-			compoundEdit.add(ins);
+			compoundEdit.add(this, ins);
 		else
 		{
 			reviseUndoId();
@@ -205,7 +204,6 @@ public class UndoManager
 	//{{{ contentRemoved() method
 	public void contentRemoved(int offset, int length, String text, boolean clearDirty)
 	{
-		Edit last = getLastEdit();
 		Edit toMerge = getMergeEdit();
 
 		if(!clearDirty && toMerge instanceof Remove
@@ -214,39 +212,40 @@ public class UndoManager
 			Remove rem = (Remove)toMerge;
 			if(rem.offset == offset)
 			{
-				rem.content.str = rem.content.str.concat(text);
-				rem.content.hashcode = rem.content.str.hashCode();
-				rem.length += length;
-				KillRing.getInstance().changed(rem.content);
+				String newStr = rem.str.concat(text);
+				KillRing.getInstance().changed(rem.str, newStr);
+				rem.str = newStr;
 				return;
 			}
 			else if(offset + length == rem.offset)
 			{
-				rem.content.str = text.concat(rem.content.str);
-				rem.content.hashcode = rem.content.str.hashCode();
-				rem.length += length;
-				rem.offset = offset;
-				KillRing.getInstance().changed(rem.content);
+				String newStr = text.concat(rem.str);
+				KillRing.getInstance().changed(rem.str, newStr);
+ 				rem.offset = offset;
+				rem.str = newStr;
 				return;
 			}
 		}
 
-		Remove rem = new Remove(this,offset,length,text);
+		// use String.intern() here as new Strings are created in
+		// JEditBuffer.remove() via undoMgr.contentRemoved(... getText() ...);
+		Remove rem = new Remove(offset,text.intern());
+
 		if(clearDirty)
 		{
-			redoClearDirty = last;
+			redoClearDirty = getLastEdit();
 			undoClearDirty = rem;
 		}
 
 		if(compoundEdit != null)
-			compoundEdit.add(rem);
+			compoundEdit.add(this, rem);
 		else
 		{
 			reviseUndoId();
 			addEdit(rem);
 		}
 
-		KillRing.getInstance().add(rem.content);
+		KillRing.getInstance().add(rem.str);
 	} //}}}
 
 	//{{{ resetClearDirty method
@@ -312,8 +311,7 @@ public class UndoManager
 	//{{{ getMergeEdit() method
 	private Edit getMergeEdit()
 	{
-		Edit last = getLastEdit();
-		return (compoundEdit != null ? compoundEdit.last : last);
+		return (compoundEdit != null ? compoundEdit.last : getLastEdit());
 	} //}}}
 
 	//{{{ getLastEdit() method
@@ -343,147 +341,297 @@ public class UndoManager
 		undoId = new Object();
 	} //}}}
 
-	//}}}
+	//{{{ getReplaceFromRemoveInsert() method
+	// a Replace Edit is a Remove Edit and then an Insert Edit
+	private Replace getReplaceFromRemoveInsert(Edit lastElement, Edit newElement)
+	{
+		if(lastElement instanceof Remove && newElement instanceof Insert)
+		{
+			// don't fold a undoClearDirty Remove Edit, because
+			// it's the identity is significant.
+			if(lastElement == undoClearDirty || newElement == undoClearDirty)
+				return null;
+
+			/* newElement is guaranteed to be an Compound-Insert Edit, redoClearDirty will be an Normal-Insert, Normal-Remove,
+			 * Compound-Remove-Insert-Edit or Compound-Replace-Edit (all possible edit operations)
+			 * redoClearDirty cannot become equal to newElement because:
+			 * - redoClearDirty will be set after the file has been saved and the first new change is made, which
+			 *   could be an Normal-Insert, Normal-Remove, Compound-Replace-Edit, Compound-Remove-Insert-Edit,
+			 *   or null, if this is the first change in the file at all.
+			 *   For Compound-Edit case it will be the last element of the Compound edit.
+			 * - As the first Remove&Insert sequence of a Compound-Edit is never compacted by above if statement,
+			 *   redoClearDirty can never be any of the following Remove&Insert elements, as the user as no option to save the
+			 *   file after the first Remove&Insert sequence, because the GUI is blocked by the search&replace all operation.
+			 */  
+			assert newElement  != redoClearDirty;
+			assert lastElement != redoClearDirty;
+
+			Remove rem = (Remove) lastElement;
+			Insert ins = (Insert) newElement;
+		
+			if(rem.offset == ins.offset)
+			{
+				return new Replace(rem.offset, rem.str, ins.str);
+			}
+		}
+		return null;
+	} //}}}
+
+	//{{{ getCompressedReplaceFromReplaceReplace() method
+	// a CompressedReplace Edit is one to many Replace Edit compressed via offsets
+	private CompressedReplace getCompressedReplaceFromReplaceReplace(Edit lastElement, Edit newElement)
+	{
+
+		if(newElement instanceof Replace)
+		{
+			CompressedReplace rep = null;
+			// try to pack the next Replace into the CompressedReplace
+			if(lastElement instanceof CompressedReplace)
+			{
+				rep = (CompressedReplace) lastElement;
+				return rep.add((Replace) newElement);
+			}
+	
+			// try to create a compressed Replace
+			if(lastElement instanceof Replace)
+			{
+				rep = new CompressedReplace((Replace)lastElement);
+				return rep.add((Replace) newElement);
+			}
+		}
+		return null;
+	} //}}}
 
 	//{{{ Inner classes
 
 	//{{{ Edit class
-	abstract static class Edit
+	private abstract static class Edit
 	{
 		Edit prev, next;
 
 		//{{{ undo() method
-		abstract int undo();
+		/**
+		 * Returns the selection that should be active after performing
+		 * the operation. If no selection should be active, a 0 length
+		 * selection should be returned, pointing the caret location
+		 * to set after the operation.
+		 * <p>Implementation note: undo manager does not receive the actual
+		 * selection, when it records the operations. That's because
+		 * the operations are recorded by <code>Buffer</code>
+		 * class, and this class has no selections,
+		 * which are kept by <code>TextArea</code> class instances.
+		 * So the <code>Selection[]</code>s returned are simply guessed,
+		 * contain the inserted text.
+		 */
+		abstract Selection[] undo(UndoManager mgr);
 		//}}}
 
 		//{{{ redo() method
-		abstract int redo();
+		/**
+		 * @return See {@link #undo}.
+		 * <p>Implementation note: redo always returns caret location only,
+		 * because the actual selection is unknown and we guess it from
+		 * the remove/insert operations. Usually after an action
+		 * the selection becomes empty, so such is the guess.</p>
+		 */
+		abstract Selection[] redo(UndoManager mgr);
 		//}}}
 	} //}}}
 
 	//{{{ Insert class
-	static class Insert extends Edit
+	private static class Insert extends Edit
 	{
 		//{{{ Insert constructor
-		Insert(UndoManager mgr, int offset, int length, String str)
+		Insert(int offset, String str)
 		{
-			this.mgr = mgr;
 			this.offset = offset;
-			this.length = length;
 			this.str = str;
 		} //}}}
 
 		//{{{ undo() method
-		int undo()
+		@Override
+		Selection[] undo(UndoManager mgr)
 		{
-			mgr.buffer.remove(offset,length);
+			mgr.buffer.remove(offset,str.length());
 			if(mgr.undoClearDirty == this)
 				mgr.buffer.setDirty(false);
-			return offset;
+			return new Selection[] { new Selection.Range(offset, offset) };
 		} //}}}
 
 		//{{{ redo() method
-		int redo()
+		@Override
+		Selection[] redo(UndoManager mgr)
 		{
 			mgr.buffer.insert(offset,str);
 			if(mgr.redoClearDirty == this)
 				mgr.buffer.setDirty(false);
-			return offset + length;
+			int caret = offset + str.length();
+			return new Selection[] { new Selection.Range(caret, caret) };
 		} //}}}
 
-		UndoManager mgr;
 		int offset;
-		int length;
 		String str;
 	} //}}}
 
-	//{{{ RemovedContent clas
-	// This class is held in KillRing.
-	public static class RemovedContent
-	{
-		String str;
-		int hashcode;
-		boolean inKillRing;
-
-		public RemovedContent(String str)
-		{
-			this.str = str;
-			this.hashcode = str.hashCode();
-		}
-
-		public String toString()
-		{
-			return str;
-		}
-	}// }}}
-
 	//{{{ Remove class
-	static class Remove extends Edit
+	private static class Remove extends Edit
 	{
 		//{{{ Remove constructor
-		Remove(UndoManager mgr, int offset, int length, String str)
+		Remove(int offset, String str)
 		{
-			this.mgr = mgr;
 			this.offset = offset;
-			this.length = length;
-			this.content = new RemovedContent(str);
+			this.str = str;
 		} //}}}
 
 		//{{{ undo() method
-		int undo()
+		@Override
+		Selection[] undo(UndoManager mgr)
 		{
-			mgr.buffer.insert(offset,content.str);
+			mgr.buffer.insert(offset,str);
 			if(mgr.undoClearDirty == this)
 				mgr.buffer.setDirty(false);
-			return offset + length;
+			return new Selection[] {
+				new Selection.Range(offset, offset + str.length())
+			};
 		} //}}}
 
 		//{{{ redo() method
-		int redo()
+		@Override
+		Selection[] redo(UndoManager mgr)
 		{
-			mgr.buffer.remove(offset,length);
+			mgr.buffer.remove(offset,str.length());
 			if(mgr.redoClearDirty == this)
 				mgr.buffer.setDirty(false);
-			return offset;
+			return new Selection[] { new Selection.Range(offset, offset) };
 		} //}}}
 
-		UndoManager mgr;
 		int offset;
-		int length;
-		final RemovedContent content;
+		String str;
+	} //}}}
+
+	//{{{ Replace class
+	private static class Replace extends Edit
+	{
+		//{{{ Replace constructor
+		Replace(int offset, String strRemove, String strInsert)
+		{
+			this.offset = offset;
+			this.strRemove = strRemove;
+			this.strInsert = strInsert;
+		} //}}}
+
+		//{{{ undo() method
+		@Override
+		Selection[] undo(UndoManager mgr)
+		{
+			mgr.buffer.remove(offset,strInsert.length());
+			mgr.buffer.insert(offset,strRemove);
+			assert mgr.undoClearDirty != this;
+			return new Selection[] {
+				new Selection.Range(offset, offset + strRemove.length())
+			};
+		} //}}}
+
+		//{{{ redo() method
+		@Override
+		Selection[] redo(UndoManager mgr)
+		{
+			mgr.buffer.remove(offset,strRemove.length());
+			mgr.buffer.insert(offset,strInsert);
+			if(mgr.redoClearDirty == this)
+				mgr.buffer.setDirty(false);
+			int caret = offset + strInsert.length();
+			return new Selection[] { new Selection.Range(caret, caret) };
+		} //}}}
+
+		int offset;
+		String strRemove, strInsert;
+	} //}}}
+
+	//{{{ CompressedReplace class
+	private static class CompressedReplace extends Replace
+	{
+		//{{{ CompressedReplace constructor
+		CompressedReplace(Replace r1)
+		{
+			super(r1.offset, r1.strRemove, r1.strInsert);
+			offsets = new IntegerArray(4);
+			offsets.add(r1.offset);
+		} //}}}
+
+		//{{{ add() method
+		CompressedReplace add(Replace rep)
+		{
+			if(this.strInsert.equals(rep.strInsert) && this.strRemove.equals(rep.strRemove))
+			{
+				offsets.add(rep.offset);
+				return this;
+			}
+			return null;
+		} //}}}
+
+		//{{{ undo() method
+		@Override
+		Selection[] undo(UndoManager mgr)
+		{
+			Selection[] s = null;
+			for(int i = offsets.getSize() - 1; i >= 0; i--)
+			{
+				offset = offsets.get(i);
+				s = super.undo(mgr);
+			}
+			return s;
+		} //}}}
+
+		//{{{ redo() method
+		@Override
+		Selection[] redo(UndoManager mgr)
+		{
+			Selection[] s = null;
+			for(int i = 0; i < offsets.getSize(); i++)
+			{
+				offset = offsets.get(i);
+				s = super.redo(mgr);
+			}
+			return s;
+		} //}}}
+
+		IntegerArray offsets;
 	} //}}}
 
 	//{{{ CompoundEdit class
-	static class CompoundEdit extends Edit
+	private static class CompoundEdit extends Edit
 	{
 		//{{{ undo() method
-		public int undo()
+		@Override
+		public Selection[] undo(UndoManager mgr)
 		{
-			int retVal = -1;
+			Selection[] retVal = null;
 			Edit edit = last;
 			while(edit != null)
 			{
-				retVal = edit.undo();
+				retVal = edit.undo(mgr);
 				edit = edit.prev;
 			}
 			return retVal;
 		} //}}}
 
 		//{{{ redo() method
-		public int redo()
+		@Override
+		public Selection[] redo(UndoManager mgr)
 		{
-			int retVal = -1;
+			Selection[] retVal = null;
 			Edit edit = first;
 			while(edit != null)
 			{
-				retVal = edit.redo();
+				retVal = edit.redo(mgr);
 				edit = edit.next;
 			}
 			return retVal;
 		} //}}}
 
-		//{{{ add() method
-		public void add(Edit edit)
+		//{{{ _add() method
+		private void _add(Edit edit)
 		{
 			if(first == null)
 				first = last = edit;
@@ -495,8 +643,64 @@ public class UndoManager
 			}
 		} //}}}
 
+		//{{{ add() method
+		public void add(UndoManager mgr, Edit edit)
+		{
+			_add(edit);
+
+			// try to compact a sequence of Remove and Insert into a Replace
+			// Edit to save memory for large search&replace operations
+			if(last.prev != null)
+			{
+				Edit rep = mgr.getReplaceFromRemoveInsert(last.prev, last);
+				if(rep != null)
+					exchangeLastElement(rep);
+			}
+
+			// try to compress a sequence of Replace and Replace into a "CompressedReplace"
+			if(last.prev != null)
+			{
+				Edit rep = mgr.getCompressedReplaceFromReplaceReplace(last.prev, last);
+				if(rep != null)
+					exchangeLastElement(rep);
+			}
+			
+			// try to compress a sequence of CompressedReplace and Replace into a "CompressedReplace"
+			if(last.prev != null)
+			{
+				Edit rep = mgr.getCompressedReplaceFromReplaceReplace(last.prev, last);
+				if(rep != null)
+					exchangeLastElement(rep);
+			}
+		} //}}}
+
+		//{{{ exchangeLastElement() method
+		private void exchangeLastElement(Edit edit)
+		{
+			// remove last
+			if(first == last)
+				first = last = null;
+			else
+			{
+				last.prev.next = null;
+				last = last.prev;
+			}
+
+			// exchange current last
+			if(first == null || first == last)
+				first = last = edit;
+			else
+			{
+				edit.prev = last.prev;
+				last.prev.next = edit;
+				last = edit;
+			}
+		} //}}}
+
 		Edit first, last;
 	} //}}}
+
+	//}}}
 
 	//}}}
 }

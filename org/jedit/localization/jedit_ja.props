@@ -31,6 +31,7 @@ common.more=さらに
 common.insert=挿入
 common.add=追加
 common.remove=削除
+common.removeCurrent=現在のものを削除
 common.moveUp=上へ
 common.moveDown=下へ
 common.clearAll=すべてクリア
@@ -70,7 +71,7 @@ view.action.close-tooltip=アクションバーを隠す (ESC)
 #}}}
 
 #{{{ Context menu
-view.context.customize=メニューをカスタマイズ...
+view.context.customize=このメニューをカスタマイズ...
 #}}}
 
 #{{{ System tray menu
@@ -99,7 +100,7 @@ closeall-except-active.label=他を閉じる($T)
 closeall-bufferset.label=すべて閉じる($E)
 closeall-bufferset.tooltip=編集ペインのバッファセットをクリアします。
 bufferset-toggle-exclusive.label=排他バッファセットの切り替え($X)
-bufferset-toggle-exclusive.tooltip=バッファが開かれるとき、他の無関係なバッファセット中にあれば閉じます。
+bufferset-toggle-exclusive.tooltip=バッファを表示したとき、他の無関係なバッファセット中に含まれている方を閉じます。
 close-all.label=すべて閉じる(グローバル)
 close-all.tooltip=すべてのビューのすべてのバッファを閉じます。
 save.label=保存($S)
@@ -655,6 +656,9 @@ ioerror.delete-error=ファイルを削除できません。
 ioerror.rename-exists=既存ファイル {0} を上書きできません。
 ioerror.rename-error={0} に名前を変更できません。
 ioerror.mkdir-error=ディレクトリを作成できません。
+ioerror.backup-failed=バックアップに失敗。 "保存とバックアップ" の設定を確認してください。
+ioerror.backup-same-name=バックアップファイル名が元のファイル名と同じです。
+ioerror.copy-self=ファイルを自身にコピーするのは破壊的操作のため、拒否されました: {0}
 
 vfs.not-supported.list=ファイルシステム "{0}" 上のディレクトリはブラウズできません。
 vfs.not-supported.load=ファイルシステム "{0}" 上のファイルを開くことはできません。
@@ -739,7 +743,7 @@ badurl.message=この URL は無効です: {0}\n\
 
 #{{{ Go to line dialog
 goto-line.title=行移動
-goto-line.message=移動先の行:
+goto-line.message=移動先の行 ({0} - {1}):
 #}}}
 
 #{{{ Word count dialog
@@ -840,6 +844,7 @@ search.settings=オプション:
 search.keep=ダイアログを維持(K)
 search.keep.mnemonic=K
 search.word=完全一致単語のみ(Q)
+search.word.bar=完全一致単語のみ
 search.word.mnemonic=Q
 search.case=大文字小文字を区別しない(I)
 search.case.mnemonic=I
@@ -897,7 +902,7 @@ search.replaceAllBtn.mnemonic=A
 #{{{ Keep searching dialog
 keepsearching.title=これ以上の一致は発見できません
 keepsearching.message=これ以上の一致は発見できません。\n\
-	{0,choice,0#先頭|1#末尾}から検索を続けますか?
+	{0,choice,0\#先頭|1\#末尾}から検索を続けますか?
 #}}}
 
 #{{{ HyperSearch results dialog
@@ -1233,10 +1238,9 @@ options.general.checkModStatus.prompt=問い合わせる
 options.general.checkModStatus.reload=自動的に更新し通知する
 options.general.checkModStatus.silentReload=通知せずに自動更新
 options.general.checkModStatusUpon=ファイル変更を確認するきっかけ:
-options.general.checkModStatusUpon.focus=アプリケーションフォーカス
-options.general.checkModStatusUpon.all=アプリケーションフォーカス 対象バッファ表示 他バッファの保存
-options.general.checkModStatusUpon.operations=対象バッファ表示 他バッファの保存
-options.general.checkModStatusUpon.focusBuffer=対象バッファ表示および保存
+options.general.checkModStatusUpon.focus=ビューへのフォーカス (すべてのバッファを確認)
+options.general.checkModStatusUpon.all=ビューへのフォーカス 対象バッファ表示
+options.general.checkModStatusUpon.visitBuffer=対象バッファ表示
 options.general.checkModStatusUpon.none=対象バッファの保存
 options.general.recentFiles=最近開いたファイルの記憶:
 options.general.hypersearch.maxWarningResults=ハイパーサーチの中止を問う閾値:
@@ -1305,7 +1309,7 @@ options.context.add.title=コンテキストメニューに追加
 options.context.add.caption=コンテキストメニューに追加:
 options.context.add.separator=セパレータ
 options.context.add.action=コマンド/マクロ:
-options.context.includeOptionsLink.label="このメニューをカスタマイズ..."を含むリンク
+options.context.includeOptionsLink.label="このメニューをカスタマイズ..." へのリンクを含む
 
 options.context.reset.dialog.title=デフォルトに戻す
 options.context.reset.dialog.message=本当にコンテキストメニューをインストールデフォルトに戻しますか?
@@ -1429,6 +1433,8 @@ options.plugin-manager.location=プラグインのインストール先:
 options.plugin-manager.settings-dir=jEdit 個人設定ディレクトリ
 options.plugin-manager.app-dir=jEdit アプリケーションディレクトリ
 options.plugin-manager.none=デフォルトのプラグインセンター
+options.plugin-manager.disable-obsolete=廃止されたプラグインを無効化
+options.plugin-manager.list-cache.minutes=プラグインリストのキャッシュ時間: (分)
 #}}}
 
 #{{{ Printing pane
@@ -1504,18 +1510,18 @@ options.shortcuts.filter.tooltip=名称がこの文字列を含むアクショ�
 options.shortcuts.clear.label=クリア
 
 grab-key.title=ショートカットを指定してください
-grab-key.caption="{0}"に割当てたいショートカットキーを押し、了解をクリックしてください。
+grab-key.caption="{0}"に割当てたいショートカットキーを押し、OKをクリックしてください。
 grab-key.keyboard-test=問題を起こしているキーストロークを入力してください。
 grab-key.assigned-to=現在の割当: {0}
 grab-key.assigned-to.none=<なし>
 grab-key.assigned-to.prefix={0} プレフィクス
 grab-key.clear=クリア
-grab-key.remove=割当の解除
+grab-key.remove=現在のものを削除
 
-grab-key.remove-ask.title=ショートカットを解除しますか?
+grab-key.remove-ask.title=ショートカットを削除しますか?
 grab-key.remove-ask.message=\
 	新たなショートカットが指定されませんでした。\n\
-	現在のショートカットを解除しますか?
+	現在のショートカットを削除しますか?
 
 grab-key.duplicate-alt-shortcut.title=重複ショートカット
 grab-key.duplicate-alt-shortcut.message=\
@@ -1593,8 +1599,7 @@ options.textarea.electricBorders=自動スクロール
 options.textarea.stdNextPrevWord=次/前の単語へ移動するときホワイトスペースを含む
 options.textarea.antiAlias=アンチエイリアス スムーズフォント
 options.textarea.antiAlias.tooltip=いくつかのシステムで表示が遅くなります
-options.textarea.fracFontMetrics=Fractional フォントメトリクス (文字の表示が\
-	よりスムーズになります)
+options.textarea.fracFontMetrics=Fractional フォントメトリクス
 options.textarea.fracFontMetrics.tooltip=サブピクセルアンチエイリアスとの併用はお薦めしません
 options.textarea.stripTrailingEOL=最終行末を隠す (あれば)
 options.textarea.completeFromAllBuffers=開いているすべてのバッファから単語補完 (デフォルト\
@@ -1642,10 +1647,6 @@ options.view.fullScreenIncludesMenu=フルスクリーンモードでメニュ�
 options.view.fullScreenIncludesToolbar=フルスクリーンモードでツールバーを表示
 options.view.fullScreenIncludesStatus=フルスクリーンモードでステータスバーを表示
 options.bufferset.scope=バッファセットのスコープ:
-options.editpane.bufferset.contain=新規バッファセットの内容:
-options.editpane.bufferset.newbufferset.copy=現在のバッファセットのコピー
-options.editpane.bufferset.newbufferset.empty=空のバッファひとつ
-options.editpane.bufferset.newbufferset.currentbuffer=現在のバッファのみ
 #}}}
 
 
@@ -1842,7 +1843,7 @@ vfs.browser.next.label=次のディレクトリ
 #}}}
 
 #{{{ Commands menu
-vfs.browser.commands.label=コマンド
+vfs.browser.commands.label=コマンド($C)
 vfs.browser.commands.encoding.label=エンコーディング
 vfs.browser.commands.encoding.auto-detect=自動検出
 
@@ -1880,12 +1881,10 @@ vfs.browser.recurse-favorites.title=自己循環するお気に入りの禁止
 vfs.browser.recurse-favorites.message=お気に入りリストをそれ自身に追加することはできません。
 
 vfs.browser.delete-confirm.title=ファイル削除の確認
-vfs.browser.delete-confirm.message=以下の{1}を本当に削除しますか?\n\n\
-	{0}
+vfs.browser.delete-confirm.message=以下の{1}を本当に削除しますか?
 
 vfs.browser.delete-favorites.title=お気に入りからの削除
-vfs.browser.delete-favorites.message=以下のファイルを本当にお気に入りから削除しますか?\n\n\
-	{0}
+vfs.browser.delete-favorites.message=以下のファイルを本当にお気に入りから削除しますか?
 
 
 vfs.browser.rename.title=ファイル名の変更
@@ -1950,6 +1949,7 @@ install-plugins.depend.message=インストールしようとしているプラ�
 	インストールされます。
 
 plugin-manager.status.loaded=ロードされています
+plugin-manager.status.disabled=サポートされていません
 plugin-manager.status.not-loaded=ロードされていません
 plugin-manager.status.error=エラー
 
@@ -2028,8 +2028,8 @@ fileprop.properties=プロパティ
 fileprop.readable=読込み可能
 fileprop.writeable=書込み可能
 fileprop.attribute=属性
-fileprop.okBtn=了解
-fileprop.cancelBtn=取消し
+fileprop.okBtn=OK
+fileprop.cancelBtn=キャンセル
 fileprop.selectedFiles=選択されたファイル
 fileprop.selectedDirectories=選択されたディレクトリ
 #}}}
@@ -2043,6 +2043,9 @@ log-viewer.message.message.label=Message
 log-viewer.message.notice.label=Notice
 log-viewer.message.warning.label=Warning
 log-viewer.message.error.label=Error
+# This one should be actually placed in Debugging options, but
+# we don't have such a pane yet
+debug.beepOnOutput.label=Beep on output
 #}}}
 
 logs-remove-all-errors.label=すべてのエラーを削除

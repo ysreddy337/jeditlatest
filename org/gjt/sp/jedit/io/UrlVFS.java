@@ -1,6 +1,6 @@
 /*
  * UrlVFS.java - URL VFS
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2000 Slava Pestov
@@ -32,7 +32,7 @@ import org.gjt.sp.util.Log;
 /**
  * URL VFS.
  * @author Slava Pestov
- * @version $Id: UrlVFS.java 21627 2012-05-04 16:58:22Z jarekczek $
+ * @version $Id: UrlVFS.java 21831 2012-06-18 22:54:17Z ezust $
  */
 public class UrlVFS extends VFS
 {

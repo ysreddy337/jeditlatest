@@ -1,6 +1,6 @@
 /*
  * Anchor.java - A base point for physical line <-> screen line conversion
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2005 Slava Pestov
@@ -25,7 +25,7 @@ package org.gjt.sp.jedit.textarea;
 /**
  * A base point for physical line/screen line conversion.
  * @author Slava Pestov
- * @version $Id: Anchor.java 22366 2012-10-13 22:21:34Z ezust $
+ * @version $Id: Anchor.java 22361 2012-10-13 12:07:28Z thomasmey $
  */
 abstract class Anchor
 {

@@ -1,6 +1,6 @@
 /*
  * BufferLoadRequest.java - I/O request
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2000, 2005 Slava Pestov
@@ -39,7 +39,7 @@ import org.gjt.sp.util.*;
 /**
  * A buffer load request.
  * @author Slava Pestov
- * @version $Id: BufferLoadRequest.java 21594 2012-04-22 11:44:00Z jarekczek $
+ * @version $Id: BufferLoadRequest.java 22357 2012-10-13 04:58:01Z ezust $
  */
 public class BufferLoadRequest extends BufferIORequest
 {
@@ -57,13 +57,13 @@ public class BufferLoadRequest extends BufferIORequest
 	{
 		super(view,buffer,session,vfs,path);
 	} //}}}
-	
+
 	//{{{ run() method
-	public void run()
+	public void _run()
 	{
 		try
 		{
-			setAbortable(true);
+			setCancellable(true);
 			if(!buffer.isTemporary())
 			{
 				String[] args = { vfs.getFileName(path) };
@@ -85,7 +85,7 @@ public class BufferLoadRequest extends BufferIORequest
 					String[] args = { vfs.getFileName(path) };
 					if(!buffer.isTemporary())
 						setStatus(jEdit.getProperty("vfs.status.load-markers",args));
-					setAbortable(true);
+					setCancellable(true);
 
 					markers = vfs._createInputStream(session,markersPath,true,view);
 					if(markers != null)
@@ -100,6 +100,11 @@ public class BufferLoadRequest extends BufferIORequest
 					IOUtilities.closeQuietly(markers);
 				}
 			}
+		}
+		catch(InterruptedException e)
+		{
+			buffer.setBooleanProperty(ERROR_OCCURRED,true);
+			Thread.currentThread().interrupt();
 		}
 		catch(Exception e)
 		{
@@ -116,10 +121,6 @@ public class BufferLoadRequest extends BufferIORequest
 
 			buffer.setBooleanProperty(ERROR_OCCURRED,true);
 		}
-		catch(WorkThread.Abort a)
-		{
-			buffer.setBooleanProperty(ERROR_OCCURRED,true);
-		}
 		finally
 		{
 			try
@@ -132,10 +133,6 @@ public class BufferLoadRequest extends BufferIORequest
 				String[] pp = { e.toString() };
 				VFSManager.error(view,path,"ioerror.read-error",pp);
 
-				buffer.setBooleanProperty(ERROR_OCCURRED,true);
-			}
-			catch(WorkThread.Abort a)
-			{
 				buffer.setBooleanProperty(ERROR_OCCURRED,true);
 			}
 		}
@@ -205,7 +202,7 @@ public class BufferLoadRequest extends BufferIORequest
 			}
 			finally
 			{
-				IOUtilities.closeQuietly(in);
+				IOUtilities.closeQuietly((Closeable)in);
 			}
 		}
 	} //}}}
@@ -218,8 +215,9 @@ public class BufferLoadRequest extends BufferIORequest
 	 *   - The encoding
 	 * If fallback encodings are specified, they are used on
 	 * encoding errors.
+	 * @throws InterruptedException
 	 */
-	private void readContents() throws IOException
+	private void readContents() throws IOException, InterruptedException
 	{
 		long length = getContentLength();
 
@@ -357,7 +355,7 @@ public class BufferLoadRequest extends BufferIORequest
 
 	//{{{ readMarkers() method
 	private static void readMarkers(Buffer buffer, InputStream _in)
-		throws IOException
+		throws IOException, InterruptedException
 	{
 		// For `reload' command
 		buffer.removeAllMarkers();
@@ -369,10 +367,13 @@ public class BufferLoadRequest extends BufferIORequest
 			String line;
 			while((line = in.readLine()) != null)
 			{
+				if(Thread.interrupted())
+					throw new InterruptedException();
+
 				// malformed marks file?
 				if(line.length() == 0)
 					continue;
-				
+
 				// compatibility kludge for jEdit 3.1 and earlier
 				if(line.charAt(0) != '!')
 					continue;

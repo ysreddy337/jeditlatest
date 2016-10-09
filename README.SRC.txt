@@ -1,6 +1,7 @@
 SOURCE CODE NOTES
 
 This file only contains information about compiling from source.
+Scroll to the bottom if you are trying to use an IDE like Eclipse.
 General jEdit documentation can be found in the 'doc' directory.
 
 * Requirements
@@ -176,16 +177,32 @@ General jEdit documentation can be found in the 'doc' directory.
 
 * Tips for Eclipse/NetBeans/IDE users:
 
+A file "jsr305.jar" contains definitions of the annotations 
+used in jEdit source code. It is downloaded automatically by ivy 
+as part of the ant build process, to your lib/compile subfolder.
+If you add that jar to the
+project properties - java build path - libraries, that will
+get rid of the compiler errors on the annotations.
+
+A file "tools.jar" from the JDK is also needed in your 
+java build path. 
+
+The ant build process creates a subfolder called "build" for its work.
+Eclipse does the same and may pick the same folder. 
+It is recommended you check/ensure that a different build
+directory ("Default Ouptut Folder") for Eclipse is used. 
+
 Some of the source directories are only needed for building packages on
 certain platforms. If you add jEdit source to an IDE like Eclipse that tries
-to build everything, you'll get some errors from these directories unless
-you have the right libraries. However, if you tell Eclipse to exclude these
-directories, you can still build and run/debug jEdit from source.
-Follow these steps:
+to compile every .java file, you'll get some errors from these directories unless
+you have the right libraries, which are automatically downloaded by ivy.
+However, if you tell Eclipse to exclude these directories, 
+you can still build and run/debug jEdit from source. Follow these steps:
 
  - Project properties - Java build path
  - Source - Excluded dirs - Edit - Add multiple
- - Add these subdirs: net, de, build
+ - Add these subdirs: net, de, build, test, misc
+ - Default output folder: /build-eclipse
 
 The "eclipse-formatting.xml" file can be used to set the
 code format style to be the same as what is currently used here.

@@ -1,6 +1,6 @@
 /*
  * KillRing.java - Stores deleted text
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2003, 2005 Slava Pestov
@@ -51,15 +51,14 @@ public class KillRing implements MutableListModel
 	{
 		int newSize = Math.max(1, historySize);
 		if(ring == null)
-			ring = new UndoManager.RemovedContent[newSize];
+			ring = new String[newSize];
 		else if(newSize != ring.length)
 		{
-			UndoManager.RemovedContent[] newRing = new UndoManager.RemovedContent[
-				newSize];
+			String[] newRing = new String[newSize];
 			int newCount = Math.min(getSize(),newSize);
 			for(int i = 0; i < newCount; i++)
 			{
-				newRing[i] = (UndoManager.RemovedContent)getElementAt(i);
+				newRing[i] = (String)getElementAt(i);
 			}
 			ring = newRing;
 			count = newCount;
@@ -94,22 +93,11 @@ public class KillRing implements MutableListModel
 	 */
 	protected void reset(Collection<?> source)
 	{
-		UndoManager.RemovedContent[] newRing
-			= new UndoManager.RemovedContent[source.size()];
+		String[] newRing = new String[source.size()];
 		int i = 0;
 		for(Object x: source)
 		{
-			UndoManager.RemovedContent element;
-			if(x instanceof String)
-			{
-				element = new UndoManager.RemovedContent(
-					(String)x);
-			}
-			else
-			{
-				element = (UndoManager.RemovedContent)x;
-			}
-			newRing[i++] = element;
+			newRing[i++] = (String)x;
 		}
 		ring = newRing;
 		count = 0;
@@ -163,7 +151,7 @@ public class KillRing implements MutableListModel
 		called by the 'Paste Deleted' dialog where the performance
 		is not exactly vital */
 		remove(index);
-		add((UndoManager.RemovedContent)value);
+		add((String)value);
 	} //}}}
 
 	//}}}
@@ -171,58 +159,28 @@ public class KillRing implements MutableListModel
 	//{{{ Package-private members
 
 	//{{{ changed() method
-	void changed(UndoManager.RemovedContent rem)
+	void changed(String oldStr, String newStr)
 	{
-		if(rem.inKillRing)
-		{
-			// compare existing entries' hashcode with this
-			int length = (wrap ? ring.length : count);
-			int kill = -1;
-
-			for(int i = 0; i < length; i++)
-			{
-				if(ring[i] != rem
-					&& ring[i].hashcode == rem.hashcode
-					&& ring[i].str.equals(rem.str))
-				{
-					// we don't want duplicate
-					// entries in the kill ring
-					kill = i;
-					break;
-				}
-			}
-
-			if(kill != -1)
-				remove(kill);
-		}
+		int i = indexOf(oldStr);
+		if(i != -1)
+			ring[i] = newStr;
 		else
-			add(rem);
+			add(newStr);
 	} //}}}
 
 	//{{{ add() method
-	void add(UndoManager.RemovedContent rem)
+	void add(String removed)
 	{
-		// compare existing entries' hashcode with this
-		int length = (wrap ? ring.length : count);
-		for(int i = 0; i < length; i++)
-		{
-			if(ring[i].hashcode == rem.hashcode)
-			{
-				// strings might be equal!
-				if(ring[i].str.equals(rem.str))
-				{
-					// we don't want duplicate entries
-					// in the kill ring
-					return;
-				}
-			}
-		}
+		// we don't want duplicate entries
+		// in the kill ring
+		if(indexOf(removed) != -1)
+			return;
 
 		// no duplicates, check for all-whitespace string
 		boolean allWhitespace = true;
-		for(int i = 0; i < rem.str.length(); i++)
+		for(int i = 0; i < removed.length(); i++)
 		{
-			if(!Character.isWhitespace(rem.str.charAt(i)))
+			if(!Character.isWhitespace(removed.charAt(i)))
 			{
 				allWhitespace = false;
 				break;
@@ -232,12 +190,7 @@ public class KillRing implements MutableListModel
 		if(allWhitespace)
 			return;
 
-		rem.inKillRing = true;
-
-		if(ring[count] != null)
-			ring[count].inKillRing = false;
-
-		ring[count] = rem;
+		ring[count] = removed;
 		if(++count >= ring.length)
 		{
 			wrap = true;
@@ -250,8 +203,7 @@ public class KillRing implements MutableListModel
 	{
 		if(wrap)
 		{
-			UndoManager.RemovedContent[] newRing = new UndoManager.RemovedContent[
-				ring.length];
+			String[] newRing = new String[ring.length];
 			int newCount = 0;
 			for(int j = 0; j < ring.length; j++)
 			{
@@ -259,7 +211,6 @@ public class KillRing implements MutableListModel
 
 				if(i == index)
 				{
-					ring[index].inKillRing = false;
 					continue;
 				}
 
@@ -279,7 +230,7 @@ public class KillRing implements MutableListModel
 	//}}}
 
 	//{{{ Private members
-	private UndoManager.RemovedContent[] ring;
+	private String[] ring;
 	private int count;
 	private boolean wrap;
 	private static KillRing killRing = new KillRing();
@@ -300,6 +251,20 @@ public class KillRing implements MutableListModel
 		}
 		else
 			return count - index - 1;
+	} //}}}
+
+	//{{{ indexOf() method
+	private int indexOf(String str)
+	{
+		int length = (wrap ? ring.length : count);
+		for(int i = length - 1; i >= 0; i--)
+		{
+			if(ring[i].equals(str))
+			{
+				return i;
+			}
+		}
+		return -1;
 	} //}}}
 
 	//}}}

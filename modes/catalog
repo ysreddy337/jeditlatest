@@ -93,6 +93,9 @@
 <MODE NAME="c"			FILE="c.xml"
 				FILE_NAME_GLOB="*.c" />
 
+<MODE NAME="cfscript"		FILE="cfscript.xml"
+				FILE_NAME_GLOB="*.cfc" />
+
 <MODE NAME="chill"		FILE="chill.xml"
 				FILE_NAME_GLOB="*.{chl,mpol}" />
 
@@ -256,6 +259,10 @@
 <MODE NAME="io"			FILE="io.xml"
 				FILE_NAME_GLOB="*.io" />
 
+<MODE NAME="jamon"
+      FILE="jamon.xml"
+      FILE_NAME_GLOB="*.jamon" />
+
 <MODE NAME="javacc"		FILE="javacc.xml"
 				FILE_NAME_GLOB="*.{jj,jjt}"/>
 
@@ -385,10 +392,11 @@
 				FILE_NAME_GLOB="*.{pas,dpr,dpk}" />
 
 <MODE NAME="patch"		FILE="patch.xml"
-				FILE_NAME_GLOB="*.{diff,patch}" />
+				FILE_NAME_GLOB="*.{diff,patch}"
+				FIRST_LINE_GLOB="{# HG changeset patch,diff --git *}" />
 
 <MODE NAME="perl"		FILE="perl.xml"
-				FILE_NAME_GLOB="*.p[lm]"
+				FILE_NAME_GLOB="*.p{[lmh],od}"
 				FIRST_LINE_GLOB="#!/*perl*" />
 
 <MODE NAME="php"		FILE="php.xml"
@@ -399,6 +407,9 @@
 				FILE_NAME_GLOB="*.{pike,pmod}" />
 
 <MODE NAME="plaintex"		FILE="plaintex.xml" />
+
+<MODE NAME="PostgreSQL" FILE="pg-sql.xml"
+							FILE_NAME_GLOB="*.{pg_sql,pg-sql}" />
 
 <MODE NAME="pl-sql"		FILE="osql.xml"
                            FILE_NAME_GLOB="*.{pls,sql}" />
@@ -504,8 +515,11 @@
 <MODE NAME="sas"		FILE="sas.xml"
 				FILE_NAME_GLOB="*.sas" />
 
+<MODE NAME="sbt" FILE="scala.xml"
+        FILE_NAME_GLOB="*.sbt" />
+
 <MODE NAME="scala"  	FILE="scala.xml"
-    			FILE_NAME_GLOB="*.scala" />
+        FILE_NAME_GLOB="*.scala" />
 
 <MODE NAME="scheme"		FILE="scheme.xml"
 				FILE_NAME_GLOB="*.scm" />

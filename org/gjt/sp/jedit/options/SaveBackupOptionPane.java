@@ -1,6 +1,6 @@
 /*
  * AutosaveBackupOptionPane.java - Autosave & backup options
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2003 Slava Pestov
@@ -35,7 +35,7 @@ import org.gjt.sp.jedit.browser.VFSBrowser;
  * The Save and Backup option panel.
  *
  * @author Slava Pestov
- * @author $Id: SaveBackupOptionPane.java 21743 2012-05-31 20:23:35Z ezust $
+ * @author $Id: SaveBackupOptionPane.java 21831 2012-06-18 22:54:17Z ezust $
  */
 public class SaveBackupOptionPane extends AbstractOptionPane
 {

@@ -1,6 +1,6 @@
 /*
  * SelectionManager.java
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2004 Slava Pestov
@@ -28,6 +28,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+import javax.annotation.Nonnull;
+
 import org.gjt.sp.jedit.buffer.*;
 //}}}
 
@@ -59,6 +61,7 @@ class SelectionManager
 	 * Returns the current selection.
 	 * @since jEdit 3.2pre1
 	 */
+	@Nonnull
 	public Selection[] getSelection()
 	{
 		return selection.toArray(

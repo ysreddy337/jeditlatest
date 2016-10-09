@@ -1,6 +1,6 @@
 /*
  * SyntaxUtilities.java - Utility functions
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2003 Slava Pestov
@@ -26,7 +26,7 @@ import javax.swing.text.Segment;
 /**
  * Contains utility functions used by the syntax highlighting code.
  * @since jEdit 4.2pre1
- * @version $Id: SyntaxUtilities.java 19475 2011-03-22 12:04:35Z kpouer $
+ * @version $Id: SyntaxUtilities.java 21831 2012-06-18 22:54:17Z ezust $
  * @author Slava Pestov
  */
 public class SyntaxUtilities

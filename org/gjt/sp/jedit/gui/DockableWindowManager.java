@@ -113,7 +113,7 @@ import org.gjt.sp.util.Log;
  * @author Slava Pestov
  * @author John Gellene (API documentation)
  * @author Shlomy Reinstein (refactoring into a base and an impl)
- * @version $Id: DockableWindowManager.java 21504 2012-03-29 17:45:22Z ezust $
+ * @version $Id: DockableWindowManager.java 22905 2013-03-30 18:46:10Z ezust $
  * @since jEdit 2.6pre3
  *
  */
@@ -286,6 +286,7 @@ public abstract class DockableWindowManager extends JPanel
 		return getDockable(name);
 	} //}}}
 
+	
 	// {{{ toggleDockAreas()
 	/**
 	 * Hides all visible dock areas, or shows them again,
@@ -317,6 +318,15 @@ public abstract class DockableWindowManager extends JPanel
 		closeToggle = !closeToggle;
 		view.getTextArea().requestFocus();
 	} // }}}
+
+	/** @return true if the next invocation of "toggle docked areas"
+	    will hide the dockables. false otherwise.
+	*/
+	    
+	public boolean willToggleHide()
+	{
+		return closeToggle;
+	}
 
 	// {{{ dockableTitleChanged
 	public void dockableTitleChanged(String dockable, String newTitle)

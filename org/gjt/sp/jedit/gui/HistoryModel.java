@@ -1,6 +1,6 @@
 /*
  * HistoryModel.java - History list model
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1999, 2005 Slava Pestov
@@ -39,7 +39,7 @@ import java.util.*;
  *
  * @author Slava Pestov
  * @author Eric Le Lay
- * @version $Id: HistoryModel.java 21506 2012-03-29 17:58:53Z ezust $
+ * @version $Id: HistoryModel.java 21831 2012-06-18 22:54:17Z ezust $
  */
 public class HistoryModel extends DefaultListModel
 	implements MutableListModel

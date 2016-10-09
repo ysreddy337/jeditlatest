@@ -1,6 +1,6 @@
 /*
  * TabbedOptionDialog.java - Options Dialog with tabs. 
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2005 Slava Pestov
@@ -25,7 +25,6 @@ package org.jedit.options;
 
 import java.awt.BorderLayout;
 import java.awt.Dialog;
-import java.awt.Dimension;
 import java.awt.Frame;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
@@ -191,7 +190,6 @@ public class TabbedOptionDialog extends EnhancedDialog implements ActionListener
 				op.save();
 		}
 		Point p = getLocation();
-		Dimension d = getSize();
 
 		/* This will fire the PROPERTIES_CHANGED event */
 		jEdit.propertiesChanged();

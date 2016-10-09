@@ -1,6 +1,6 @@
 /*
  * FoldPainter.java
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2008 Shlomy Reinstein
@@ -31,7 +31,7 @@ import org.gjt.sp.jedit.buffer.JEditBuffer;
  *
  * @since jEdit 4.3pre16
  * @author Shlomy Reinstein
- * @version $Id: FoldPainter.java 18569 2010-09-16 08:35:11Z kpouer $
+ * @version $Id: FoldPainter.java 21971 2012-08-02 20:32:37Z jarekczek $
  */
 public interface FoldPainter
 {

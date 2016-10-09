@@ -1,6 +1,6 @@
 /*
  * ModeProvider.java - An edit mode provider.
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 2003 Slava Pestov
@@ -22,6 +22,8 @@
 package org.gjt.sp.jedit.syntax;
 
 //{{{ Imports
+import java.io.Closeable;
+
 import org.gjt.sp.jedit.Mode;
 import org.gjt.sp.util.IOUtilities;
 import org.gjt.sp.util.Log;
@@ -99,7 +101,7 @@ public class ModeProvider
 		if (filename != null && filename.endsWith(".gz"))
 			filename = filename.substring(0, filename.length() - 3);
 
-		List<Mode> acceptable = new ArrayList<Mode>();
+		List<Mode> acceptable = new ArrayList<Mode>(1);
 		for(Mode mode : modes.values())
 		{
 			if(mode.accept(filepath, filename, firstLine))
@@ -233,7 +235,7 @@ public class ModeProvider
 		}
 		finally
 		{
-			IOUtilities.closeQuietly(grammar);
+			IOUtilities.closeQuietly((Closeable)grammar);
 		}
 	} //}}}
 

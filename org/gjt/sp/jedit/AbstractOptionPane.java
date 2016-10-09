@@ -1,6 +1,6 @@
 /*
  * AbstractOptionPane.java - Abstract option pane
- * :tabSize=8:indentSize=8:noTabs=false:
+ * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1998, 1999, 2000, 2001, 2002 Slava Pestov
@@ -56,7 +56,7 @@ import java.awt.*;
  *
  * @author Slava Pestov
  * @author John Gellene (API documentation)
- * @version $Id: AbstractOptionPane.java 21538 2012-04-01 10:10:44Z kpouer $
+ * @version $Id: AbstractOptionPane.java 21831 2012-06-18 22:54:17Z ezust $
  */
 // even though this class is called AbstractOptionPane, it is not really
 // abstract, since BufferOptions uses an instance of it to lay out its

@@ -31,6 +31,7 @@ common.more=Více...
 common.insert=Vložit
 common.add=Přidat
 common.remove=Odebrat
+common.removeCurrent=Odebrat aktuální
 common.moveUp=Posunout nahoru
 common.moveDown=Posunout dolů
 common.clearAll=Vyčistit vše
@@ -741,7 +742,7 @@ badurl.message=Následující URL není validní: {0}\n\
 
 #{{{ Go to line dialog
 goto-line.title=Jdi na řádku
-goto-line.message=Jdi na řádku:
+goto-line.message=Jdi na řádku ({0} - {1}):
 #}}}
 
 #{{{ Word count dialog
@@ -841,6 +842,7 @@ search.settings=Nastavení:
 search.keep=Podržet dialog
 search.keep.mnemonic=k
 search.word=Celé slovo
+search.word.bar=Celé slovo
 search.word.mnemonic=q
 search.case=Ignorovat velikost písmen
 search.case.mnemonic=i
@@ -886,6 +888,7 @@ search.synchronize.tooltip=Nastaví filtr a adresář na aktuálníkoncovku/umí
 search.findBtn=Najít
 search.findBtn.mnemonic=f
 search.replaceBtn=Nahradit
+search.replaceBtn.mnemonic=h
 search.replaceAndFindBtn=Nahradit & Najít
 search.replaceAndFindBtn.mnemonic=r
 search.replaceAllBtn=Nahradit vše
@@ -1603,8 +1606,7 @@ options.textarea.electricBorders=Elektrické okraje (auto skrolování)
 options.textarea.stdNextPrevWord=Go to next/previous word commands eat whitespace
 options.textarea.antiAlias=Vyhlazený hladký text
 options.textarea.antiAlias.tooltip=Zpomaluje zobrazování na některých systémech
-options.textarea.fracFontMetrics=Částečné písmové metriky (pro lepší hladké \
-	zobrazení textu)
+options.textarea.fracFontMetrics=Částečné písmové metriky
 options.textarea.fracFontMetrics.tooltip=Není doporučeno se subpixelovým vyhlazováním
 options.textarea.stripTrailingEOL=Skrýt poslední konec řádku (pokud je)
 options.textarea.completeFromAllBuffers=Dokončit slova ve všech otevřených bufferech (výchozí je \
@@ -1653,10 +1655,6 @@ options.view.fullScreenIncludesMenu=Zobrazit menu panel v režimu "Na celou obra
 options.view.fullScreenIncludesToolbar=Zobrazit panely nástrojů v režimu "Na celou obrazovku"
 options.view.fullScreenIncludesStatus=Zobrazit stavový řádek v režimu "Na celou obrazovku"
 options.bufferset.scope=Rozsah sady bufferů:
-options.editpane.bufferset.contain=Nová sada bufferu obsahuje:
-options.editpane.bufferset.newbufferset.copy=kopii aktuální sady bufferů
-options.editpane.bufferset.newbufferset.empty=prázdný buffer
-options.editpane.bufferset.newbufferset.currentbuffer=pouze aktuální buffer
 #}}}
 
 
@@ -1891,13 +1889,11 @@ vfs.browser.recurse-favorites.title=Oblíbené nelze přidat do sebe
 vfs.browser.recurse-favorites.message=Seznam oblíbených nemůže být přidám do sebe.
 
 vfs.browser.delete-confirm.title=Potvrzení smazání souboru
-vfs.browser.delete-confirm.message=Opravdu chcete smazat následující {1}?\n\n\
-	{0}
+vfs.browser.delete-confirm.message=Opravdu chcete smazat následující ?
 
 vfs.browser.delete-favorites.title=Odstranit z oblíbených
 vfs.browser.delete-favorites.message=Opravdu chcete odebrat následující soubory \
-	z oblíbených?\n\n\
-	{0}
+	z oblíbených?
 
 vfs.browser.rename.title=Přejmenovat soubor
 vfs.browser.rename.message=Zadejte nový název pro {0}:

@@ -31,12 +31,15 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 
+import org.gjt.sp.jedit.bufferio.IoTask;
 import org.gjt.sp.jedit.gui.ErrorListDialog;
 import org.gjt.sp.jedit.msg.VFSUpdate;
 import org.gjt.sp.jedit.*;
 import org.gjt.sp.util.Log;
+import org.gjt.sp.util.Task;
+import org.gjt.sp.util.TaskManager;
 import org.gjt.sp.util.ThreadUtilities;
-import org.gjt.sp.util.WorkThreadPool;
+import org.gjt.sp.util.AwtRunnableQueue;
 import org.gjt.sp.util.StandardUtilities;
 //}}}
 
@@ -52,7 +55,7 @@ import org.gjt.sp.util.StandardUtilities;
  * {@link #waitForRequests()}.
  *
  * @author Slava Pestov
- * @version $Id: VFSManager.java 22134 2012-09-02 02:22:53Z ezust $
+ * @version $Id: VFSManager.java 22943 2013-04-22 11:44:40Z thomasmey $
  */
 public class VFSManager
 {
@@ -68,13 +71,6 @@ public class VFSManager
 	 */
 	public static void init()
 	{
-		int count = jEdit.getIntegerProperty("ioThreadCount",4);
-		ioThreadPool = new WorkThreadPool("jEdit I/O",count);
-		JARClassLoader classLoader = new JARClassLoader();
-		for(int i = 0; i < ioThreadPool.getThreadCount(); i++)
-		{
-			ioThreadPool.getThread(i).setContextClassLoader(classLoader);
-		}
 	} //}}}
 
 	//{{{ start() method
@@ -83,7 +79,7 @@ public class VFSManager
 	 */
 	public static void start()
 	{
-		ioThreadPool.start();
+		AwtRunnableQueue.INSTANCE.start();
 	} //}}}
 
 	//{{{ VFS methods
@@ -168,23 +164,18 @@ public class VFSManager
 
 	//{{{ I/O request methods
 
-	//{{{ getIOThreadPool() method
-	/**
-	 * Returns the I/O thread pool.
-	 */
-	public static WorkThreadPool getIOThreadPool()
-	{
-		return ioThreadPool;
-	} //}}}
-
 	//{{{ waitForRequests() method
 	/**
 	 * Returns when all pending requests are complete.
+	 * Must be called in the Event Dispatch Thread
 	 * @since jEdit 2.5pre1
 	 */
 	public static void waitForRequests()
 	{
-		ioThreadPool.waitForRequests();
+		if(EventQueue.isDispatchThread() != true)
+			throw new IllegalStateException();
+
+		TaskManager.instance.waitForIoTasks();
 	} //}}}
 
 	//{{{ errorOccurred() method
@@ -202,7 +193,7 @@ public class VFSManager
 	 */
 	public static int getRequestCount()
 	{
-		return ioThreadPool.getRequestCount();
+		return TaskManager.instance.countIoTasks();
 	} //}}}
 
 	//{{{ runInAWTThread() method
@@ -223,7 +214,7 @@ public class VFSManager
 	@Deprecated
 	public static void runInAWTThread(Runnable run)
 	{
-		ioThreadPool.addWorkRequest(run,true);
+		AwtRunnableQueue.INSTANCE.runAfterIoTasks(run);
 	} //}}}
 
 	//{{{ runInWorkThread() method
@@ -236,9 +227,12 @@ public class VFSManager
 	 * @see org.gjt.sp.util.ThreadUtilities#runInBackground(Runnable)
 	 */
 	@Deprecated
-	public static void runInWorkThread(Runnable run)
+	public static void runInWorkThread(Task run)
 	{
-		ioThreadPool.addWorkRequest(run,false);
+		if(!(run instanceof IoTask))
+			throw new IllegalArgumentException();
+
+		ThreadUtilities.runInBackground(run);
 	} //}}}
 
 	//}}}
@@ -348,7 +342,7 @@ public class VFSManager
 					// we were the first to add an update;
 					// add update sending runnable to AWT
 					// thread
-					VFSManager.runInAWTThread(new SendVFSUpdatesSafely());
+					AwtRunnableQueue.INSTANCE.runAfterIoTasks(new SendVFSUpdatesSafely());
 				}
 			}
 		}
@@ -382,7 +376,6 @@ public class VFSManager
 	//{{{ Private members
 
 	//{{{ Static variables
-	private static WorkThreadPool ioThreadPool;
 	private static VFS fileVFS;
 	private static VFS urlVFS;
 	private static boolean error;
@@ -500,7 +493,7 @@ public class VFSManager
 				Vector<ErrorListDialog.ErrorEntry> errorsCopy;
 				synchronized(errorLock)
 				{
-					errorsCopy = new Vector(errors);
+					errorsCopy = new Vector<ErrorListDialog.ErrorEntry>(errors);
 					errors.clear();
 					error = false;
 				}
