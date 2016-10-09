@@ -88,7 +88,7 @@ import org.gjt.sp.util.SyntaxUtilities;
  * @see View#getEditPanes()
  *
  * @author Slava Pestov
- * @version $Id: EditPane.java 16335 2009-10-14 09:34:37Z kpouer $
+ * @version $Id: EditPane.java 17498 2010-03-19 17:20:31Z kpouer $
  */
 public class EditPane extends JPanel implements EBComponent, BufferSetListener
 {
@@ -950,6 +950,7 @@ public class EditPane extends JPanel implements EBComponent, BufferSetListener
 	{
 		saveCaretInfo();
 		EditBus.send(new EditPaneUpdate(this,EditPaneUpdate.DESTROYED));
+		bufferSet.removeBufferSetListener(this);
 		EditBus.removeFromBus(this);
 		textArea.dispose();
 	} //}}}

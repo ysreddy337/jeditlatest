@@ -1,5 +1,62 @@
 JEDIT 4.3 VERSION HISTORY
 
+{{{ Version 4.3.2
+
+Thanks to Björn "Vampire" Kautler, Matthieu Casanova, Shlomy Reinstein,
+Kazutoshi Satoda, oman002, and Eric Le Lay for contributing to this release.
+
+{{{ Bug Fixes
+
+- Fixed Standalone TextArea build target (Shlomy Reinstein)
+
+- Fixed a NPE that happens when an error occurs before the view is loaded
+  (Matthieu Casanova #2905487)
+
+- Fixed bug #2927555: beanshell load() fails w/ exception (Shlomy Reinstein)
+
+- Fixed a memory leak which held closed View and EditPane when using
+  global bufferset scope. (Kazutoshi Satoda)
+
+- When removing text from the buffer, the event contentRemoved was sent before
+  making the buffer dirty (oman002 #2944145)
+
+- Fixed leaky memory usage after some specific text operations.
+  (Kazutoshi Satoda)
+
+- Worked around a memory leak in Sun Java 6 where the sun.font.GlyphLayout is
+  cached and reused while holding an instance to the char array
+  (Björn "Vampire" Kautler)
+
+- When setting a new message in the status bar in a macro called from the
+  Macro menu the message was cleared immediately (Matthieu Casanova #2964522)
+
+- don't log an error when the API docs are not available. Provide a link
+  to the online docs instead (SF.net bug #1777806 - Eric Le Lay)
+
+- RFC edit mode was misplaced in catalog and was never matching anything because
+  text edit mode glob was more global and checked first (Matthieu Casanova)
+
+- java installer refuses to install from a directory containing exclamation
+  marks (SF.net bug #2065330 - Eric Le Lay)
+
+}}}
+{{{ Miscellaneous
+
+
+}}}
+{{{ API Changes
+
+- Applied patch #2932330 to suppress BufferUpdate messages from temporary
+  buffers to improve performance. (Dale Anson)
+
+}}}
+{{{ Editing
+
+
+}}}
+
+}}}
+
 {{{ Version 4.3.1
 
 Thanks to Björn "Vampire" Kautler, Alan Ezust, Damien Radtke,
@@ -20,17 +77,6 @@ Anson)
 
 - Fixed #2920352: Can't disable "Restore previously open files on startup".
   (Shlomy Reinstein)
-
-}}}
-{{{ Miscellaneous
-
-
-}}}
-{{{ API Changes
-
-
-}}}
-{{{ Editing
 
 }}}
 
@@ -73,7 +119,7 @@ Alan Ezust, Eric Berry, and Eric Le Lay for contributing to this release.
 }}}
 {{{ API Changes
 
-. Add support for type-specific EditBus message handlers. EditBus handlers
+- Add support for type-specific EditBus message handlers. EditBus handlers
   don't need to implement EBComponent anymore; they just need to annotate their
   EditBus handler methods with the new "EBHandler" annotation. The methods
   should expect a single argument (an instance of any EBMessage type), and the

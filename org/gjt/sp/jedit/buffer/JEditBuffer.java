@@ -61,7 +61,7 @@ import java.util.regex.Pattern;
  * </ul>
  *
  * @author Slava Pestov
- * @version $Id: JEditBuffer.java 16136 2009-09-01 05:52:12Z shlomy $
+ * @version $Id: JEditBuffer.java 17654 2010-04-16 10:59:28Z kpouer $
  *
  * @since jEdit 4.3pre3
  */
@@ -82,7 +82,6 @@ public class JEditBuffer
 	public JEditBuffer(Map props)
 	{
 		bufferListeners = new Vector<Listener>();
-		undoListeners = new Vector<BufferUndoListener>();
 		lock = new ReentrantReadWriteLock();
 		contentMgr = new ContentManager();
 		lineMgr = new LineManager();
@@ -114,7 +113,6 @@ public class JEditBuffer
 	public JEditBuffer()
 	{
 		bufferListeners = new Vector<Listener>();
-		undoListeners = new Vector<BufferUndoListener>();
 		lock = new ReentrantReadWriteLock();
 		contentMgr = new ContentManager();
 		lineMgr = new LineManager();
@@ -760,13 +758,14 @@ public class JEditBuffer
 			lineMgr.contentRemoved(startLine,offset,numLines,length);
 			positionMgr.contentRemoved(offset,length);
 
+			setDirty(true);
+
 			fireContentRemoved(startLine,offset,numLines,length);
 
 			/* otherwise it will be delivered later */
 			if(!undoInProgress && !insideCompoundEdit())
 				fireTransactionComplete();
 
-			setDirty(true);
 		}
 		finally
 		{
@@ -2294,28 +2293,6 @@ loop:		for(int i = 0; i < seg.count; i++)
 		return returnValue;
 	} //}}}
 
-	//{{{ addBufferUndoListener() method
-	/**
-	 * Adds a buffer undo listener.
-	 * @param listener The listener
-	 * @since jEdit 4.3pre18
-	 */
-	public void addBufferUndoListener(BufferUndoListener listener)
-	{
-		undoListeners.add(listener);
-	} //}}}
-
-	//{{{ removeBufferUndoListener() method
-	/**
-	 * Removes a buffer undo listener.
-	 * @param listener The listener
-	 * @since jEdit 4.3pre18
-	 */
-	public void removeBufferUndoListener(BufferUndoListener listener)
-	{
-		undoListeners.remove(listener);
-	} //}}}
-
 	//{{{ setUndoLimit() method
 	/**
 	 * Set the undo limit of the Undo Manager.
@@ -2464,69 +2441,21 @@ loop:		for(int i = 0; i < seg.count; i++)
 	//{{{ fireBeginUndo() method
 	protected void fireBeginUndo()
 	{
-		for (BufferUndoListener listener: undoListeners)
-		{
-			try
-			{
-				listener.beginUndo(this);
-			}
-			catch(Throwable t)
-			{
-				Log.log(Log.ERROR,this,"Exception while sending buffer undo event to "+ listener +" :");
-				Log.log(Log.ERROR,this,t);
-			}
-		}
 	} //}}}
 
 	//{{{ fireEndUndo() method
 	protected void fireEndUndo()
 	{
-		for (BufferUndoListener listener: undoListeners)
-		{
-			try
-			{
-				listener.endUndo(this);
-			}
-			catch(Throwable t)
-			{
-				Log.log(Log.ERROR,this,"Exception while sending buffer undo event to "+ listener +" :");
-				Log.log(Log.ERROR,this,t);
-			}
-		}
 	} //}}}
 
 	//{{{ fireBeginRedo() method
 	protected void fireBeginRedo()
 	{
-		for (BufferUndoListener listener: undoListeners)
-		{
-			try
-			{
-				listener.beginRedo(this);
-			}
-			catch(Throwable t)
-			{
-				Log.log(Log.ERROR,this,"Exception while sending buffer begin redo event to "+ listener +" :");
-				Log.log(Log.ERROR,this,t);
-			}
-		}
 	} //}}}
 	
 	//{{{ fireEndRedo() method
 	protected void fireEndRedo()
 	{
-		for (BufferUndoListener listener: undoListeners)
-		{
-			try
-			{
-				listener.endRedo(this);
-			}
-			catch(Throwable t)
-			{
-				Log.log(Log.ERROR,this,"Exception while sending buffer end redo event to "+ listener +" :");
-				Log.log(Log.ERROR,this,t);
-			}
-		}
 	} //}}}
 	
 	//{{{ fireTransactionComplete() method
@@ -2702,7 +2631,6 @@ loop:		for(int i = 0; i < seg.count; i++)
 
 	//{{{ Private members
 	private List<Listener> bufferListeners;
-	private List<BufferUndoListener> undoListeners;
 	private final ReentrantReadWriteLock lock;
 	private ContentManager contentMgr;
 	private LineManager lineMgr;

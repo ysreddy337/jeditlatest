@@ -53,7 +53,7 @@ import org.gjt.sp.util.*;
  * <li>Displaying memory status
  * </ul>
  *
- * @version $Id: StatusBar.java 15589 2009-06-26 15:26:42Z daleanson $
+ * @version $Id: StatusBar.java 17692 2010-04-24 15:51:12Z k_satoda $
  * @author Slava Pestov
  * @since jEdit 3.2pre2
  */
@@ -226,6 +226,18 @@ public class StatusBar extends JPanel implements WorkThreadProgressListener
 	} //}}}
 
 	//}}}
+
+	//{{{ getMessage() method
+	/**
+	 * Returns the current message.
+	 *
+	 * @return the current message
+	 * @since jEdit 4.4pre1
+	 */
+	public String getMessage()
+	{
+		return message.getText();
+	} //}}}
 
 	//{{{ setMessageAndClear() method
 	/**
