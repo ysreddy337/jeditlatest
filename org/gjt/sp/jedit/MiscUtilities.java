@@ -33,7 +33,7 @@ import java.util.StringTokenizer;
  * A quicksort implementation is also available.
  *
  * @author Slava Pestov
- * @version $Id: MiscUtilities.java,v 1.46 2001/04/18 03:09:44 sp Exp $
+ * @version $Id: MiscUtilities.java,v 1.47 2001/05/17 05:00:14 sp Exp $
  */
 public class MiscUtilities
 {
@@ -611,15 +611,15 @@ loop:		for(int i = 0; i < str.length(); i++)
 	 * VersionCompare class.
 	 * @param version1 the first version string
 	 * @param version2 the second version string
-	 * @return a negative value, if <code>version1 < version2</code>, 
-	 *         a positive value, if <code>version1 > version2</code>,
+	 * @return a negative value, if <code>version1 &lt; version2</code>, 
+	 *         a positive value, if <code>version1 &gt; version2</code>,
 	 *         0, if <code>version1.equals(version2)</code>.
 	 */
-	public static int compareVersions(String version1, String version2) {
+	public static int compareVersions(String version1, String version2)
+	{
 		VersionCompare comparator = new VersionCompare();
 		return comparator.compare(version1,version2);
 	}
-	
 	
 	/**
 	 * Converts an internal version number (build) into a
