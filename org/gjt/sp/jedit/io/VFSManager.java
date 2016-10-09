@@ -55,7 +55,7 @@ import org.gjt.sp.util.StandardUtilities;
  * {@link #waitForRequests()}.
  *
  * @author Slava Pestov
- * @version $Id: VFSManager.java 22943 2013-04-22 11:44:40Z thomasmey $
+ * @version $Id: VFSManager.java 23222 2013-09-29 20:43:34Z shlomy $
  */
 public class VFSManager
 {
@@ -151,12 +151,7 @@ public class VFSManager
 		List<String> returnValue = new LinkedList<String>();
 		String[] newAPI = ServiceManager.getServiceNames(SERVICE);
 		if(newAPI != null)
-		{
-			for(int i = 0; i < newAPI.length; i++)
-			{
-				returnValue.add(newAPI[i]);
-			}
-		}
+			Collections.addAll(returnValue, newAPI);
 		return returnValue.toArray(new String[returnValue.size()]);
 	} //}}}
 
@@ -172,7 +167,7 @@ public class VFSManager
 	 */
 	public static void waitForRequests()
 	{
-		if(EventQueue.isDispatchThread() != true)
+		if(!EventQueue.isDispatchThread())
 			throw new IllegalStateException();
 
 		TaskManager.instance.waitForIoTasks();
@@ -324,10 +319,9 @@ public class VFSManager
 
 			synchronized(vfsUpdateLock)
 			{
-				for(int i = 0; i < vfsUpdates.size(); i++)
+				for (VFSUpdate msg : vfsUpdates)
 				{
-					VFSUpdate msg = vfsUpdates.get(i);
-					if(msg.getPath().equals(path))
+					if (msg.getPath().equals(path))
 					{
 						// don't send two updates
 						// for the same path
@@ -363,10 +357,8 @@ public class VFSManager
 				Collections.sort(vfsUpdates,
 					new StandardUtilities.StringCompare<VFSUpdate>()
 				);
-				for(int i = 0; i < vfsUpdates.size(); i++)
-				{
-					EditBus.send(vfsUpdates.get(i));
-				}
+				for (VFSUpdate vfsUpdate : vfsUpdates)
+					EditBus.send(vfsUpdate);
 
 				vfsUpdates.clear();
 			}

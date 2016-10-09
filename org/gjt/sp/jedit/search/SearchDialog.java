@@ -43,7 +43,7 @@ import org.gjt.sp.jedit.*;
 /**
  * Search and replace dialog.
  * @author Slava Pestov
- * @version $Id: SearchDialog.java 22471 2012-11-14 15:55:39Z daleanson $
+ * @version $Id: SearchDialog.java 23391 2014-01-04 01:01:28Z ezust $
  */
 public class SearchDialog extends EnhancedDialog
 {
@@ -715,26 +715,25 @@ public class SearchDialog extends EnhancedDialog
 		JPanel grid = new JPanel(new GridLayout(5,1,0,12));
 
 		findBtn = new JButton(jEdit.getProperty("search.findBtn"));
-		findBtn.setMnemonic(jEdit.getProperty("search.findBtn.mnemonic")
-			.charAt(0));
+	    
 		getRootPane().setDefaultButton(findBtn);
 		grid.add(findBtn);
 		findBtn.addActionListener(actionHandler);
 
 		replaceBtn = new JButton(jEdit.getProperty("search.replaceBtn", "Replace"));
-		replaceBtn.setMnemonic(jEdit.getProperty("search.replaceBtn.mnemonic")
+		replaceBtn.setMnemonic(jEdit.getProperty("search.replaceBtn.mnemonic", "p")
 			.charAt(0));
 		grid.add(replaceBtn);
 		replaceBtn.addActionListener(actionHandler);
 
 		replaceAndFindBtn = new JButton(jEdit.getProperty("search.replaceAndFindBtn"));
-		replaceAndFindBtn.setMnemonic(jEdit.getProperty("search.replaceAndFindBtn.mnemonic")
+		replaceAndFindBtn.setMnemonic(jEdit.getProperty("search.replaceAndFindBtn.mnemonic", "R")
 			.charAt(0));
 		grid.add(replaceAndFindBtn);
 		replaceAndFindBtn.addActionListener(actionHandler);
 
 		replaceAllBtn = new JButton(jEdit.getProperty("search.replaceAllBtn"));
-		replaceAllBtn.setMnemonic(jEdit.getProperty("search.replaceAllBtn.mnemonic")
+		replaceAllBtn.setMnemonic(jEdit.getProperty("search.replaceAllBtn.mnemonic", "a")
 			.charAt(0));
 		grid.add(replaceAllBtn);
 		replaceAllBtn.addActionListener(actionHandler);

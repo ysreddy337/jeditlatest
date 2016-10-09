@@ -3,8 +3,8 @@
  * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
- * Copyright (C) 2002-2012 Slava Pestov, Matthieu Casanova, Kris Kopicki,
- * 				Shlomy Reinstein, Alan Ezust
+ * Copyright (C) 2002-2013 Slava Pestov, Matthieu Casanova, Kris Kopicki,
+ * 				Shlomy Reinstein, Alan Ezust, Björn "Vampire" Kautler
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -43,7 +43,7 @@ import org.gjt.sp.util.ThreadUtilities;
 //}}}
 
 /**
- * @version $Id: PluginManager.java 22967 2013-05-06 09:15:44Z kpouer $
+ * @version $Id: PluginManager.java 23099 2013-07-29 18:08:50Z ezust $
  */
 public class PluginManager extends JFrame
 {

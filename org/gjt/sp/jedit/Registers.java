@@ -62,7 +62,7 @@ import org.gjt.sp.util.Log;
  *
  * @author Slava Pestov
  * @author John Gellene (API documentation)
- * @version $Id: Registers.java 21831 2012-06-18 22:54:17Z ezust $
+ * @version $Id: Registers.java 23224 2013-09-30 20:51:42Z shlomy $
  */
 public class Registers
 {
@@ -790,12 +790,10 @@ public class Registers
 	{
 		DataFlavor[] dataFlavors = transferable.getTransferDataFlavors();
 
-		for (int i = 0;i<dataFlavors.length;i++)
+		for (DataFlavor dataFlavor : dataFlavors)
 		{
-			DataFlavor dataFlavor = dataFlavors[i];
-			Log.log(Log.DEBUG,Registers.class,
-				"debugListDataFlavors(): dataFlavor="+
-				dataFlavor+'.');
+			Log.log(Log.DEBUG, Registers.class, "debugListDataFlavors(): dataFlavor=" +
+				dataFlavor + '.');
 		}
 
 		if (dataFlavors.length == 0)

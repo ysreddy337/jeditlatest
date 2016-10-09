@@ -41,7 +41,7 @@ import org.gjt.sp.util.StandardUtilities;
 /**
  * Abbrev editor.
  * @author Slava Pestov
- * @version $Id: AbbrevsOptionPane.java 21831 2012-06-18 22:54:17Z ezust $
+ * @version $Id: AbbrevsOptionPane.java 23221 2013-09-29 20:03:32Z shlomy $
  */
 public class AbbrevsOptionPane extends AbstractOptionPane
 {
@@ -385,14 +385,10 @@ public class AbbrevsOptionPane extends AbstractOptionPane
 		public Hashtable<String,String> toHashtable()
 		{
 			Hashtable<String,String> hash = new Hashtable<String,String>();
-			for(int i = 0; i < abbrevs.size(); i++)
+			for (Abbrev abbrev : abbrevs)
 			{
-				Abbrev abbrev = abbrevs.get(i);
-				if(abbrev.abbrev.length() > 0
-				   && abbrev.expand.length() > 0)
-				{
-					hash.put(abbrev.abbrev,abbrev.expand);
-				}
+				if (abbrev.abbrev.length() > 0 && abbrev.expand.length() > 0)
+					hash.put(abbrev.abbrev, abbrev.expand);
 			}
 			return hash;
 		} //}}}

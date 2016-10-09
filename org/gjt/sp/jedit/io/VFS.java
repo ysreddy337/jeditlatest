@@ -104,7 +104,7 @@ import org.gjt.sp.util.ThreadUtilities;
  * @see VFSManager#getVFSForProtocol(String)
  *
  * @author Slava Pestov
- * @author $Id: VFS.java 22454 2012-11-10 11:15:08Z thomasmey $
+ * @author $Id: VFS.java 23222 2013-09-29 20:43:34Z shlomy $
  */
 public abstract class VFS
 {
@@ -1114,10 +1114,9 @@ public abstract class VFS
 			if(colors == null)
 				loadColors();
 
-			for(int i = 0; i < colors.size(); i++)
+			for (ColorEntry entry : colors)
 			{
-				ColorEntry entry = colors.get(i);
-				if(entry.re.matcher(name).matches())
+				if (entry.re.matcher(name).matches())
 					return entry.color;
 			}
 

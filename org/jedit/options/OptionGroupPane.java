@@ -125,7 +125,7 @@ public class OptionGroupPane extends AbstractOptionPane implements TreeSelection
 
 		Object[] nodes = path.getPath();
 
-		StringBuffer buf = new StringBuffer();
+		StringBuilder sb = new StringBuilder();
 
 		OptionPane optionPane = null;
 
@@ -178,17 +178,17 @@ public class OptionGroupPane extends AbstractOptionPane implements TreeSelection
 				continue;
 			}
 			if (label != null)
-				buf.append(label);
+				sb.append(label);
 
 			if (i > 0 && i < lastIdx)
-				buf.append(": ");
+				sb.append(": ");
 		}
 
 		if (optionPane == null)
 			return;
 		
 		String ttext = jEdit.getProperty("optional.title-template", new Object[] {
-			optionGroup.getName(), buf.toString() });
+			optionGroup.getName(), sb.toString() });
 		setTitle(ttext);
 
 		try
@@ -323,7 +323,9 @@ public class OptionGroupPane extends AbstractOptionPane implements TreeSelection
 			JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
 			JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 		scroller.setMinimumSize(new Dimension(120, 0));
-		splitter = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, scroller, new JScrollPane(stage));
+		JScrollPane scroll = new JScrollPane(stage);
+		scroll.getVerticalScrollBar().setUnitIncrement(10);
+		splitter = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, scroller, scroll);
 		content.add(splitter, BorderLayout.CENTER);
 
 		// register the Options dialog as a TreeSelectionListener.

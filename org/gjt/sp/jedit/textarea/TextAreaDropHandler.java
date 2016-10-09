@@ -24,6 +24,7 @@ package org.gjt.sp.jedit.textarea;
 
 //{{{ Imports
 import javax.swing.*;
+import java.awt.datatransfer.DataFlavor;
 import java.awt.dnd.*;
 import java.awt.*;
 import org.gjt.sp.jedit.buffer.JEditBuffer;
@@ -32,7 +33,7 @@ import org.gjt.sp.util.Log;
 
 /**
  * @author Slava Pestov
- * @version $Id: TextAreaDropHandler.java 21831 2012-06-18 22:54:17Z ezust $
+ * @version $Id: TextAreaDropHandler.java 23322 2013-11-07 13:47:32Z kpouer $
  */
 class TextAreaDropHandler extends DropTargetAdapter
 {
@@ -60,6 +61,8 @@ class TextAreaDropHandler extends DropTargetAdapter
 	@Override
 	public void dragOver(DropTargetDragEvent dtde)
 	{
+		if (!dtde.isDataFlavorSupported(DataFlavor.stringFlavor))
+			return;
 		Point p = dtde.getLocation();
 		p = SwingUtilities.convertPoint(textArea,p,
 			textArea.getPainter());

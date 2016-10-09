@@ -42,7 +42,7 @@ import org.gjt.sp.util.StandardUtilities;
 /**
  * Style option pane.
  * @author Slava Pestov
- * @version $Id: SyntaxHiliteOptionPane.java 21831 2012-06-18 22:54:17Z ezust $
+ * @version $Id: SyntaxHiliteOptionPane.java 23222 2013-09-29 20:43:34Z shlomy $
  */
 public class SyntaxHiliteOptionPane extends AbstractOptionPane
 {
@@ -217,12 +217,10 @@ public class SyntaxHiliteOptionPane extends AbstractOptionPane
 		//{{{ save() method
 		public void save()
 		{
-			for(int i = 0; i < styleChoices.size(); i++)
+			for (StyleChoice ch : styleChoices)
 			{
-				StyleChoice ch = styleChoices
-					.get(i);
 				jEdit.setProperty(ch.property,
-				                  GUIUtilities.getStyleString(ch.style));
+					GUIUtilities.getStyleString(ch.style));
 			}
 		} //}}}
 

@@ -37,7 +37,7 @@ import org.gjt.sp.util.Log;
 /**
  * Operating system detection routines.
  * @author Slava Pestov
- * @version $Id: OperatingSystem.java 22935 2013-04-17 17:24:33Z ezust $
+ * @version $Id: OperatingSystem.java 23221 2013-09-29 20:03:32Z shlomy $
  * @since jEdit 4.0pre4
  */
 public class OperatingSystem
@@ -90,10 +90,9 @@ public class OperatingSystem
 		// Get available screens
 		// O(n^3), this is nasty, but since we aren't dealling with
 		// many items it should be fine
-		for (int i=0; i < gd.length; i++)
+		for (GraphicsDevice aGd : gd)
 		{
-			GraphicsConfiguration gc = gd[i]
-				.getDefaultConfiguration();
+			GraphicsConfiguration gc = aGd.getDefaultConfiguration();
 			// Don't add duplicates
 			if (window.intersects(gc.getBounds()))
 			{
@@ -264,26 +263,17 @@ public class OperatingSystem
 		return hasScreenMenuBar == 1;
 	} //}}}
 
-	//{{{ hasJava16() method
-	/**
-	 * Returns true always 
-	 * @since jEdit 4.3pre17
-	 * @deprecated obsolete, since we depend on Java 1.6 now
-	 */
-	@Deprecated
-	public static boolean hasJava16()
-	{
-		return true;
-	} //}}}
-
 	//{{{ hasJava17() method
 	/**
+	 * @deprecated - there is no point in checking for this
+	 *				 since we require Java 1.7.
 	 * Returns if Java 2 version 1.7 is in use.
 	 * @since jEdit 5.0pre1
 	 */
+	@Deprecated
 	public static boolean hasJava17()
 	{
-		return java17;
+		return true;
 	} //}}}
 
 	
@@ -306,7 +296,6 @@ public class OperatingSystem
 	private static final int UNKNOWN = 0xBAD;
 
 	private static int os;
-	private static boolean java17;
 	private static int hasScreenMenuBar = -1;
 
 	//{{{ Class initializer
@@ -346,12 +335,13 @@ public class OperatingSystem
 		}
 		// for debugging, make jEdit think its using a different
 		// version of Java than it really is.
+		/*
 		String javaVersion = System.getProperty("jedit.force.java.version");
 		if(javaVersion == null || javaVersion.isEmpty())
 			javaVersion = System.getProperty("java.version");
 		if(javaVersion == null || javaVersion.isEmpty())
-			javaVersion = System.getProperty("java.runtime.version");
-		java17 = javaVersion.compareTo("1.7") >= 0;
+			javaVersion = System.getProperty("java.runtime.version"); */
+		// java17 = javaVersion.compareTo("1.7") >= 0;
 	} //}}}
 
 	//}}}

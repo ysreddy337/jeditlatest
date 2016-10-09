@@ -31,7 +31,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.gjt.sp.jedit.TextUtilities;
 import org.gjt.sp.util.SegmentCharSequence;
-import org.gjt.sp.util.StandardUtilities;
 //}}}
 
 /**
@@ -40,7 +39,7 @@ import org.gjt.sp.util.StandardUtilities;
  * or font style for painting that token.
  *
  * @author Slava Pestov, mike dillon
- * @version $Id: TokenMarker.java 21831 2012-06-18 22:54:17Z ezust $
+ * @version $Id: TokenMarker.java 23381 2013-12-09 12:43:14Z kpouer $
  *
  * @see org.gjt.sp.jedit.syntax.Token
  * @see org.gjt.sp.jedit.syntax.TokenHandler
@@ -969,9 +968,9 @@ unwind:		while(context.parent != null)
 			{
 				LineContext lc = (LineContext)obj;
 				return lc.inRule == inRule && lc.rules == rules
-					&& StandardUtilities.objectsEqual(parent,lc.parent)
+					&& Objects.equals(parent,lc.parent)
 					&& charArraysEqual(spanEndSubst,lc.spanEndSubst)
-					&& StandardUtilities.objectsEqual(spanEndSubstRegex, lc.spanEndSubstRegex);
+					&& Objects.equals(spanEndSubstRegex, lc.spanEndSubstRegex);
 			}
 			else
 				return false;

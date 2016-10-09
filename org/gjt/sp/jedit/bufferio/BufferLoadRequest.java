@@ -25,6 +25,7 @@ package org.gjt.sp.jedit.bufferio;
 //{{{ Imports
 import java.io.*;
 import java.nio.charset.*;
+import java.util.Collections;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Set;
@@ -39,7 +40,7 @@ import org.gjt.sp.util.*;
 /**
  * A buffer load request.
  * @author Slava Pestov
- * @version $Id: BufferLoadRequest.java 22357 2012-10-13 04:58:01Z ezust $
+ * @version $Id: BufferLoadRequest.java 23224 2013-09-30 20:51:42Z shlomy $
  */
 public class BufferLoadRequest extends BufferIORequest
 {
@@ -245,12 +246,7 @@ public class BufferLoadRequest extends BufferIORequest
 
 				String fallbackEncodings = jEdit.getProperty("fallbackEncodings");
 				if(fallbackEncodings != null && fallbackEncodings.length() > 0)
-				{
-					for(String encoding: fallbackEncodings.split("\\s+"))
-					{
-						encodingProviders.add(encoding);
-					}
-				}
+					Collections.addAll(encodingProviders, fallbackEncodings.split("\\s+"));
 			}
 			else
 			{

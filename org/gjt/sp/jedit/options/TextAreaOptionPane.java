@@ -40,7 +40,7 @@ import org.gjt.sp.jedit.gui.RolloverButton;
 
 /**
  * @author Slava Pestov
- * @version $Id: TextAreaOptionPane.java 21831 2012-06-18 22:54:17Z ezust $
+ * @version $Id: TextAreaOptionPane.java 23058 2013-07-10 01:34:01Z daleanson $
  */
 public class TextAreaOptionPane extends AbstractOptionPane
 {
@@ -241,6 +241,11 @@ public class TextAreaOptionPane extends AbstractOptionPane
 			"options.textarea.completeFromAllBuffers"));
 		completeFromAllBuffers.setSelected(jEdit.getBooleanProperty("completeFromAllBuffers"));
 		addComponent(completeFromAllBuffers);
+		
+		insertCompletionWithDigit = new JCheckBox(jEdit.getProperty(
+			"options.textarea.insertCompletionWithDigit"));
+		insertCompletionWithDigit.setSelected(jEdit.getBooleanProperty("insertCompletionWithDigit"));
+		addComponent(insertCompletionWithDigit);
 	} //}}}
 
 	//{{{ _save() method
@@ -292,6 +297,7 @@ public class TextAreaOptionPane extends AbstractOptionPane
 		jEdit.setBooleanProperty("view.fracFontMetrics",fracFontMetrics.isSelected());
 		jEdit.setBooleanProperty("stripTrailingEOL", stripTrailingEOL.isSelected());
 		jEdit.setBooleanProperty("completeFromAllBuffers", completeFromAllBuffers.isSelected());
+		jEdit.setBooleanProperty("insertCompletionWithDigit", insertCompletionWithDigit.isSelected());
 		jEdit.setIntegerProperty("options.textarea.lineSpacing",
 					 Integer.valueOf(lineSpacing.getText()));
 	} //}}}
@@ -325,6 +331,7 @@ public class TextAreaOptionPane extends AbstractOptionPane
 	private JCheckBox fracFontMetrics;
 	private JCheckBox stripTrailingEOL;
 	private JCheckBox completeFromAllBuffers;
+	private JCheckBox insertCompletionWithDigit;
 	private JTextField lineSpacing;
 	//}}}
 

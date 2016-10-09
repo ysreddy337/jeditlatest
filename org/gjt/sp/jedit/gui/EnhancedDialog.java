@@ -20,6 +20,10 @@
 package org.gjt.sp.jedit.gui;
 
 import javax.swing.*;
+
+import org.gjt.sp.jedit.GUIUtilities;
+import org.gjt.sp.jedit.gui.KeyEventTranslator;
+
 import java.awt.event.*;
 import java.awt.*;
 
@@ -30,7 +34,7 @@ import java.awt.*;
  * Enter is pressed) and cancel() (called when Escape is pressed, or window
  * is closed).
  * @author Slava Pestov
- * @version $Id: EnhancedDialog.java 21502 2012-03-29 17:19:44Z ezust $
+ * @version $Id: EnhancedDialog.java 23832 2015-01-24 03:26:47Z ezust $
  */
 public abstract class EnhancedDialog extends JDialog
 {
@@ -101,10 +105,8 @@ public abstract class EnhancedDialog extends JDialog
 				Container cont = (Container)comp;
 				cont.addContainerListener(this);
 				Component[] comps = cont.getComponents();
-				for(int i = 0; i < comps.length; i++)
-				{
-					componentAdded(comps[i]);
-				}
+				for (Component comp1 : comps)
+					componentAdded(comp1);
 			}
 		}
 
@@ -116,10 +118,8 @@ public abstract class EnhancedDialog extends JDialog
 				Container cont = (Container)comp;
 				cont.removeContainerListener(this);
 				Component[] comps = cont.getComponents();
-				for(int i = 0; i < comps.length; i++)
-				{
-					componentRemoved(comps[i]);
-				}
+				for (Component comp1 : comps)
+					componentRemoved(comp1);
 			}
 		}
 	}
@@ -157,7 +157,10 @@ public abstract class EnhancedDialog extends JDialog
 				evt.consume();
 				ok();
 			}
-			else if(evt.getKeyCode() == KeyEvent.VK_ESCAPE)
+			else if(evt.getKeyCode() == KeyEvent.VK_ESCAPE
+					||
+					isCloseBufferShortcut(evt)
+					)
 			{
 				evt.consume();
 				if(comp instanceof JComboBox)
@@ -171,6 +174,35 @@ public abstract class EnhancedDialog extends JDialog
 				}
 				else cancel();
 			}
+		}
+
+		private boolean isCloseBufferShortcut(KeyEvent evt) {
+
+			String[] s = GUIUtilities.getShortcutLabel("close-buffer", false).split(" or ");
+
+			if(s.length == 1){ // w/o alternative shortcut
+
+				if(s[0].contains(" "))  //primary shortcut is a multiple-key shortcut
+					return false;
+				else{
+					return KeyEventTranslator.parseKey(s[0]).equals(KeyEventTranslator.translateKeyEvent(evt));
+				}
+			}
+			else{ // w/ alternative shortcut
+				boolean primarymatch,altmatch;
+				primarymatch=altmatch=false;
+
+				if(!s[0].contains(" "))
+					primarymatch=KeyEventTranslator.parseKey(s[0]).equals(KeyEventTranslator.translateKeyEvent(
+						evt));
+
+				if(!primarymatch && !s[1].contains(" "))
+					altmatch=KeyEventTranslator.parseKey(s[1]).equals(KeyEventTranslator.translateKeyEvent(evt));
+
+				if(primarymatch || altmatch)
+					return true;
+			}
+			return false;
 		}
 	}
 

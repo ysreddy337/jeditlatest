@@ -50,6 +50,7 @@ import java.net.*;
 import java.text.MessageFormat;
 import java.util.*;
 import java.util.List;
+import java.lang.reflect.InvocationTargetException;
 
 import org.xml.sax.SAXParseException;
 
@@ -83,7 +84,7 @@ import org.gjt.sp.util.SyntaxUtilities;
 /**
  * The main class of the jEdit text editor.
  * @author Slava Pestov
- * @version $Id: jEdit.java 23090 2013-07-28 17:02:35Z Vampire0 $
+ * @version $Id: jEdit.java 23842 2015-02-02 01:11:51Z elberry $
  */
 public class jEdit
 {
@@ -104,7 +105,7 @@ public class jEdit
 	public static String getBuild()
 	{
 		// (major).(minor).(<99 = preX, 99 = "final").(bug fix)
-		return "05.01.99.00";
+		return "05.02.99.00";
 	} //}}}
 
 	//{{{ main() method
@@ -116,13 +117,13 @@ public class jEdit
 	public static void main(String[] args)
 	{
 		StringList slargs = new StringList(args);
-		//{{{ Check for Java 1.6 or later
+		//{{{ Check for Java 1.7 or later
 		String javaVersion = System.getProperty("java.version");
-		if(javaVersion.compareTo("1.6") < 0)
+		if(javaVersion.compareTo("1.7") < 0)
 		{
 			System.err.println("You are running Java version "
 				+ javaVersion + '.');
-			System.err.println("jEdit requires Java 1.6 or later.");
+			System.err.println("jEdit requires Java 1.7 or later.");
 			System.exit(1);
 		} //}}}
 
@@ -378,14 +379,6 @@ public class jEdit
 			// just exit
 			System.exit(0);
 		} //}}}
-
-		// This must be done before anything graphical is displayed, so we can't even
-		// wait for the settings to be loaded, because the splash screen will already
-		// be visible
-		if (OperatingSystem.isMacOS() && !new File(settingsDirectory, "noquartz").exists())
-		{
-			System.setProperty("apple.awt.graphics.UseQuartz", "true");
-		}
 
 		// don't show splash screen if there is a file named
 		// 'nosplash' in the settings directory
@@ -1060,7 +1053,14 @@ public class jEdit
 
 		if (getBooleanProperty("systrayicon"))
 		{
-			JTrayIconManager.addTrayIcon();
+			EventQueue.invokeLater(new Runnable()
+			{
+				@Override
+				public void run()
+				{
+					JTrayIconManager.addTrayIcon();
+				}
+			});
 		}
 		else
 		{
@@ -1269,14 +1269,13 @@ public class jEdit
 		if(plugins == null)
 			return;
 
-		for(int i = 0; i < plugins.length; i++)
+		for (String plugin : plugins)
 		{
-			String plugin = plugins[i];
-			if(!plugin.toLowerCase().endsWith(".jar"))
+			if (!plugin.toLowerCase().endsWith(".jar"))
 				continue;
 
-			String path = MiscUtilities.constructPath(directory,plugin);
-			if (jEdit.getBooleanProperty("plugin-blacklist."+plugin))
+			String path = MiscUtilities.constructPath(directory, plugin);
+			if (jEdit.getBooleanProperty("plugin-blacklist." + plugin))
 				continue;
 
 			addPluginJAR(path);
@@ -1512,21 +1511,20 @@ public class jEdit
 		Buffer retVal = null;
 		Buffer lastBuffer = null;
 
-		for(int i = 0; i < args.length; i++)
+		for (String arg : args)
 		{
-			String arg = args[i];
-			if(arg == null)
+			if (arg == null)
 				continue;
-			else if(arg.startsWith("+line:") || arg.startsWith("+marker:"))
+			else if (arg.startsWith("+line:") || arg.startsWith("+marker:"))
 			{
-				if(lastBuffer != null)
-					gotoMarker(view,lastBuffer,arg);
+				if (lastBuffer != null)
+					gotoMarker(view, lastBuffer, arg);
 				continue;
 			}
 
-			lastBuffer = openFile((View)null,parent,arg,false,null);
+			lastBuffer = openFile((View) null, parent, arg, false, null);
 
-			if(retVal == null && lastBuffer != null)
+			if (retVal == null && lastBuffer != null)
 				retVal = lastBuffer;
 		}
 
@@ -2236,13 +2234,11 @@ public class jEdit
 		// save caret info. Buffer.load() will load it.
 		visit(new SaveCaretInfoVisitor());
 
-
-		for(int i = 0; i < buffers.length; i++)
+		for (Buffer buffer : buffers)
 		{
-			Buffer buffer = buffers[i];
 			if (buffer.isUntitled())
 				continue;
-			buffer.load(view,true);
+			buffer.load(view, true);
 		}
 	} //}}}
 
@@ -2972,11 +2968,8 @@ public class jEdit
 
 			// Stop all plugins
 			PluginJAR[] plugins = getPluginJARs();
-			for(int i = 0; i < plugins.length; i++)
-			{
-				removePluginJAR(plugins[i],true);
-			}
-
+			for (PluginJAR plugin : plugins)
+				removePluginJAR(plugin, true);
 
 			// Save settings
 			saveSettings();
@@ -3620,30 +3613,26 @@ public class jEdit
 		Arrays.sort(snippets,
 			new StandardUtilities.StringCompare<String>(true));
 
-		for (int i = 0; i < snippets.length; ++i)
+		for (String snippet : snippets)
 		{
-			String snippet = snippets[i];
-			if(!snippet.toLowerCase().endsWith(".props"))
+			if (!snippet.toLowerCase().endsWith(".props"))
 				continue;
 
 			try
 			{
-				String path = MiscUtilities.constructPath(
-					siteSettingsDirectory,snippet);
-				Log.log(Log.DEBUG,jEdit.class,
-					"Loading site snippet: " + path);
+				String path = MiscUtilities.constructPath(siteSettingsDirectory, snippet);
+				Log.log(Log.DEBUG, jEdit.class, "Loading site snippet: " + path);
 
 				propMgr.loadSiteProps(new FileInputStream(new File(path)));
 			}
-			catch(FileNotFoundException fnf)
+			catch (FileNotFoundException fnf)
 			{
-				Log.log(Log.DEBUG,jEdit.class,fnf);
+				Log.log(Log.DEBUG, jEdit.class, fnf);
 			}
-			catch(IOException e)
+			catch (IOException e)
 			{
-				Log.log(Log.ERROR,jEdit.class,"Cannot load site snippet "
-					+ snippet);
-				Log.log(Log.ERROR,jEdit.class,e);
+				Log.log(Log.ERROR, jEdit.class, "Cannot load site snippet " + snippet);
+				Log.log(Log.ERROR, jEdit.class, e);
 			}
 		}
 	} //}}}
@@ -3689,10 +3678,8 @@ public class jEdit
 		}
 
 		PluginJAR[] jars = getPluginJARs();
-		for(int i = 0; i < jars.length; i++)
-		{
-			jars[i].checkDependencies();
-		}
+		for (PluginJAR jar : jars)
+			jar.checkDependencies();
 	} //}}}
 
 	//{{{ initUserProperties() method
@@ -3787,6 +3774,7 @@ public class jEdit
 	private static void initPLAF()
 	{
 		String lf = getProperty("lookAndFeel");
+		final String sLf = getPLAFClassName(lf);
 		String sLfOld = null;
 		String sLfNew = null;
 		LookAndFeel lfOld = UIManager.getLookAndFeel();
@@ -3794,7 +3782,7 @@ public class jEdit
 			sLfOld = lfOld.getClass().getName();
 
 		// do not change anything if Look and Feel did not change
-		if (isStartupDone() && getPLAFClassName(lf).equals(sLfOld))
+		if (isStartupDone() && sLf.equals(sLfOld))
 		{
 			return;
 		}
@@ -3839,20 +3827,51 @@ public class jEdit
 		KeyboardFocusManager.setCurrentKeyboardFocusManager(
 			new MyFocusManager());
 
-		try
+		// A couple of issues here -- (these are fixed)
+		// First, setLookAndFeel must be called on the EDT. On initial start
+		// up this isn't a problem, but initPLAF is called on propertiesChanged,
+		// which can happen a lot.
+		// Second, this will fail to load the look and feel as set in the
+		// LookAndFeel plugin on initial start up because the plugins haven't
+		// been loaded yet.
+		if (EventQueue.isDispatchThread())
 		{
-			// A couple of issues here --
-			// First, setLookAndFeel must be called on the EDT. On initial start
-			// up this isn't a problem, but initPLAF is called on propertiesChanged,
-			// which can happen a lot.
-			// Second, this will fail to load the look and feel as set in the
-			// LookAndFeel plugin on initial start up because the plugins haven't
-			// been loaded yet.
-			UIManager.setLookAndFeel(getPLAFClassName(lf));
+			try 
+			{
+				UIManager.setLookAndFeel(sLf);
+			}
+			catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e) 
+			{
+				// ignored, there really isn't anything to do and this may be
+				// bogus, the lnf may be from the Look And Feel plugin
+			}
 		}
-		catch(Exception e)
+		else 
 		{
-			Log.log(Log.ERROR,jEdit.class,e);
+			try
+			{
+				EventQueue.invokeAndWait(
+					new Runnable()
+					{
+						public void run() 
+						{
+							try
+							{
+								UIManager.setLookAndFeel(sLf);
+							}
+							catch (ClassNotFoundException | IllegalAccessException | InstantiationException | UnsupportedLookAndFeelException e) 
+							{
+								// same as above, there really isn't anything to do and this may be
+								// bogus, the lnf may be from the Look And Feel plugin
+							}
+						}
+					}
+				);
+			}
+			catch (InterruptedException | InvocationTargetException e) 
+			{
+				// don't worry about this one either	
+			}
 		}
 
 		LookAndFeel lfNew = UIManager.getLookAndFeel();
@@ -3865,9 +3884,9 @@ public class jEdit
 				" old=" + sLfOld +
 				" requested=" + lf +
 				" new=" + sLfNew );
-		if (lf == null || !lf.equals(sLfNew))
+		if (!sLf.equals(sLfNew))
 			Log.log(Log.WARNING, jEdit.class,
-				"initPLAF failed to set required l&f");
+				"initPLAF failed to set requested l&f " + lf);
 
 		UIDefaults defaults = UIManager.getDefaults();
 
@@ -3884,16 +3903,15 @@ public class jEdit
 				jEdit.getColorProperty("view.selectionColor"));
 
 			String[] prefixes = { "PasswordField", "TextField", "TextArea", "List", "Table" };
-			for(int i = 0; i < prefixes.length; i++)
+			for (String prefix : prefixes)
 			{
-				String prefix = prefixes[i];
-				defaults.put(prefix + ".foreground",foreground);
-				defaults.put(prefix + ".background",background);
-				defaults.put(prefix + ".disabledForeground",foreground);
-				defaults.put(prefix + ".disabledBackground",background);
-				defaults.put(prefix + ".caretForeground",caretColor);
-				defaults.put(prefix + ".selectionForeground",foreground);
-				defaults.put(prefix + ".selectionBackground",selectionColor);
+				defaults.put(prefix + ".foreground", foreground);
+				defaults.put(prefix + ".background", background);
+				defaults.put(prefix + ".disabledForeground", foreground);
+				defaults.put(prefix + ".disabledBackground", background);
+				defaults.put(prefix + ".caretForeground", caretColor);
+				defaults.put(prefix + ".selectionForeground", foreground);
+				defaults.put(prefix + ".selectionBackground", selectionColor);
 			}
 
 			defaults.put("ComboBox.foreground",foreground);
@@ -4009,25 +4027,20 @@ public class jEdit
 		String defaultEncoding = getProperty("buffer.encoding");
 		setProperty("buffer.encoding", "UTF-8");
 
-		for(int i = 0; i < snippets.length; ++i)
+		for (File snippet : snippets)
 		{
-			File snippet = snippets[i];
-
-			Macros.Handler handler = Macros.getHandlerForPathName(
-				snippet.getPath());
-			if(handler == null)
+			Macros.Handler handler = Macros.getHandlerForPathName(snippet.getPath());
+			if (handler == null)
 				continue;
 
 			try
 			{
-				Macros.Macro newMacro = handler.createMacro(
-					snippet.getName(),
-					snippet.getPath());
-				handler.runMacro(null,newMacro,false);
+				Macros.Macro newMacro = handler.createMacro(snippet.getName(), snippet.getPath());
+				handler.runMacro(null, newMacro, false);
 			}
-			catch(Exception e)
+			catch (Exception e)
 			{
-				Log.log(Log.ERROR,jEdit.class,e);
+				Log.log(Log.ERROR, jEdit.class, e);
 			}
 		}
 
@@ -4239,22 +4252,21 @@ public class jEdit
 	private static void getNotLoadedPluginJARs(Collection<String> returnValue,
 		String dir, String[] list)
 	{
-loop:	for(int i = 0; i < list.length; i++)
+loop:
+		for (String name : list)
 		{
-			String name = list[i];
-			if(!name.toLowerCase().endsWith(".jar"))
+			if (!name.toLowerCase().endsWith(".jar"))
 				continue loop;
 
-			String path = MiscUtilities.constructPath(dir,name);
+			String path = MiscUtilities.constructPath(dir, name);
 
-			for(int j = 0; j < jars.size(); j++)
+			for (int j = 0; j < jars.size(); j++)
 			{
 				PluginJAR jar = jars.elementAt(j);
 				String jarPath = jar.getPath();
 
-				if (path.equals(jarPath) ||
-					name.equals(MiscUtilities.getFileName(jarPath)) &&
-					!new File(jarPath).exists())
+				if (path.equals(jarPath)
+				    || name.equals(MiscUtilities.getFileName(jarPath)) && !new File(jarPath).exists())
 					continue loop;
 			}
 
@@ -4574,10 +4586,8 @@ loop:	for(int i = 0; i < list.length; i++)
 		inputHandler.removeAllKeyBindings();
 
 		ActionSet[] actionSets = getActionSets();
-		for (int i = 0; i < actionSets.length; i++)
-		{
-			actionSets[i].initKeyBindings();
-		}
+		for (ActionSet actionSet : actionSets)
+			actionSet.initKeyBindings();
 	} //}}}
 
 	//{{{ composeBufferPropsFromHistory() method

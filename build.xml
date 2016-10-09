@@ -1,3 +1,4 @@
+<?xml version="1.0"?>
 <project name="jedit"
 	 default="build"
 	 xmlns:mod="antlib:de.masters_of_disaster.ant.tasks"
@@ -15,12 +16,12 @@
 
 	<!-- Target Java Versions -->
 	<property name="target.java.version"
-		  value="1.6"/>
+		  value="1.7"/>
 	<property name="mac.target.java.version"
-		  value="1.6+"/>
+		  value="1.7+"/>
 	<!-- based on http://packages.slackverse.org/?v=1&p=92 -->
 	<property name="slackware.target.java.version"
-		  value="1_6_0_20-i586-1"/>
+		  value="1_7_0"/>
 
 	<!-- Various Paths -->
 	<property name="config.lib.dir"
@@ -107,7 +108,7 @@
 
 	<target name="init-ivy"
 		depends="init,download-ivy"
-		unless="${ivy.done}">
+		unless="ivy.done">
 		<property name="ivy.retrieve.pattern"
 			  value="${lib.dir}/[conf]/[artifact](-[classifier]).[ext]"/>
 		<taskdef resource="org/apache/ivy/ant/antlib.xml"
@@ -120,7 +121,7 @@
 	<target name="retrieve"
 		description="retrieve the dependencies"
 		depends="init,init-ivy"
-		unless="${ivy.done}">
+		unless="ivy.done">
 		<ivy:retrieve sync="true"/>
 		<ivy:retrieve pattern="${lib.dir}/ivy/[artifact]-[revision].[ext]"
 			      organisation="org.apache.ivy"
@@ -299,9 +300,9 @@
 				<include name="org/gjt/sp/jedit/buffer/LineManager.java"/>
 				<include name="org/gjt/sp/jedit/buffer/PositionManager.java"/>
 				<include name="org/gjt/sp/jedit/buffer/UndoManager.java"/>
-                
+
 				<include name="org/gjt/sp/jedit/bufferio/IoTask.java"/>
-                
+
 				<include name="org/gjt/sp/jedit/gui/KeyEventTranslator.java"/>
 				<include name="org/gjt/sp/jedit/gui/KeyEventWorkaround.java"/>
 				<include name="org/gjt/sp/jedit/gui/MutableListModel.java"/>
@@ -417,17 +418,15 @@
 		       compiler="modern"
 		       encoding="UTF-8"
 		       includeAntRuntime="false">
+			<classpath refid="classpath.compile"/>
 			<compilerarg line="${config.build.compilerarg}"/>
-            <classpath id="classpath.compile">
-				<fileset dir="${lib.dir}/compile"
-					 includes="*.jar"/>
-			</classpath>
 		</javac>
 	</target>
 
 	<target name="test"
 		depends="init,retrieve,compile,compile-test"
-		description="run unit tests">
+		description="run unit tests"
+		unless="skip.tests">
 		<delete dir="${build.dir}/test/raw-reports"/>
 		<mkdir dir="${build.dir}/test/raw-reports"/>
 		<junit printsummary="true"
@@ -505,6 +504,7 @@
 				</copy>
 			</contrib:then>
 		</contrib:if>
+		<antcall target="test" />
 	</target>
 
 	<target name="build-exe-launcher"
@@ -533,22 +533,29 @@
 		</contrib:if>
 		<contrib:switch value="${osfamily}">
 			<contrib:case value="windows">
-				<unzip src="${lib.dir}/launch4j/launch4j-win32.zip"
-				       dest="${build.dir}/"/>
+				<unjar src="${lib.dir}/launch4j/launch4j-workdir-win32.jar"
+				       dest="${build.dir}/launch4j"/>
+				<copy todir="${lib.dir}/launch4j">
+					<fileset dir="${build.dir}/launch4j/launch4j-3.5.0-workdir-win32/"/>
+				</copy>
 			</contrib:case>
 			<contrib:case value="unix">
-				<untar src="${lib.dir}/launch4j/launch4j-linux.tgz"
-				       dest="${build.dir}/"
-				       compression="gzip"/>
-				<chmod dir="${build.dir}/launch4j/bin/"
+				<unjar src="${lib.dir}/launch4j/launch4j-workdir-linux.jar"
+				       dest="${build.dir}/launch4j/"/>
+				<copy todir="${lib.dir}/launch4j">
+					<fileset dir="${build.dir}/launch4j/launch4j-3.5.0-workdir-linux/"/>
+				</copy>
+				<chmod dir="${lib.dir}/launch4j/bin"
 				       perm="+x"
 				       includes="**"/>
 			</contrib:case>
 			<contrib:case value="mac">
-				<untar src="${lib.dir}/launch4j/launch4j-macosx.tgz"
-				       dest="${build.dir}/"
-				       compression="gzip"/>
-				<chmod dir="${build.dir}/launch4j/bin/"
+				<unjar src="${lib.dir}/launch4j/launch4j-workdir-mac.jar"
+				       dest="${build.dir}/launch4j/"/>
+				<copy todir="${lib.dir}/launch4j">
+					<fileset dir="${build.dir}/launch4j/launch4j-3.5.0-workdir-mac/"/>
+				</copy>
+				<chmod dir="${lib.dir}/launch4j/bin"
 				       perm="+x"
 				       includes="**"
 				       osfamily="mac"/>
@@ -559,8 +566,12 @@
 		</contrib:switch>
 		<taskdef name="create"
 			 classname="net.sf.launch4j.ant.Launch4jTask"
-			 classpath="${build.dir}/launch4j/launch4j.jar"
-			 uri="antlib:net.sf.launch4j.ant"/>
+			 uri="antlib:net.sf.launch4j.ant">
+			<classpath>
+				<fileset dir="${lib.dir}/launch4j"
+					 includes="*.jar"/>
+			</classpath>
+		 </taskdef>
 		<launch4j:create configFile="${classes.dir}/package-files/windows/jedit.launch4j.xml"
 				 outfile="${jar.location}/jedit.exe"/>
 	</target>
@@ -639,6 +650,8 @@
 				<fileset dir="${lib.dir}/docbook"
 					 includes="*.jar"/>
 			</classpath>
+			<!-- ant 1.9 compatibility: explicitly set the processor to Saxon (see bug #3818) -->
+			<factory name="com.icl.saxon.TransformerFactoryImpl"/>
 			<xmlcatalog>
 				<entity publicid="http://docbook.sourceforge.net/release/xsl/current/html/chunk.xsl"
 					location="${build.dir}/docbook-xsl/docbook/html/chunk.xsl"/>
@@ -773,8 +786,7 @@
 				       includeAntRuntime="true">
 					<compilerarg line="${config.build.compilerarg}"/>
 				</javac>
-				<javadoc
-					 locale="en"
+				<javadoc locale="en"
 					 sourcepath="${basedir}"
 					 destdir="${classes.dir}/javadoc/api"
 					 packagenames="org.*"
@@ -792,19 +804,17 @@
 					 docencoding="UTF-8"
 					 charset="UTF-8">
 					<group title="jEdit 5 API"
-					       packages="org.jedit.*"/>					       
+					       packages="org.jedit.*"/>
 					<group title="jEdit 4 API"
-					       packages="org.gjt.*"/>
+					       packages="org.gjt.sp.*"/>
 					<group title="BeanShell"
 					       packages="org.gjt.sp.jedit.bsh*"/>
 					<tag name="todo" scope="all" description="To do:"/>
 					<tag name="example" scope="all" description="Example:"/>
-						<classpath>
-							<fileset dir="${classes.dir}/core/"
-								includes="*.class"/>
-							<fileset dir="${lib.dir}/compile"
-								includes="*.jar"/>
-						</classpath>
+					<classpath id="classpath.javadoc">
+						<path refid="classpath.compile"/>
+						<pathelement location="${classes.dir}/core"/>
+					</classpath>
 				</javadoc>
 			</contrib:else>
 		</contrib:if>
@@ -835,6 +845,9 @@
 				</tokenfilter>
 			</filterchain>
 		</copy>
+		<copy file="${basedir}/doc/stylesheet.css"
+		      todir="${jar.location}/doc/api"
+		      overwrite="true"/>
 	</target>
 
 	<target name="generate-pdf-users-guide"
@@ -946,8 +959,6 @@
 		       debuglevel="${config.build.debuglevel}"
 		       nowarn="${config.build.nowarn}"
 		       deprecation="${config.build.deprecation}"
-		       source="${target.java.version}"
-		       target="${target.java.version}"
 		       compiler="modern"
 		       encoding="UTF-8"
 		       includeAntRuntime="false">
@@ -1159,15 +1170,11 @@
 		       debuglevel="${config.build.debuglevel}"
 		       nowarn="${config.build.nowarn}"
 		       deprecation="${config.build.deprecation}"
-		       source="1.4"
-		       target="1.4"
+		       source="1.6"
+		       target="1.6"
 		       compiler="modern"
 		       encoding="UTF-8"
 		       includeAntRuntime="true">
-			<classpath>
-				<fileset dir="${lib.dir}/jarbundler"
-					 includes="*.jar"/>
-			</classpath>
 			<compilerarg line="${config.build.compilerarg}"/>
 		</javac>
 	</target>
@@ -1186,10 +1193,6 @@
 			 classname="net.sourceforge.jarbundler.JarBundler"
 			 classpath="${dist.dir}/classes/jarbundler"
 			 uri="antlib:net.sourceforge.jarbundler">
-			<classpath>
-				<fileset dir="${lib.dir}/jarbundler"
-					 includes="*.jar"/>
-			</classpath>
 		</taskdef>
 		<tstamp>
 			<format property="current.year"
@@ -1203,20 +1206,19 @@
 				   arguments="-background"
 				   build="${jedit.build.number}"
 				   bundleid="org.gjt.sp.jedit"
+				   developmentregion="English"
 				   extraclasspath="/System/Library/Java"
 				   icon="icons/icon.icns"
 				   infostring="jEdit ${jedit.version}, Copyright &#169; 1998-${current.year} Contributors"
+				   copyright="Copyright &#169; 1998-${current.year} Contributors"
 				   jvmversion="${mac.target.java.version}"
 				   shortname="jEdit"
 				   signature="JESP"
-				   stubfile="jedit"
-				   version="${jedit.version}">
-			<javaproperty name="apple.awt.antialiasing" value="true"/>
-			<javaproperty name="apple.awt.textantialiasing" value="true"/>
-			<javaproperty name="apple.laf.useScreenMenuBar" value="true"/>
-			<!-- Commented due https://sourceforge.net/tracker/?func=detail&atid=100588&aid=2820535&group_id=588 discussion -->
-			<!--javaproperty name="apple.awt.graphics.UseQuartz" value="true" />
-			<javaproperty name="apple.awt.rendering"          value="speed" /-->
+				   stubfile="package-files/osx/jedit"
+				   version="${jedit.version}"
+				   antialiasedgraphics="true"
+				   antialiasedtext="true"
+				   screenmenu="true">
 			<javafileset dir="${dist.dir}"
 				     includes="doc/**
 					       jars/**
@@ -1228,41 +1230,63 @@
 			<documenttype name="jEdit TEXT Document"
 				      extensions="*"
 				      ostypes="TEXT ****"
+				      utis="public.text"
 				      iconfile="icons/file.icns"
 				      role="Editor"/>
-			<service message="openFile"
-				 menuitem="jEdit/Open Files"
-				 sendtypes="NSStringPboardType,NSFilenamesPboardType"/>
-			<service message="insertSelection"
-				 menuitem="jEdit/Insert Text"
-				 sendtypes="NSStringPboardType"/>
-			<service message="openSelection"
-				 menuitem="jEdit/New Buffer with Text"
-				 sendtypes="NSStringPboardType"/>
 		</jarbundler:create>
-		<delete file="${dist.dir}/classes/mac/jEdit.app/Contents/MacOS/jedit" />
-		<exec executable="ln"
-		      failonerror="true">
-			<arg value="-s" />
-			<arg file="/System/Library/Frameworks/JavaVM.framework/Resources/MacOS/JavaApplicationStub" />
-			<arg file="${dist.dir}/classes/mac/jEdit.app/Contents/MacOS/jedit" />
-		</exec>
-		<delete file="${dist.dir}/${mac.disk.image.filename}"
-			failonerror="false"/>
+		<delete failonerror="false">
+			<fileset dir="${dist.dir}"
+				 includes="*${mac.disk.image.filename}"/>
+		</delete>
 		<exec executable="hdiutil"
 		      failonerror="true">
 			<arg value="create"/>
-			<arg value="-quiet"/>
 			<arg value="-volname"/>
-			<arg value="jEdit ${jedit.version}"/>
+			<arg value="jEdit"/>
 			<arg value="-srcfolder"/>
 			<arg file="${dist.dir}/classes/mac/jEdit.app"/>
-			<arg file="${dist.dir}/${mac.disk.image.filename}"/>
+			<arg value="-srcfolder"/>
+			<arg file="package-files/osx/.background"/>
+			<arg file="${dist.dir}/orig-${mac.disk.image.filename}"/>
 		</exec>
 		<exec executable="hdiutil"
 		      failonerror="true">
-			<arg value="internet-enable"/>
-			<arg value="-quiet"/>
+			<arg value="convert"/>
+			<arg file="${dist.dir}/orig-${mac.disk.image.filename}"/>
+			<arg value="-format"/>
+			<arg value="UDRW"/>
+			<arg value="-o"/>
+			<arg file="${dist.dir}/udrw-${mac.disk.image.filename}"/>
+		</exec>
+		<exec executable="hdiutil"
+		      failonerror="true">
+			<arg value="attach"/>
+			<arg file="${dist.dir}/udrw-${mac.disk.image.filename}"/>
+		</exec>
+		<exec executable="ln"
+		      failonerror="true">
+			<arg value="-sF" />
+			<arg file="/Applications" />
+			<arg file="/Volumes/jEdit/ " />
+		</exec>
+		<copy file="package-files/osx/DS_Store"
+		      tofile="/Volumes/jEdit/.DS_Store"
+		      overwrite="true"/>
+		<exec executable="hdiutil"
+		      failonerror="true">
+			<arg value="detach"/>
+			<arg file="/Volumes/jEdit"/>
+			<arg value="-force"/>
+		</exec>
+		<exec executable="hdiutil"
+		      failonerror="true">
+			<arg value="convert"/>
+			<arg file="${dist.dir}/udrw-${mac.disk.image.filename}"/>
+			<arg value="-format"/>
+			<arg value="UDZO"/>
+			<arg value="-imagekey"/>
+			<arg value="zlib-level=9"/>
+			<arg value="-o"/>
 			<arg file="${dist.dir}/${mac.disk.image.filename}"/>
 		</exec>
 		<property name="wipe.dist.files"
@@ -1297,6 +1321,7 @@
 					       icons/file.icns
 					       icons/icon.icns
 					       org/gjt/sp/jedit/jEdit.java
+					       package-files/osx/**
 					       ${config.dist.dir}/${jar.filename}
 					       ${config.dist.dir}/classes/jarbundler/**
 					       ${config.dist.dir}/doc/**
@@ -2061,6 +2086,7 @@ Press Return key to continue...
 									  negate="true"/>
 							</and>
 							<filename name="classes/**"/>
+							<filename name="*-${mac.disk.image.filename}"/>
 						</or>
 					</fileset>
 				</delete>

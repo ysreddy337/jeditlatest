@@ -27,7 +27,7 @@ package org.gjt.sp.jedit;
  * development) and debugging routines.
  * @since jEdit 4.2pre1
  * @author Slava Pestov
- * @version $Id: Debug.java 21831 2012-06-18 22:54:17Z ezust $
+ * @version $Id: Debug.java 23185 2013-09-18 20:01:10Z ezust $
  */
 public class Debug
 {
@@ -104,13 +104,10 @@ public class Debug
 	 */
 	public static boolean BEANSHELL_DEBUG = false;
 
-	/**
-	 * If true, an alternative dispatcher using key typed events will be
-	 * used to handle a modifier key press in conjunction with an alphabet
-	 * key. <b>On by default on MacOS.</b>
-	 */
-	public static boolean ALTERNATIVE_DISPATCHER = OperatingSystem.isMacOS();
-
+	/** @deprecated no longer used. */
+	@Deprecated
+	public static boolean ALTERNATIVE_DISPATCHER = false;
+	
 	/**
 	 * If true, A+ shortcuts are disabled. If you use this, you should also
 	 * remap the the modifiers so that A+ is actually something else.

@@ -1723,6 +1723,8 @@ helpviewer.title=jEdit ヘルプ
 helpviewer.loading=ロード中...
 helpviewer.back.label=戻る
 helpviewer.forward.label=進む
+# FIXME: no translation
+helpviewer.copy-link.label=Copy link to clipboard
 
 helpviewer.toc.loading=ロード中...
 helpviewer.toc.label=コンテンツ
@@ -2126,8 +2128,7 @@ macro.rs.CutLinesContaining.LinesCut.message=行切り取り
 #{{{ Editing
 
 #{{{ Go to column
-macro.rs.GoToColumn.ColumnBefore.label=列 ( 1 から
-macro.rs.GoToColumn.ColumnAfter.label=の間で指定):
+macro.rs.GoToColumn.label=列 ( 1 から {0} の間で指定):
 #}}}
 
 #{{{ Key Words to Uppercase

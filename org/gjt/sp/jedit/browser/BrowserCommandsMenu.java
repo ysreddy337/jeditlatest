@@ -36,7 +36,7 @@ import org.gjt.sp.jedit.menu.MenuItemTextComparator;
 //}}}
 
 /**
- * @version $Id: BrowserCommandsMenu.java 22900 2013-03-28 21:22:13Z ezust $
+ * @version $Id: BrowserCommandsMenu.java 23222 2013-09-29 20:43:34Z shlomy $
  * @author Slava Pestov and Jason Ginchereau
  */
 public class BrowserCommandsMenu extends JPopupMenu
@@ -244,14 +244,13 @@ public class BrowserCommandsMenu extends JPopupMenu
 
 		List<JMenuItem> encodingMenuItemList = new ArrayList<JMenuItem>();
 		String[] encodings = MiscUtilities.getEncodings(true);
-		for(int i = 0; i < encodings.length; i++)
+		for (String encoding : encodings)
 		{
-			String encoding = encodings[i];
 			JRadioButtonMenuItem mi = new JRadioButtonMenuItem(encoding);
 			mi.setActionCommand("encoding@" + encoding);
 			mi.addActionListener(actionHandler);
 			grp.add(mi);
-			encodingMenuItems.put(encoding,mi);
+			encodingMenuItems.put(encoding, mi);
 			encodingMenuItemList.add(mi);
 		}
 
@@ -270,16 +269,13 @@ public class BrowserCommandsMenu extends JPopupMenu
 		Collections.sort(encodingMenuItemList,
 			new MenuItemTextComparator());
 
-		Iterator iter = encodingMenuItemList.iterator();
-		while(iter.hasNext())
+		for (JMenuItem item : encodingMenuItemList)
 		{
-			JRadioButtonMenuItem mi = (JRadioButtonMenuItem)
-				iter.next();
+			JRadioButtonMenuItem mi = (JRadioButtonMenuItem) item;
 
-			if(menu.getMenuComponentCount() > 20)
+			if (menu.getMenuComponentCount() > 20)
 			{
-				JMenu newMenu = new JMenu(
-					jEdit.getProperty("common.more"));
+				JMenu newMenu = new JMenu(jEdit.getProperty("common.more"));
 				menu.add(newMenu);
 				menu = newMenu;
 			}

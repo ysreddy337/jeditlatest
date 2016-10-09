@@ -113,7 +113,7 @@ import org.gjt.sp.util.Log;
  * @author Slava Pestov
  * @author John Gellene (API documentation)
  * @author Shlomy Reinstein (refactoring into a base and an impl)
- * @version $Id: DockableWindowManager.java 22905 2013-03-30 18:46:10Z ezust $
+ * @version $Id: DockableWindowManager.java 23222 2013-09-29 20:43:34Z shlomy $
  * @since jEdit 2.6pre3
  *
  */
@@ -222,13 +222,11 @@ public abstract class DockableWindowManager extends JPanel
 	public void applyDockingLayout(DockingLayout docking)
 	{
 		// By default, use the docking positions specified by the jEdit properties
-		Iterator<Entry<String, String>> iterator = positions.entrySet().iterator();
-		while (iterator.hasNext())
+		for (Entry<String, String> entry : positions.entrySet())
 		{
-			Entry<String, String> entry = iterator.next();
 			String dockable = entry.getKey();
 			String position = entry.getValue();
-			if (! position.equals(FLOATING))
+			if (!position.equals(FLOATING))
 				showDockableWindow(dockable);
 		}
 	} //}}}
@@ -558,9 +556,8 @@ public abstract class DockableWindowManager extends JPanel
 		}
 
 		String[] dockables = factory.getRegisteredDockableWindows();
-		for(int i = 0; i < dockables.length; i++)
+		for (String dockable : dockables)
 		{
-			String dockable = dockables[i];
 			String oldPosition = positions.get(dockable);
 			String newPosition = getDockablePosition(dockable);
 			if (oldPosition == null || !newPosition.equals(oldPosition))
@@ -662,8 +659,8 @@ public abstract class DockableWindowManager extends JPanel
 				match1 = match(e, b1, match1);
 			if (b2 != null)
 				match2 = match(e, b2, match2);
-			if ((match1 > 0 && match1 == b1.size()) ||
-				(match2 > 0 && match2 == b2.size()))
+			if ((match1 > 0 && b1 != null && match1 == b1.size()) ||
+				(match2 > 0 && b2 != null && match2 == b2.size()))
 			{
 				hideDockableWindow(name);
 				match1 = match2 = 0;

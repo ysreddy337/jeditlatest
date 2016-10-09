@@ -29,7 +29,7 @@ import java.util.ArrayList;
 /**
  * History model used by the help browser 
  * @author Nicholas O'Leary
- * @version $Id: HelpHistoryModel.java 21831 2012-06-18 22:54:17Z ezust $
+ * @version $Id: HelpHistoryModel.java 23221 2013-09-29 20:03:32Z shlomy $
  */
 public class HelpHistoryModel
 {
@@ -133,12 +133,10 @@ public class HelpHistoryModel
 	//{{{ updateTitle() method
 	public void updateTitle(String url, String title)
 	{
-		for (int i=0;i<history.length;i++)
+		for (HistoryEntry aHistory : history)
 		{
-			if ((history[i] != null) && history[i].url.equals(url))
-			{
-				history[i].title = title;
-			}
+			if ((aHistory != null) && aHistory.url.equals(url))
+				aHistory.title = title;
 		}
 		fireUpdate();
 	}//}}}
@@ -186,10 +184,8 @@ public class HelpHistoryModel
 	//{{{ fireUpdate() method
 	public void fireUpdate()
 	{
-		for (int i=0 ; i<listeners.size() ; i++)
-		{
-			listeners.get(i).historyUpdated();
-		}
+		for (HelpHistoryModelListener listener : listeners)
+			listener.historyUpdated();
 	} //}}}
 
 	//{{{ Private members

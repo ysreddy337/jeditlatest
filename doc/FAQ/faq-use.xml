@@ -3,7 +3,7 @@
     <title>Usage Questions</title>
 
     <!-- jEdit buffer-local properties:                      -->
-    <!-- :indentSize=4:noTabs=false:tabSize=4: -->
+    <!-- :indentSize=2:noTabs=false:tabSize=2: -->
     <!-- :xml.root=faq.xml:                                  -->
     <!-- jEdit FAQ                                           -->
 
@@ -156,7 +156,7 @@
                     wish to use from <guisubmenu> Encoding</guisubmenu> in the
                     <guimenu>Commands</guimenu> menu of the File System Browser.
                     You can also designate a default encoding in the
-                    <ulink url="jeditresource:/doc/users-guide/global-opts.html#encodings-pane">
+                    <ulink url="../users-guide/global-opts.html#encodings-pane">
                     <guimenuitem>Encoding</guimenuitem></ulink> pane of the
                     Global Options; if you do not, jEdit uses
                     
@@ -311,6 +311,19 @@
         <qandadiv id="text-format">
             <title>Formatting text</title>
 
+			<qandaentry>
+                <question id="toggle-auto-indent">
+                    <para>How do I toggle jEdit's auto-indent behavior? </para>
+                </question>
+                <answer>
+                   <para> By default, the <literal>Return</literal> key is bound to
+                   the <guimenuitem>Insert Newline and Indent</guimenuitem> action.
+                   If you bind it to <guimenuitem>Insert Newline</guimenuitem> from
+                   <guimenuitem>Global Options - Shortcuts</guimenuitem>, that will
+                   disable the auto-indent behavior. There is no way to "toggle"
+                   this feature. </para>
+                </answer>
+            </qandaentry>
             <qandaentry>
                 <question id="text-indent">
                     <para>How do I indent or unindent selections of text?</para>
@@ -502,9 +515,7 @@
                 </question>
 
                 <answer>
-                    <para>Start with the "Emacs" Keymap and customize it by setting 
-                    your own shortcuts to make it more like your flavor of Emacs.
-                    Emacs macros are contributed by Brian Clapper. 
+                    <para>As of jEdit 5.1, it is much easier than before:  <guimenuitem> Global Options - Shortcuts - Choose Keymap: Emacs</guimenuitem>. Customize it by setting your own shortcuts to make it more like your flavor of Emacs. Emacs macros are contributed by Brian Clapper. 
                     </para>
                 </answer>
             </qandaentry>
@@ -532,17 +543,8 @@
                     <para>How can I get antialiased text everywhere, even dockables and menus? </para>
                 </question>
                 <answer>
-                   <para>For the text area, go to <guimenuitem>Global Options - TextArea - Anti Aliased Smooth Text</guimenuitem>.
-                   Note that enabling the related option for "Fractional font metrics" potentially
-                   improves character shapes, but can make the text look blurry. </para>
-                   
-                   <para>For the dockables, starting <command>java</command> with command line options <literal>"-Dawt.useSystemAAFontSettings=on" "-Dswing.aatext=true"</literal> will give you antialiased text everywhere else.
-                   You can add these options to the batch file or shell script line that starts jEdit. </para>
-                   
-                   <para> On Windows with the .exe launcher, you create a file called <literal>jedit.l4j.ini</literal> in the same directory as the .exe file, 
-                   and place one line for each java argument you want to pass. For example:
-                   <programlisting>-Dawt.useSystemAAFontSettings=on
--Dswing.aatext=true</programlisting>
+                   <para>
+                   See the <ulink url="../users-guide/jvm-options.html">page on JVM options</ulink> in the users guide.  
                    </para>
                    
                    <para> On Mac OS X, the jEdit.app bundle already provides certain antialiasing properties in

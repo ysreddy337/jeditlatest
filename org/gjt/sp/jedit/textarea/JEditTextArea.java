@@ -27,16 +27,23 @@ package org.gjt.sp.jedit.textarea;
 import java.awt.AWTEvent;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-
 import java.awt.event.MouseEvent;
+import java.util.regex.Pattern;
+
 import javax.swing.JMenuItem;
 
-import org.gjt.sp.jedit.*;
-import org.gjt.sp.jedit.options.GlobalOptions;
+import org.gjt.sp.jedit.Abbrevs;
+import org.gjt.sp.jedit.EditBus;
 import org.gjt.sp.jedit.EditBus.EBHandler;
-import org.gjt.sp.jedit.msg.PropertiesChanged;
-
+import org.gjt.sp.jedit.GUIUtilities;
+import org.gjt.sp.jedit.Macros;
+import org.gjt.sp.jedit.ServiceManager;
+import org.gjt.sp.jedit.TextUtilities;
+import org.gjt.sp.jedit.View;
+import org.gjt.sp.jedit.jEdit;
 import org.gjt.sp.jedit.msg.PositionChanging;
+import org.gjt.sp.jedit.msg.PropertiesChanged;
+import org.gjt.sp.jedit.options.GlobalOptions;
 //}}}
 
 /**
@@ -49,7 +56,7 @@ import org.gjt.sp.jedit.msg.PositionChanging;
  *
  * @author Slava Pestov
  * @author John Gellene (API documentation)
- * @version $Id: JEditTextArea.java 22469 2012-11-14 08:05:15Z ezust $
+ * @version $Id: JEditTextArea.java 23536 2014-05-10 19:08:54Z ezust $
  */
 public class JEditTextArea extends TextArea
 {
@@ -251,7 +258,8 @@ public class JEditTextArea extends TextArea
 	//{{{ showGoToLineDialog() method
 	/**
 	 * Displays the 'go to line' dialog box, and moves the caret to the
-	 * specified line number.
+	 * specified line number, or moves the caret back or forward by the offset provided.
+	 * 
 	 * @since jEdit 2.7pre2
 	 */
 	public void showGoToLineDialog()
@@ -263,9 +271,24 @@ public class JEditTextArea extends TextArea
 
 		try
 		{
-			int lineNumber = Integer.parseInt(line) - 1;
+			int lineNumber = 0;
+			if (Pattern.matches("-\\d+", line) || Pattern.matches("\\+\\d+", line))
+			{
+				int offset = Integer.parseInt(line);
+				lineNumber = caretLine + offset;
+			}
+			else
+			{
+				lineNumber = Integer.parseInt(line) - 1;
+			}
+			
 			if(lineNumber > --maxLine)
 				lineNumber = maxLine;
+
+			if(lineNumber < 0)
+				lineNumber = 0;
+			
+			
 			EditBus.send(new PositionChanging(this));
 			setCaretPosition(getLineStartOffset(lineNumber));
 		}
@@ -342,22 +365,24 @@ public class JEditTextArea extends TextArea
 		int lines = 1;
 
 		boolean word = true;
-		for(int i = 0; i < chars.length; i++)
+		for (char aChar : chars)
 		{
-			switch(chars[i])
+			switch (aChar)
 			{
-			case '\r': case '\n':
-				lines++;
-			case ' ': case '\t':
-				word = true;
-				break;
-			default:
-				if(word)
-				{
-					words++;
-					word = false;
-				}
-				break;
+				case '\r':
+				case '\n':
+					lines++;
+				case ' ':
+				case '\t':
+					word = true;
+					break;
+				default:
+					if (word)
+					{
+						words++;
+						word = false;
+					}
+					break;
 			}
 		}
 

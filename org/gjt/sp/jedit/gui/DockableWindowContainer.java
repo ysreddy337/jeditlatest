@@ -23,10 +23,10 @@ package org.gjt.sp.jedit.gui;
  *
  * This class should never be used directly, and is not public.
  * @author Slava Pestov
- * @version $Id: DockableWindowContainer.java 21502 2012-03-29 17:19:44Z ezust $
+ * @version $Id: DockableWindowContainer.java 23665 2014-08-22 05:12:35Z ezust $
  * @since jEdit 2.6pre3
  */
-interface DockableWindowContainer
+public interface DockableWindowContainer
 {
 	void register(DockableWindowManagerImpl.Entry entry);
 	void remove(DockableWindowManagerImpl.Entry entry);

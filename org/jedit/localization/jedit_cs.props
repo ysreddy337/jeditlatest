@@ -1731,6 +1731,8 @@ helpviewer.title=jEdit Pomoc
 helpviewer.loading=Načítání...
 helpviewer.back.label=Zpět
 helpviewer.forward.label=Dopředu
+# FIXME: no translation
+helpviewer.copy-link.label=Copy link to clipboard
 
 helpviewer.toc.loading=Načítání...
 helpviewer.toc.label=Obsah
@@ -2127,8 +2129,7 @@ macro.rs.CutLinesContaining.LinesCut.message=řadka/y vyjmuta
 #{{{ Editing
 
 #{{{ Go to column
-macro.rs.GoToColumn.ColumnBefore.label=Sloupec (mezi 1 a
-macro.rs.GoToColumn.ColumnAfter.label=):
+macro.rs.GoToColumn.label=Sloupec (mezi 1 a {0}):
 #}}}
 
 #{{{ Key Words to Uppercase

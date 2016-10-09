@@ -34,7 +34,7 @@ import javax.swing.event.*;
 /**
  * History Button
  * @author Nicholas O'Leary
- * @version $Id: HistoryButton.java 21831 2012-06-18 22:54:17Z ezust $
+ * @version $Id: HistoryButton.java 23221 2013-09-29 20:03:32Z shlomy $
  */
 public class HistoryButton extends JPanel implements ActionListener
 {
@@ -143,12 +143,10 @@ public class HistoryButton extends JPanel implements ActionListener
 				}
 				else
 				{
-					for (int i=0 ; i<urls.length ; i++)
+					for (HelpHistoryModel.HistoryEntry url : urls)
 					{
-						if (urls[i] != null)
-						{
-							historyList.add(new HistoryListActionHandler(urls[i]));
-						}
+						if (url != null)
+							historyList.add(new HistoryListActionHandler(url));
 					}
 				}
 

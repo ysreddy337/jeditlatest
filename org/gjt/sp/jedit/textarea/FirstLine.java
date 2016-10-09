@@ -29,7 +29,7 @@ import org.gjt.sp.util.Log;
  * This Anchor is the first visible line of the textarea.
  *
  * @author Slava Pestov
- * @version $Id: FirstLine.java 22670 2013-01-12 12:29:48Z thomasmey $
+ * @version $Id: FirstLine.java 23224 2013-09-30 20:51:42Z shlomy $
  */
 class FirstLine extends Anchor
 {
@@ -144,7 +144,7 @@ class FirstLine extends Anchor
 	 * Method called before a content is removed from a buffer.
 	 *
 	 * @param startLine the first line of the removed content
-	 * @param offset the offset in the start line
+	 * @param startOffset the offset in the start line
 	 * @param numLines the number of removed lines
 	 */
 	void contentRemoved(int startLine, int startOffset, int numLines)

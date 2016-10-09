@@ -251,7 +251,7 @@
 				FILE_NAME_GLOB="*.iss" />
 
 <MODE NAME="ini"		FILE="ini.xml"
-				FILE_NAME_GLOB="*.{ini,reg}" />
+				FILE_NAME_GLOB="*.{ini,reg,milk}" />
 
 <MODE NAME="interlis"		FILE="interlis.xml"
 				FILE_NAME_GLOB="*.ili" />
@@ -411,6 +411,10 @@
 <MODE NAME="PostgreSQL" FILE="pg-sql.xml"
 							FILE_NAME_GLOB="*.{pg_sql,pg-sql}" />
 
+<MODE NAME="PowerCenter Parameter File"
+    FILE="powercenter_parameter_file.xml" FILE_NAME_GLOB="*.par" />
+							
+							
 <MODE NAME="pl-sql"		FILE="osql.xml"
                            FILE_NAME_GLOB="*.{pls,sql}" />
 

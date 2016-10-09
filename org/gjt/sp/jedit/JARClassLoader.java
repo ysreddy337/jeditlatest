@@ -43,7 +43,7 @@ import java.util.jar.Attributes.Name;
  * A class loader implementation that loads classes from JAR files. All
  * instances share the same set of classes.
  * @author Slava Pestov
- * @version $Id: JARClassLoader.java 21831 2012-06-18 22:54:17Z ezust $
+ * @version $Id: JARClassLoader.java 23224 2013-09-30 20:51:42Z shlomy $
  */
 public class JARClassLoader extends ClassLoader
 {
@@ -325,19 +325,15 @@ public class JARClassLoader extends ClassLoader
 		String[] classes = jar.getClasses();
 		if(classes != null)
 		{
-			for(int i = 0; i < classes.length; i++)
-			{
-				classHash.put(classes[i],this);
-			}
+			for (String aClass : classes)
+				classHash.put(aClass, this);
 		}
 
 		String[] resources = jar.getResources();
 		if(resources != null)
 		{
-			for(int i = 0; i < resources.length; i++)
-			{
-				resourcesHash.put(resources[i],this);
-			}
+			for (String resource : resources)
+				resourcesHash.put(resource, this);
 		}
 	} //}}}
 
@@ -347,11 +343,11 @@ public class JARClassLoader extends ClassLoader
 		String[] classes = jar.getClasses();
 		if(classes != null)
 		{
-			for(int i = 0; i < classes.length; i++)
+			for (String aClass : classes)
 			{
-				Object loader = classHash.get(classes[i]);
-				if(loader == this)
-					classHash.remove(classes[i]);
+				Object loader = classHash.get(aClass);
+				if (loader == this)
+					classHash.remove(aClass);
 				else
 					/* two plugins provide same class! */;
 			}
@@ -361,11 +357,11 @@ public class JARClassLoader extends ClassLoader
 		if(resources == null)
 			return;
 
-		for(int i = 0; i < resources.length; i++)
+		for (String resource : resources)
 		{
-			Object loader = resourcesHash.get(resources[i]);
-			if(loader == this)
-				resourcesHash.remove(resources[i]);
+			Object loader = resourcesHash.get(resource);
+			if (loader == this)
+				resourcesHash.remove(resource);
 			else
 				/* two plugins provide same resource! */;
 		}

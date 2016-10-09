@@ -97,7 +97,7 @@ import org.gjt.sp.util.SyntaxUtilities;
  * @author Slava Pestov
  * @author John Gellene (API documentation)
    @author Matthieu Casanova
- * @version $Id: StandaloneTextArea.java 22357 2012-10-13 04:58:01Z ezust $
+ * @version $Id: StandaloneTextArea.java 23297 2013-10-29 12:32:55Z kpouer $
  */
 public class StandaloneTextArea extends TextArea
 {
@@ -515,13 +515,13 @@ public class StandaloneTextArea extends TextArea
 			"folding",
 			"collapseFolds"
 		};
-		for (int i = 0; i < bufferProperties.length; i++)
+		for (String bufferProperty : bufferProperties)
 		{
-			String value = getProperty("buffer." + bufferProperties[i]);
+			String value = getProperty("buffer." + bufferProperty);
 			if (value == null)
-				buffer.unsetProperty(bufferProperties[i]);
+				buffer.unsetProperty(bufferProperty);
 			else
-				buffer.setProperty(bufferProperties[i], value);
+				buffer.setProperty(bufferProperty, value);
 		}
 		buffer.propertiesChanged();
 	} // }}}
@@ -589,7 +589,7 @@ public class StandaloneTextArea extends TextArea
 	 * The actionSet for standalone textArea.
 	 * @author Matthieu Casanova
 	 */
-	protected static class StandaloneActionSet extends JEditActionSet<JEditBeanShellAction>
+	public static class StandaloneActionSet extends JEditActionSet<JEditBeanShellAction>
 	{
 		private final IPropertyManager iPropertyManager;
 		private final TextArea textArea;

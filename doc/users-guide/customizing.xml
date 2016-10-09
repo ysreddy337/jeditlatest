@@ -2,7 +2,7 @@
 <chapter id="customizing">
     <title>Customizing jEdit</title>
     <!-- jEdit buffer-local properties: -->
-    <!-- :tabSize=1:indentSize=1:noTabs=true:wrap=soft:maxLineLen=0: -->
+    <!-- :tabSize=2:indentSize=2:noTabs=true:wrap=soft:maxLineLen=90: -->
     <!-- :xml.root=users-guide.xml: -->
 
     <section id="buffer-opts">
@@ -458,18 +458,18 @@
             such as the directory where plugins are to be installed. In addition, you can set the time in minutes that the pluginlist can be cached from jedit.org, helping to reduce the server load. See <xref
             linkend="using-plugins" />.</para>
             
-            <para> If the option "disable obsolete plugins" is enabled, then plugins
+            <para> If the option <guimenuitem>Disable Obsolete Plugins</guimenuitem> is checked, then plugins
             that were released on Plugin Manager will be checked against the plugins you have
             installed, for those with a maximum jEdit version that is lower than the one you are 
-            running. Plugins are marked with a maximum version when they are found to be broken or somehow
+            running. Plugins are marked with a maximum jEdit version when they are found to be broken or somehow
             incompatible with a given jEdit release. 
             Until an update is made available for such a plugin
-            on Plugin Manager, these plugins are automatically unloaded and marked unsupported. </para>
+            on Plugin Manager, these plugins are automatically unloaded and marked unsupported. This should improve the stability of jEdit.  </para>
             
             <para> If you re-enable a plugin that was disabled this way, it will remain loaded until the
-            next time the plugin list checked - whenever the user
-            selects the Update or Install tab from Plugin Manager. If you un-check this option,
-            then obsolete plugins will not be automatically disabled in this way. </para>
+            next time the plugin list is checked - whenever the user
+            selects the <guibutton>Update</guibutton> or <guibutton>Install</guibutton> tab from Plugin Manager. If you un-check this option,
+            then plugins will not be automatically disabled in this way. </para>
             
             
         </section>
@@ -492,12 +492,13 @@
             connections, for example when downloading plugins.</para>
         </section>
 
-        <section id="autosave-backups-pane">
+        <section id="saving-backup-pane">
             <title>The Saving and Backup Pane</title>
 
             <para>The <guibutton>Saving and Backup</guibutton> option pane contains
             settings for the autosave and backup features. See <xref
             linkend="autosave" /> and <xref linkend="backups" />.</para>
+
         </section>
 
         <section id="shortcuts-pane">
@@ -551,7 +552,7 @@
             <para>The <guibutton>Status Bar</guibutton>, its API, and its corresponding option
             pane contains settings to customize
             which widgets are in the status bar, their order, and what separators exist
-            between them. Or, you can disable it completely, for regular and/or plain views.
+            between them. Also, you can disable it completely, for regular and/or plain views.
             See <xref linkend="status-bar" />.</para>
 
             <para> From the <literal>Options</literal> tab, you can
@@ -611,10 +612,24 @@
             <title>The View Pane</title>
 
             <para>The <guibutton>View</guibutton> option pane lets you change
-            various settings related to the editor window's appearance,
-            including the arrangement of dockable windows, and if the search bar
-            and buffer switcher should be visible. See <xref
+            various settings related to the editor main window appearance,
+            including the arrangement of dockable windows, whether the search bar
+            and buffer switcher are visible, and whether menu, toolbar, and
+            statusbar are visible in full-screen mode. See <xref
             linkend="views" />.</para>
+            
+            <para> You can choose the default bufferset scope here, as well as whether/how you want buffersets to be sorted in buffer switchers. See <xref linkend="buffersets"/> for more details. </para>
+            
+            <para> If <guimenuitem>Abbreviate paths with environment variables when
+            possible</guimenuitem> is checked, you will notice that jEdit displays
+            abbreviated versions of file paths when it can, using
+            <literal>$VARIABLE/name.ext</literal> or
+            <literal>%VARIABLE%\name.ext</literal> syntax, depending on your platform.
+            Abbreviating is used in the File System Browser, as well as in the window
+            title, and in plugins, to save horizontal space. Reverse-expansions also work
+            as you would expect them to, with both syntaxes recognized on both platforms.
+            </para>
+
         </section>
 
         <section id="vfs-browser-pane">
@@ -632,7 +647,7 @@
     <section id="settings-directory">
         <title>The jEdit Settings Directory</title>
 
-        <para>jEdit stores settings, macros, and plugins as files inside the
+        <para>jEdit stores settings, keymaps, macros, and plugins as files inside the
         <firstterm>settings directory</firstterm>. In most cases, editing these
         files by hand is not necessary, since graphical tools and editor
         commands can do the job. However, being familiar with the structure of
@@ -689,7 +704,7 @@
                 which contains the full activity log. See <xref
                 linkend="activity-log" />.</para>
             </listitem>
-
+            
             <listitem>
                 <para><filename>history</filename> - a plain text file which
                 stores history lists, used by history text fields and the
@@ -710,7 +725,13 @@
                 are automatically updated when plugins are installed or
                 updated.</para>
             </listitem>
-
+            <listitem>
+              <para><filename>keymaps</filename> - this directory
+              contains collections of named keyboard shortcuts
+              which can be defined from the Shortcuts Option Pane (see <xref linkend="shortcuts-pane"/>).  </para>
+            </listitem>
+              
+            
             <listitem>
                 <para><filename>killring.xml</filename> - stores recently
                 deleted text. See <xref linkend="text-transfer" />.</para>
@@ -781,6 +802,10 @@
                 contains numbered backups of all automatically-written settings
                 files.</para>
             </listitem>
+            <listitem><para><filename>startup</filename> - This directory
+              contains startup scripts in beanshell or other plugin-supported scripting
+              languages. They are run at the time jEdit starts, after the <filename>startup</filename> scripts in the jEdit install directory have been run. See <xref linkend="startup-scripts" /></para>
+            </listitem>
         </itemizedlist>
 
         <section id="propertiesfile">
@@ -799,18 +824,20 @@
 
         <section id="sitepropertiesfiles">
             <title>Site Properties</title>
+            
+            
             <para>
-                You may also put properties files in the "properties" directory in
-                the jEdit home directory (NOT the .jedit settings directory). You
+                You may also put properties files in the <filename>properties</filename> directory under 
+                the jEdit home directory (NOT the jedit settings directory). You
                 can locate the jEdit home directory by going to the Utilities menu
-                directory, then the "jEdit Home Directory" menu item, and the first
+                directory, then the <guimenuitem>jEdit Home Directory</guimenuitem> menu item, and the first
                 item in the pullout menu will be the location of the jEdit home
-                directory. This is intended for site-wide settings and it is
-                useful for things like a set of custom key bindings that you might
-                want to share between different computers. This lets you keep your
-                custom properties separate from the jEdit properties, so they are
-                easier to find, edit, and move between machines. Note that your
+                directory. This is intended for site-wide settings. This lets you keep 
+                custom user properties separate from the jEdit site-wide properties, so they are easier to find, edit, and move between machines. Note that your
                 custom properties files must have ".props" as the file name extension.
+            </para>
+            <para> 
+              Prior to jEdit 5.0, this was also where site-wide keyboard shortcuts were placed, but now you can define custom sets of shortcuts as keymap files. These files can be cloned and edited from the Shortcuts Option Pane, or edited by hand. To place them in a system-wide location, copy them into the <filename>keymaps</filename> folder under the jedit home directory. 
             </para>
             <para>
                 Site properties files are read in alphabetically by file name. This means
@@ -821,6 +848,7 @@
             <para>
                 You can edit these files inside jEdit - changes made to these files will not be re-read until the next time jEdit is started.
             </para>
+            
         </section>
     </section>
 </chapter>

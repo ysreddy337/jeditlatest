@@ -50,7 +50,7 @@ import org.gjt.sp.util.Log;
  * @see TextArea
  *
  * @author Mike Dillon and Slava Pestov
- * @version $Id: Gutter.java 21831 2012-06-18 22:54:17Z ezust $
+ * @version $Id: Gutter.java 23461 2014-04-06 18:00:29Z ezust $
  */
 public class Gutter extends JComponent implements SwingConstants
 {
@@ -950,12 +950,14 @@ public class Gutter extends JComponent implements SwingConstants
 				if (e.getX() >= FOLD_MARKER_SIZE)
 				{
 					selectionStart = textArea.getLineStartOffset(line);
+					int selectionEnd = getFoldEndOffset(line);
 					Selection s = new Selection.Range(
-						selectionStart, getFoldEndOffset(line));
+						selectionStart, selectionEnd);
 					if(textArea.isMultipleSelectionEnabled())
 						textArea.addToSelection(s);
 					else
 						textArea.setSelection(s);
+					textArea.moveCaretPosition(selectionEnd, false);
 					selectLines = true;
 					selAnchorLine = line;
 					return;
@@ -1086,11 +1088,13 @@ public class Gutter extends JComponent implements SwingConstants
 				{
 					selStart = textArea.getLineStartOffset(line);
 					selEnd = getFoldEndOffset(selAnchorLine);
+					textArea.moveCaretPosition(selStart, false);
 				}
 				else
 				{
 					selStart = textArea.getLineStartOffset(selAnchorLine);
 					selEnd = getFoldEndOffset(line);
+					textArea.moveCaretPosition(selEnd, false);
 				}
 
 				textArea.resizeSelection(selStart, selEnd, 0, false);

@@ -29,10 +29,12 @@ import java.io.Closeable;
 
 import javax.swing.filechooser.FileSystemView;
 import javax.swing.*;
+
 import java.awt.Component;
 import java.io.*;
 import java.text.*;
 import java.util.Date;
+
 import org.gjt.sp.jedit.*;
 import org.gjt.sp.util.IOUtilities;
 import org.gjt.sp.util.Log;
@@ -41,7 +43,7 @@ import org.gjt.sp.util.Log;
 /**
  * Local filesystem VFS.
  * @author Slava Pestov
- * @version $Id: FileVFS.java 22774 2013-02-12 06:55:37Z ezust $
+ * @version $Id: FileVFS.java 23336 2013-11-16 12:05:40Z ezust $
  */
 public class FileVFS extends VFS
 {
@@ -55,8 +57,8 @@ public class FileVFS extends VFS
 			| NON_AWT_SESSION_CAP
 			| (OperatingSystem.isCaseInsensitiveFS()
 			? CASE_INSENSITIVE_CAP : 0),
-			new String[] { EA_TYPE, EA_SIZE, EA_STATUS,
-			EA_MODIFIED });
+			new String[] { EA_SIZE, EA_MODIFIED, EA_STATUS,
+			EA_TYPE });
 	} //}}}
 
 	//{{{ getParentOfPath() method
@@ -174,16 +176,12 @@ public class FileVFS extends VFS
 		if (path.exists())
 		{
 			File[] files = path.listFiles();
-			for (int i = 0; i < files.length; i++)
+			for (File file : files)
 			{
-				if (files[i].isDirectory())
-				{
-					recursiveDelete(files[i]);
-				}
+				if (file.isDirectory())
+					recursiveDelete(file);
 				else
-				{
-					files[i].delete();
-				}
+					file.delete();
 			}
 		}
 		return path.delete();
@@ -212,8 +210,7 @@ public class FileVFS extends VFS
 		private File file;
 
 		// use system default short format
-		public static DateFormat DATE_FORMAT
-			= DateFormat.getInstance();
+		public static DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy/MM/dd HH:mm");
 
 		private long modified;
 
@@ -322,6 +319,7 @@ public class FileVFS extends VFS
 		} //}}}
 
 		//{{{ getModified() method
+		@Override
 		public long getModified()
 		{
 			fetchAttrs();

@@ -30,8 +30,8 @@ import javax.swing.text.Segment;
 import javax.swing.*;
 import java.awt.event.*;
 import java.awt.*;
+import java.util.Objects;
 import java.util.StringTokenizer;
-import org.gjt.sp.jedit.io.*;
 import org.gjt.sp.jedit.textarea.*;
 import org.gjt.sp.jedit.*;
 import org.gjt.sp.jedit.gui.statusbar.StatusWidgetFactory;
@@ -52,7 +52,7 @@ import org.gjt.sp.util.*;
  * <li>Displaying memory status
  * </ul>
  *
- * @version $Id: StatusBar.java 22942 2013-04-22 11:27:52Z thomasmey $
+ * @version $Id: StatusBar.java 23410 2014-02-09 19:23:35Z ezust $
  * @author Slava Pestov
  * @since jEdit 3.2pre2
  */
@@ -132,7 +132,7 @@ public class StatusBar extends JPanel
 			panel.remove(caretStatus);
 
 		String statusBar = jEdit.getProperty("view.status");
-		if (!StandardUtilities.objectsEqual(currentBar, statusBar))
+		if (!Objects.equals(currentBar, statusBar))
 		{
 			box.removeAll();
 			StringTokenizer tokenizer = new StringTokenizer(statusBar);
@@ -334,6 +334,7 @@ public class StatusBar extends JPanel
 	} //}}}
 
 	//{{{ updateCaretStatus() method
+	/** Updates the status bar with information about the caret position, line number, etc */
 	public void updateCaretStatus()
 	{
 		if (showCaretStatus)

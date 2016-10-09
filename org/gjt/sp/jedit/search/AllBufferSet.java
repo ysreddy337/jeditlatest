@@ -35,7 +35,7 @@ import org.gjt.sp.util.StandardUtilities;
 /**
  * A file set for searching all open buffers in a view.
  * @author Slava Pestov
- * @version $Id: AllBufferSet.java 22151 2012-09-04 04:01:41Z ezust $
+ * @version $Id: AllBufferSet.java 23221 2013-09-29 20:03:32Z shlomy $
  */
 public class AllBufferSet extends BufferListSet
 {
@@ -105,10 +105,9 @@ public class AllBufferSet extends BufferListSet
 			return null;
 		}
 
-		for(int i = 0; i < buffers.length; i++)
+		for (Buffer buffer : buffers)
 		{
-			Buffer buffer = buffers[i];
-			if(filter.matcher(buffer.getName()).matches())
+			if (filter.matcher(buffer.getName()).matches())
 				returnValue.add(buffer.getPath());
 		}
 

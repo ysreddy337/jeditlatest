@@ -108,10 +108,7 @@ public class CompleteWord extends CompletionPopup
 		else
 		{
 			String longestPrefix = MiscUtilities.getLongestPrefix(
-				completions,
-				keywordMap != null
-				? keywordMap.getIgnoreCase()
-				: false);
+				completions, keywordMap != null && keywordMap.getIgnoreCase());
 
 			if (word.length() < longestPrefix.length())
 			{
@@ -258,17 +255,14 @@ public class CompleteWord extends CompletionPopup
 		if(keywordMap != null)
 		{
 			String[] keywords = keywordMap.getKeywords();
-			for(int i = 0; i < keywords.length; i++)
+			for (String _keyword : keywords)
 			{
-				String _keyword = keywords[i];
-				if(_keyword.regionMatches(keywordMap.getIgnoreCase(),
-					0,word,0,wordLen))
+				if (_keyword.regionMatches(keywordMap.getIgnoreCase(),
+							   0, word, 0, wordLen))
 				{
-					Completion keyword = new Completion(_keyword,true);
-					if(!completions.contains(keyword))
-					{
+					Completion keyword = new Completion(_keyword, true);
+					if (!completions.contains(keyword))
 						completions.add(keyword);
-					}
 				}
 			}
 		} //}}}
@@ -465,7 +459,7 @@ public class CompleteWord extends CompletionPopup
 	protected void keyTyped(KeyEvent e)
 	{
 		char ch = e.getKeyChar();
-		if(Character.isDigit(ch))
+		if(jEdit.getBooleanProperty("insertCompletionWithDigit") && Character.isDigit(ch)) 
 		{
 			int index = ch - '0';
 			if(index == 0)

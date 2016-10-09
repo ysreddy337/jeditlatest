@@ -1,6 +1,6 @@
 ###
 ### jEdit user interface definitions,
-### :tabSize=8:indentSize=8:noTabs=false:
+### :tabSize=4:indentSize=4:noTabs=false:
 ### :folding=explicit:collapseFolds=1:
 ### :encoding=UTF-8:
 ###
@@ -574,6 +574,7 @@ about.text.contributors=Slava Pestov\n\
 	Ben Glazer\n\
 	Ben Sarsgard\n\
 	Ben Williams\n\
+	Benjamin Zengin\n\
 	Bernhard Walle\n\
 	Bertalan Fodor\n\
 	Bill McMilleon\n\
@@ -757,7 +758,8 @@ about.text.contributors=Slava Pestov\n\
 	Will Varfar\n\
 	Wiktor Adamski\n\
 	Wojciech Stryjewski\n\
-	Wolfgang Chico-Töpfer
+	Wolfgang Chico-Töpfer\n\
+	Yihua Zhang
 #}}}
 
 #{{{ Search and replace dialog
@@ -901,6 +903,10 @@ fullScreenIncludesStatus=true
 
 # Enable subpixel antialiasing by default in textarea.
 view.antiAlias=subpixel HRGB
+
+# Fancy Java2D stuff
+view.fracFontMetrics=false
+
 #}}}
 
 #{{{ File System Browser panes

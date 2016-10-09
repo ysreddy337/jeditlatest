@@ -32,7 +32,7 @@ import org.gjt.sp.util.StandardUtilities;
 /**
  * A file set for searching a user-specified list of buffers.
  * @author Slava Pestov
- * @version $Id: BufferListSet.java 22454 2012-11-10 11:15:08Z thomasmey $
+ * @version $Id: BufferListSet.java 23221 2013-09-29 20:03:32Z shlomy $
  */
 public abstract class BufferListSet implements SearchFileSet
 {
@@ -110,7 +110,8 @@ public abstract class BufferListSet implements SearchFileSet
 	} //}}}
 
 	//{{{ getPrevOrNextFile method()
-	private enum Direction {PREV, NEXT};
+	private enum Direction {PREV, NEXT}
+
 	private String getPrevOrNextFile(View view, String path, Direction direction)
 	{
 		if(files == null)
@@ -126,10 +127,10 @@ public abstract class BufferListSet implements SearchFileSet
 			boolean ignoreCase = ((vfs.getCapabilities()
 				& VFS.CASE_INSENSITIVE_CAP) != 0);
 
-			for(int i = 0; i < files.length; i++)
+			for (String file : files)
 			{
-				if(StandardUtilities.compareStrings(
-					files[i],path,ignoreCase) == 0)
+				if (StandardUtilities.compareStrings(
+					file, path, ignoreCase) == 0)
 				{
 					return path;
 				}

@@ -72,7 +72,7 @@ import org.gjt.sp.util.StandardUtilities;
 /** A container for dockable windows. This class should never be used
  * directly.
  * @author Slava Pestov
- * @version $Id: PanelWindowContainer.java 21831 2012-06-18 22:54:17Z ezust $
+ * @version $Id: PanelWindowContainer.java 23221 2013-09-29 20:03:32Z shlomy $
  * @since jEdit 4.0pre1
  */
 public class PanelWindowContainer implements DockableWindowContainer, DockingArea
@@ -389,10 +389,8 @@ public class PanelWindowContainer implements DockableWindowContainer, DockingAre
 		buttonPanel.add(closeBox);
 		buttonPanel.add(menuBtn);
 		Collections.sort(buttons,new DockableWindowCompare());
-		for(int i = 0; i < buttons.size(); i++)
-		{
-			buttonPanel.add(buttons.get(i));
-		}
+		for (AbstractButton button : buttons)
+			buttonPanel.add(button);
 	} //}}}
 
 	//{{{ getWrappedDimension() method
@@ -820,10 +818,8 @@ public class PanelWindowContainer implements DockableWindowContainer, DockingAre
 			Component[] comp = parent.getComponents();
 			if(comp.length <= 2)
 			{
-				for(int i = 0; i < comp.length; i++)
-				{
-					comp[i].setVisible(false);
-				}
+				for (Component aComp : comp)
+					aComp.setVisible(false);
 				return;
 			}
 

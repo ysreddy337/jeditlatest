@@ -3,7 +3,8 @@
  * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
- * Copyright (C) 1999, 2005 Slava Pestov
+ * Copyright (C) 1999-2013 Slava Pestov, Shlomy Reinstein
+ * Matthieu Casanova, Kazutoshi Satoda, Alan Ezust, Dale Anson  
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -54,7 +55,7 @@ import org.gjt.sp.util.Log;
  * @see TextArea
  *
  * @author Slava Pestov
- * @version $Id: TextAreaPainter.java 23084 2013-07-27 16:11:13Z ezust $
+ * @version $Id: TextAreaPainter.java 23832 2015-01-24 03:26:47Z ezust $
  */
 public class TextAreaPainter extends JComponent implements TabExpander
 {
@@ -628,7 +629,7 @@ public class TextAreaPainter extends JComponent implements TabExpander
 
 	//{{{ setAntiAliasEnabled() method
 	/**
-	 * As of jEdit 4.3pre4, a new JDK 1.6 subpixel antialias mode is supported.
+	 * As of jEdit 4.3, subpixel antialias mode is supported.
 	 *
 	 * @since jEdit 4.2pre4
 	 */
@@ -1229,7 +1230,7 @@ public class TextAreaPainter extends JComponent implements TabExpander
 				return;
 
 			float x = indent = textArea.getHorizontalOffset();
-			float baseLine = y + fm.getHeight() -
+			float baseLine = y + getLineHeight() -
 				(fm.getLeading()+1) - fm.getDescent();
 
 			DefaultTokenHandler tokenHandler = new DefaultTokenHandler();

@@ -5,12 +5,8 @@
  *
  * Copyright (C) 2003 Ollie Rutherfurd <oliver@rutherfurd.net>
  *
- * $Id: Go_to_Column.bsh 21353 2012-03-14 09:46:51Z jojaba_67 $
+ * $Id: Go_to_Column.bsh 23112 2013-08-13 07:18:29Z ezust $
  */
- 
-//Localization
-final static String ColumnBeforeLabel   = jEdit.getProperty("macro.rs.GoToColumn.ColumnBefore.label",  "Column (between 1 and");
-final static String ColumnAfterLabel   = jEdit.getProperty("macro.rs.GoToColumn.ColumnAfter.label",  "):");
 
 //Process
 goToColumn()
@@ -19,7 +15,7 @@ goToColumn()
 	len = textArea.getLineLength(line) + 1;
 	while(true)
 	{
-		col = Macros.input(view, ColumnBeforeLabel + " " + len + " " + ColumnAfterLabel);
+		col = Macros.input(view, jEdit.getProperty("macro.rs.GoToColumn.label", new Integer[]{len}));
 		if(col == null)
 			return;
 		else

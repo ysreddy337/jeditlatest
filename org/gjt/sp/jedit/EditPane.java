@@ -89,7 +89,7 @@ import org.gjt.sp.util.ThreadUtilities;
  * @see View#getEditPanes()
  *
  * @author Slava Pestov
- * @version $Id: EditPane.java 22181 2012-09-09 23:29:58Z ezust $
+ * @version $Id: EditPane.java 23701 2014-10-26 14:09:49Z ezust $
  */
 public class EditPane extends JPanel implements BufferSetListener
 {
@@ -220,7 +220,7 @@ public class EditPane extends JPanel implements BufferSetListener
 					// This must happen after loadCaretInfo.
 					// Otherwise caret is not restored properly.
 					int check = jEdit.getIntegerProperty("checkFileStatus");
-					if (jEdit.isStartupDone() && (check & GeneralOptionPane.checkFileStatus_focusBuffer) > 0);
+					if (jEdit.isStartupDone() && (check & GeneralOptionPane.checkFileStatus_focusBuffer) > 0)
 						jEdit.checkBufferStatus(view, true);
 				}
 			});
@@ -509,10 +509,9 @@ public class EditPane extends JPanel implements BufferSetListener
 
 		int caret = textArea.getCaretPosition();
 
-		for(int i = 0; i < markers.size(); i++)
+		for (Marker _marker : markers)
 		{
-			Marker _marker = markers.get(i);
-			if(_marker.getPosition() > caret)
+			if (_marker.getPosition() > caret)
 			{
 				marker = _marker;
 				break;
@@ -603,17 +602,15 @@ public class EditPane extends JPanel implements BufferSetListener
 
 		// always add markers on selected lines
 		Selection[] selection = textArea.getSelection();
-		for(int i = 0; i < selection.length; i++)
+		for (Selection s : selection)
 		{
-			Selection s = selection[i];
 			int startLine = s.getStartLine();
-			if(startLine != s.getEndLine() && startLine != caretLine)
+			if (startLine != s.getEndLine() && startLine != caretLine)
 			{
-				buffer.addMarker('\0',s.getStart());
+				buffer.addMarker('\0', s.getStart());
 			}
 
-			if(s.getEndLine() != caretLine)
-				buffer.addMarker('\0',s.getEnd());
+			if (s.getEndLine() != caretLine) buffer.addMarker('\0', s.getEnd());
 		}
 
 		// toggle marker on caret line
@@ -906,8 +903,9 @@ public class EditPane extends JPanel implements BufferSetListener
 			"view.gutter.structureHighlight"));
 		gutter.setStructureHighlightColor(
 			jEdit.getColorProperty("view.gutter.structureHighlightColor"));
-		gutter.setBackground(
-			jEdit.getColorProperty("view.gutter.bgColor"));
+		Color backgroundColor = jEdit.getColorProperty("view.gutter.bgColor");
+		gutter.setBackground(backgroundColor);
+		textArea.setBackground(backgroundColor);
 		gutter.setForeground(
 			jEdit.getColorProperty("view.gutter.fgColor"));
 		gutter.setHighlightedForeground(

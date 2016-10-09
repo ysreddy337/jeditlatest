@@ -58,7 +58,7 @@ import static java.text.DateFormat.MEDIUM;
  * to the log, see {@link #init}.
  *
  * @author Slava Pestov
- * @version $Id: Log.java 22935 2013-04-17 17:24:33Z ezust $
+ * @version $Id: Log.java 23221 2013-09-29 20:03:32Z shlomy $
  */
 public class Log
 {
@@ -141,10 +141,9 @@ public class Log
 			"os.arch", "user.home", "java.home",
 			"java.class.path",
 			};
-		for(int i = 0; i < props.length; i++)
+		for (String prop : props)
 		{
-			log(MESSAGE,Log.class,
-				props[i] + '=' + System.getProperty(props[i]));
+			log(MESSAGE, Log.class, prop + '=' + System.getProperty(prop));
 		}
 	} //}}}
 
@@ -490,24 +489,20 @@ public class Log
 		//{{{ fireIntervalAdded() method
 		private void fireIntervalAdded(int index1, int index2)
 		{
-			for(int i = 0; i < listeners.size(); i++)
+			for (ListDataListener listener : listeners)
 			{
-				ListDataListener listener = listeners.get(i);
 				listener.intervalAdded(new ListDataEvent(this,
-					ListDataEvent.INTERVAL_ADDED,
-					index1,index2));
+					ListDataEvent.INTERVAL_ADDED, index1, index2));
 			}
 		} //}}}
 
 		//{{{ fireIntervalRemoved() method
 		private void fireIntervalRemoved(int index1, int index2)
 		{
-			for(int i = 0; i < listeners.size(); i++)
+			for (ListDataListener listener : listeners)
 			{
-				ListDataListener listener = listeners.get(i);
-				listener.intervalRemoved(new ListDataEvent(this,
-					ListDataEvent.INTERVAL_REMOVED,
-					index1,index2));
+				listener.intervalRemoved(new ListDataEvent(
+					this, ListDataEvent.INTERVAL_REMOVED, index1, index2));
 			}
 		} //}}}
 

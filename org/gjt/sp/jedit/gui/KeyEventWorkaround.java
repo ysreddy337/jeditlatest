@@ -35,7 +35,7 @@ import org.gjt.sp.util.Log;
  * Java's keyboard handling is crap, to put it mildly.
  *
  * @author Slava Pestov
- * @version $Id: KeyEventWorkaround.java 22842 2013-03-14 21:38:44Z elberry $
+ * @version $Id: KeyEventWorkaround.java 23204 2013-09-23 21:41:51Z ezust $
  */
 public class KeyEventWorkaround
 {
@@ -188,17 +188,6 @@ public class KeyEventWorkaround
 		}
 	} //}}}
 
-	//{{{ isMacControl() method
-	/**
-	 * Apple sucks.
-	 */
-	public static boolean isMacControl(KeyEvent evt)
-	{
-		return (OperatingSystem.isMacOS() &&
-			(evt.getModifiers() & InputEvent.CTRL_MASK) != 0
-			&& evt.getKeyChar() <= 0x2B);
-	} //}}}
-
 	//{{{ isNumericKeypad() method
 	public static boolean isNumericKeypad(int keyCode)
 	{
@@ -282,8 +271,7 @@ public class KeyEventWorkaround
 		case KeyEvent.KEY_TYPED:
 			// need to let \b through so that backspace will work
 			// in HistoryTextFields
-			if(!isMacControl(evt)
-				&& (ch < 0x20 || ch == 0x7f || ch == 0xff)
+			if((ch < 0x20 || ch == 0x7f || ch == 0xff)
 				&& ch != '\b' && ch != '\t' && ch != '\n')
 			{
 				return null;
@@ -295,17 +283,14 @@ public class KeyEventWorkaround
 					+ AbstractInputHandler.toString(evt)+": last="+last+".");
 			}
 
-			if(!Debug.ALTERNATIVE_DISPATCHER)
+			if((modifiers & InputEvent.CTRL_MASK) != 0
+				&& (modifiers & InputEvent.ALT_MASK) == 0
+				|| (modifiers & InputEvent.CTRL_MASK) == 0
+				&& (modifiers & InputEvent.ALT_MASK) != 0
+				&& !Debug.ALT_KEY_PRESSED_DISABLED
+				|| (modifiers & InputEvent.META_MASK) != 0)
 			{
-				if((modifiers & InputEvent.CTRL_MASK) != 0
-					&& (modifiers & InputEvent.ALT_MASK) == 0
-					|| (modifiers & InputEvent.CTRL_MASK) == 0
-					&& (modifiers & InputEvent.ALT_MASK) != 0
-					&& !Debug.ALT_KEY_PRESSED_DISABLED
-					|| (modifiers & InputEvent.META_MASK) != 0)
-				{
-					return null;
-				}
+				return null;
 			}
 
 			// if the last key was a numeric keypad key

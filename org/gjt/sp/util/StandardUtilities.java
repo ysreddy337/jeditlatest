@@ -40,7 +40,7 @@ import java.util.Stack;
  * Several tools that depends on JDK only.
  *
  * @author Matthieu Casanova
- * @version $Id: StandardUtilities.java 22936 2013-04-19 13:26:30Z kpouer $
+ * @version $Id: StandardUtilities.java 23381 2013-12-09 12:43:14Z kpouer $
  * @since 4.3pre5
  */
 public class StandardUtilities
@@ -490,7 +490,9 @@ loop:		for(int i = 0; i < str.length(); i++)
 	 * Returns if two strings are equal. This correctly handles null pointers,
 	 * as opposed to calling <code>o1.equals(o2)</code>.
 	 * @since jEdit 4.3pre6
+	 * @deprecated use {java.util.Objects#equals(Object, Object}
 	 */
+	@Deprecated
 	public static boolean objectsEqual(@Nullable Object o1, @Nullable Object o2)
 	{
 		if(o1 == null)

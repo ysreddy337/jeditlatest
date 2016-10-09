@@ -88,7 +88,7 @@ import java.awt.event.*;
  * </ul>
  *
  * @author Slava Pestov
- * @version $Id: GUIUtilities.java 21920 2012-07-03 15:35:12Z kpouer $
+ * @version $Id: GUIUtilities.java 23449 2014-03-30 19:14:26Z kerik-sf $
  */
 public class GUIUtilities
 {
@@ -527,7 +527,7 @@ public class GUIUtilities
 		}
 
 		String toolTip = prettifyMenuLabel(label);
-		String shortcutLabel = getShortcutLabel(name);
+		String shortcutLabel = getShortcutLabel(name, true);
 		if(shortcutLabel != null)
 		{
 			toolTip = toolTip + " (" + shortcutLabel + ')';
@@ -582,8 +582,9 @@ public class GUIUtilities
 	/**
 	 * Returns a label string to show users what shortcut are
 	 * assigned to the action.
+	 * @param platform if true, show fancy platform-specific label for the modifiers. 
 	 */
-	public static String getShortcutLabel(String action)
+	public static String getShortcutLabel(String action, Boolean platform)
 	{
 		if(action == null)
 			return null;
@@ -593,8 +594,8 @@ public class GUIUtilities
 			String shortcut1 = keymap.getShortcut(action + ".shortcut");
 			String shortcut2 = keymap.getShortcut(action + ".shortcut2");
 
-			shortcut1 = getPlatformShortcutLabel(shortcut1);
-			shortcut2 = getPlatformShortcutLabel(shortcut2);
+			shortcut1 = platform ? getPlatformShortcutLabel(shortcut1) : shortcut1;
+			shortcut2 = platform ? getPlatformShortcutLabel(shortcut2) : shortcut2;
 
 			if(shortcut1 == null || shortcut1.length() == 0)
 			{
@@ -1864,19 +1865,6 @@ public class GUIUtilities
 		frame.addComponentListener(ss);
 	} //}}}
 
-	//{{{ initContinuousLayout() method
-	/**
-	 * This method do nothing.
-	 *
-	 * @param split the split. It must never be null
-	 * @since jEdit 4.3pre9
-	 * @deprecated since jEdit 5.0 using or not continuous layout is not anymore an option.
-	 */
-	@Deprecated
-	public static void initContinuousLayout(JSplitPane split)
-	{
-	} //}}}
-
 	//{{{ Package-private members
 
 	//{{{ initializeDeprecatedIcons() method
@@ -1982,7 +1970,22 @@ public class GUIUtilities
 	//{{{ showSplashScreen() method
 	static void showSplashScreen()
 	{
-		splash = new SplashScreen();
+		// Have to do it in the EDT, since it creates gui components
+		try
+		{
+			SwingUtilities.invokeAndWait(new Runnable()
+			{
+				public void run()
+				{
+					splash = new SplashScreen();
+				}
+			});
+		}
+		catch (Exception e)
+		{
+			Log.log(Log.ERROR, GUIUtilities.class,
+					"error displaying splash screen !",e);
+		}
 	} //}}}
 
 	//{{{ advanceSplashProgress() method
@@ -2148,7 +2151,7 @@ public class GUIUtilities
 	 * For non-Frame's use {@link GUIUtilities#saveGeometry(Window,String)}
 	 *
 	 * @author Björn Kautler
-	 * @version $Id: GUIUtilities.java 21920 2012-07-03 15:35:12Z kpouer $
+	 * @version $Id: GUIUtilities.java 23449 2014-03-30 19:14:26Z kerik-sf $
 	 * @since jEdit 4.3pre6
 	 * @see GUIUtilities#saveGeometry(Window,Container,String)
 	 */

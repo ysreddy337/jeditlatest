@@ -19,15 +19,15 @@ General jEdit documentation can be found in the 'doc' directory.
  For building jEdit, the API documentation or any of the
  distribution files except of the source package:
 
-  - A Java compiler of at least version 1.6, such as Sun's javac
+  - A Java compiler of at least version 1.7, such as Oracle's javac
     which is included in the JDK. Get it from <http://www.java.com/download> or
-    from your package manager - e. g. sun-java6-jdk.
+    from your package manager - e. g. openjdk-7-jdk.
 
  For building the API documentation:
 
   - Sun's javadoc tool, which is included in the JDK.
     Get it from <http://www.java.com/download> or from your package
-    manager - e. g. sun-java6-jdk.
+    manager - e. g. sun-java7-jdk.
 
  For building the windows installer (for the final step):
 
@@ -35,10 +35,6 @@ General jEdit documentation can be found in the 'doc' directory.
   - A box running windows or wine, e. g. on *nix. If Inno Setup should be
     run via wine, a wine version of at least 1.3.10 is required because
     of a bug in earlier wine versions.
-
- For building the EXE launcher on Mac OS X:
-
-  - Rosetta. Get it from your installation DVD at "Optional Installs".
 
  For building the Mac OS X disk image (DMG) for easy distribution
  (for the final step):

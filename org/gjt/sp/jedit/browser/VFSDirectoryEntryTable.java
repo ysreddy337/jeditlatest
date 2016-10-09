@@ -49,7 +49,7 @@ import org.gjt.sp.util.ThreadUtilities;
 
 /**
  * @author Slava Pestov
- * @version $Id: VFSDirectoryEntryTable.java 21831 2012-06-18 22:54:17Z ezust $
+ * @version $Id: VFSDirectoryEntryTable.java 23222 2013-09-29 20:43:34Z shlomy $
  * @since jEdit 4.2pre1
  */
 public class VFSDirectoryEntryTable extends JTable
@@ -126,10 +126,8 @@ public class VFSDirectoryEntryTable extends JTable
 
 		java.util.List<VFSFile> returnValue = new LinkedList<VFSFile>();
 		int[] selectedRows = getSelectedRows();
-		for(int i = 0; i < selectedRows.length; i++)
-		{
-			returnValue.add(model.files[selectedRows[i]].dirEntry);
-		}
+		for (int selectedRow : selectedRows)
+			returnValue.add(model.files[selectedRow].dirEntry);
 		return returnValue.toArray(new VFSFile[returnValue.size()]);
 	} //}}}
 

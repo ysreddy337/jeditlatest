@@ -21,15 +21,26 @@ package org.gjt.sp.jedit.gui;
 
 //{{{ Imports
 import javax.swing.event.*;
+import javax.swing.plaf.ComboBoxUI;
+import javax.swing.plaf.basic.BasicComboBoxUI;
+import java.lang.reflect.Field;
+
 import javax.swing.*;
+
 import java.awt.*;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.Transferable;
+import java.awt.datatransfer.UnsupportedFlavorException;
+import java.io.IOException;
+
 import org.gjt.sp.jedit.*;
 import org.gjt.sp.jedit.bufferset.BufferSet;
+import org.gjt.sp.jedit.bufferset.BufferSetManager;
 import org.gjt.sp.util.ThreadUtilities;
 //}}}
 
 /** BufferSwitcher class
-   @version $Id: BufferSwitcher.java 22075 2012-08-26 23:13:58Z ezust $
+   @version $Id: BufferSwitcher.java 23712 2014-11-01 23:45:33Z ezust $
 */
 public class BufferSwitcher extends JComboBox
 {
@@ -38,12 +49,14 @@ public class BufferSwitcher extends JComboBox
 	private boolean updating;
 	// item that was selected before popup menu was opened
 	private Object itemSelectedBefore;
+	public static final DataFlavor BufferDataFlavor = new DataFlavor(BufferTransferableData.class, DataFlavor.javaJVMLocalObjectMimeType);
 
 	public BufferSwitcher(final EditPane editPane)
 	{
 		this.editPane = editPane;
 
 		//setFont(new Font("Dialog",Font.BOLD,10));
+		setTransferHandler(new ComboBoxTransferHandler(this));
 		setRenderer(new BufferCellRenderer());
 		setMaximumRowCount(jEdit.getIntegerProperty("bufferSwitcher.maxRowCount", 10));
 		addPopupMenuListener(new PopupMenuListener()
@@ -94,6 +107,7 @@ public class BufferSwitcher extends JComboBox
 				setModel(new DefaultComboBoxModel(bufferSet.getAllBuffers()));
 				setSelectedItem(editPane.getBuffer());
 				setToolTipText(editPane.getBuffer().getPath(true));
+				addDnD();
 				updating = false;
 			}
 		};
@@ -119,6 +133,281 @@ public class BufferSwitcher extends JComboBox
 				setToolTipText(buffer.getPath());
 			}
 			return this;
+		}
+	}
+	
+	private void addDnD() 
+	{
+		ComboBoxUI ui = getUI();
+		if (ui instanceof BasicComboBoxUI)
+		{
+			try
+			{
+				Field listBoxField = getField(ui.getClass(), "listBox");
+				listBoxField.setAccessible(true);
+				JList list = (JList)listBoxField.get(ui);
+				list.setDragEnabled(true);
+				list.setDropMode(DropMode.INSERT);
+				list.setTransferHandler(new BufferSwitcherTransferHandler());
+			}
+			catch (Exception ignored) // NOPMD
+			{
+				// don't do anything if the above fails, it just means dnd won't work.
+			}
+		}
+	}
+	
+	/**
+	 * Return the named field from the given class.
+	 */
+	private Field getField( Class aClass, String fieldName ) throws NoSuchFieldException {
+		if ( aClass == null )
+			throw new NoSuchFieldException( "Invalid field : " + fieldName );
+		try 
+		{
+			return aClass.getDeclaredField( fieldName );
+		}
+		catch ( NoSuchFieldException e ) 
+		{
+			return getField( aClass.getSuperclass(), fieldName );
+		}
+	}
+	
+	private class ComboBoxTransferHandler extends TransferHandler
+	{
+		JComboBox comboBox;
+
+		public ComboBoxTransferHandler(JComboBox comboBox)
+		{
+			this.comboBox = comboBox;
+		}
+
+		public boolean canImport(TransferHandler.TransferSupport info)
+		{
+			// we only import Strings
+			if (!info.isDataFlavorSupported(BufferSwitcher.BufferDataFlavor))
+			{
+				return false;
+			}
+			if (!comboBox.isPopupVisible())
+			{
+				comboBox.showPopup();
+			}
+			return false;
+		}
+	}
+	
+	private class BufferSwitcherTransferable implements Transferable
+	{
+		private final DataFlavor[] supportedDataFlavor = { BufferSwitcher.BufferDataFlavor };
+		private final Buffer buffer;
+		private final JComponent source;
+		
+		public BufferSwitcherTransferable(Buffer buffer, JComponent source)
+		{
+			this.buffer = buffer;
+			this.source = source;
+		}
+
+		@Override
+		public DataFlavor[] getTransferDataFlavors()
+		{
+			return supportedDataFlavor;
+		}
+
+		@Override
+		public boolean isDataFlavorSupported(DataFlavor flavor)
+		{
+			return BufferSwitcher.BufferDataFlavor.equals(flavor);
+		}
+
+		@Override
+		public Object getTransferData(DataFlavor flavor)
+				throws UnsupportedFlavorException, IOException
+		{
+			if (!isDataFlavorSupported(flavor))
+				throw new UnsupportedFlavorException(flavor);
+			return new BufferTransferableData(buffer, source);
+		}
+	}
+	
+	private class BufferTransferableData
+	{
+		private final Buffer buffer;
+		private final JComponent source;
+		
+		public BufferTransferableData(Buffer buffer, JComponent source)
+		{
+			this.buffer = buffer;
+			this.source = source;
+		}
+		
+		public Buffer getBuffer()
+		{
+			return this.buffer;
+		}
+		
+		public JComponent getSource()
+		{
+			return this.source;
+		}
+	}
+	
+	private class BufferSwitcherTransferHandler extends TransferHandler
+	{
+		@Override
+		public boolean canImport(TransferSupport support)
+		{
+
+			if (!support
+					.isDataFlavorSupported(BufferSwitcher.BufferDataFlavor))
+			{
+				return false;
+			}
+
+			JList.DropLocation dl = (JList.DropLocation) support.getDropLocation();
+			if (dl.getIndex() == -1)
+			{
+				return false;
+			}
+
+			Transferable t = support.getTransferable();
+			BufferTransferableData data;
+			try
+			{
+				data = (BufferTransferableData) t
+						.getTransferData(BufferSwitcher.BufferDataFlavor);
+			}
+			catch (UnsupportedFlavorException e)
+			{
+				return false;
+			}
+			catch (IOException e)
+			{
+				return false;
+			}
+			JComponent target = (JComponent) support.getComponent();
+			EditPane sourceEditPane = (EditPane) GUIUtilities.getComponentParent(
+					data.getSource(), EditPane.class);
+			EditPane targetEditPane = (EditPane) GUIUtilities.getComponentParent(
+					target, EditPane.class);
+			BufferSet.Scope scope = jEdit.getBufferSetManager().getScope();
+			View sourceView = sourceEditPane.getView();
+			View targetView = targetEditPane.getView();
+			switch (scope)
+			{
+				case editpane:
+				{
+					return sourceEditPane != targetEditPane;
+				}
+				case view:
+				{
+					return sourceView != targetView;
+				}
+				case global:
+					return false;
+			}
+
+			return false;
+		}
+
+		@Override
+		public boolean importData(TransferSupport support)
+		{
+			if (!support.isDrop())
+			{
+				return false;
+			}
+			
+			Transferable t = support.getTransferable();
+			BufferTransferableData data;
+			try
+			{
+				data = (BufferTransferableData) t
+						.getTransferData(BufferSwitcher.BufferDataFlavor);
+			}
+			catch (UnsupportedFlavorException e)
+			{
+				return false;
+			}
+			catch (IOException e)
+			{
+				return false;
+			}
+			JComponent target = (JComponent) support.getComponent();
+			EditPane targetEditPane = (EditPane) GUIUtilities.getComponentParent(
+					target, EditPane.class);
+
+			Buffer buffer = data.getBuffer();
+
+			View view = targetEditPane.getView();
+
+			BufferSetManager bufferSetManager = jEdit.getBufferSetManager();
+			if (buffer != null)
+			{
+				bufferSetManager.addBuffer(targetEditPane, buffer);
+				targetEditPane.setBuffer(buffer);
+			}
+			view.toFront();
+			view.requestFocus();
+			targetEditPane.requestFocus();
+
+			return true;
+		}
+
+		@Override
+		public int getSourceActions(JComponent c)
+		{
+			return COPY_OR_MOVE;
+		}
+
+		@Override
+		public void exportDone(JComponent c, Transferable t, int action)
+		{
+			if (action == MOVE)
+			{
+				BufferTransferableData data;
+
+				try
+				{
+					data = (BufferTransferableData) t
+							.getTransferData(BufferSwitcher.BufferDataFlavor);
+				}
+				catch (UnsupportedFlavorException e)
+				{
+					return;
+				}
+				catch (IOException e)
+				{
+					return;
+				}
+
+				Buffer buffer = data.getBuffer();
+
+				EditPane editPane = (EditPane) GUIUtilities.getComponentParent(c,
+						EditPane.class);
+
+				BufferSetManager bufferSetManager = jEdit.getBufferSetManager();
+				if (buffer != null)
+				{
+					bufferSetManager.removeBuffer(editPane, buffer);
+				}
+			}
+		}
+
+		@Override
+		public Transferable createTransferable(JComponent c)
+		{
+			JList list = (JList) c;
+			Buffer buffer = (Buffer) list.getSelectedValue();
+			if (buffer == null)
+			{
+				return null;
+			}
+			else
+			{
+				return new BufferSwitcherTransferable(buffer, c);
+			}
 		}
 	}
 }

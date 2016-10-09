@@ -38,10 +38,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Stack;
+
+import java.util.TreeSet;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -131,7 +134,7 @@ import org.gjt.sp.util.StandardUtilities;
  *
  * @author Slava Pestov
  * @author John Gellene (API documentation)
- * @version $Id: View.java 22815 2013-02-27 19:23:28Z ezust $
+ * @version $Id: View.java 23412 2014-02-11 05:06:18Z ezust $
  */
 public class View extends JFrame implements InputHandlerProvider
 {
@@ -963,16 +966,24 @@ public class View extends JFrame implements InputHandlerProvider
 
 	//{{{ getBuffers() method
 	/**
-	 * Returns all Buffers opened in this View.
+	 * Returns all Buffers opened in this View,
+	 * sorted according to View options. (as of jEdit 5.2)
 	 * @since jEdit 5.1
 	 */
 	public Buffer[] getBuffers()
 	{
 		BufferSetManager mgr = jEdit.getBufferSetManager();
-		Collection<Buffer> retval = new HashSet<Buffer>();
+		Collection<Buffer> retval = null;
 		for (EditPane ep: getEditPanes())
 		{
 			BufferSet bs = ep.getBufferSet();
+			if (retval == null) {
+				Comparator<Buffer> sorter = bs.getSorter();
+				if (sorter == null)
+					retval = new HashSet<Buffer>();
+				else
+					retval = new TreeSet<Buffer>(sorter);
+			}
 			Collections.addAll(retval, bs.getAllBuffers());
 			// If scope is not editpane, then all buffersets
 			// are the same and we got what we need.
@@ -1211,10 +1222,10 @@ public class View extends JFrame implements InputHandlerProvider
 	{
 		List<Buffer> buffers = new ArrayList<Buffer>();
 		EditPane[] editPanes = getEditPanes();
-		for(int i = 0; i < editPanes.length; i++)
+		for (EditPane ep : editPanes)
 		{
-			Buffer buffer = editPanes[i].getBuffer();
-			if(!buffers.contains(buffer))
+			Buffer buffer = ep.getBuffer();
+			if (!buffers.contains(buffer))
 				buffers.add(buffer);
 		}
 
@@ -1289,9 +1300,8 @@ public class View extends JFrame implements InputHandlerProvider
 	public void visit(JEditVisitor visitor)
 	{
 		EditPane[] panes = getEditPanes();
-		for (int i = 0; i < panes.length; i++)
+		for (EditPane editPane : panes)
 		{
-			EditPane editPane = panes[i];
 			visitor.visit(editPane);
 			visitor.visit(editPane.getTextArea());
 		}
@@ -1399,11 +1409,11 @@ public class View extends JFrame implements InputHandlerProvider
 	} //}}}
 
 	//{{{ isFullScreenMode method
-	public boolean isFullScreenMode() 
+	public boolean isFullScreenMode()
 	{
 		return fullScreenMode;
 	}//}}}
-	
+
 	//{{{ toggleFullScreen() method
 	public void toggleFullScreen()
 	{
@@ -1486,8 +1496,8 @@ public class View extends JFrame implements InputHandlerProvider
 		dispose();
 
 		EditPane[] editPanes = getEditPanes();
-		for(int i = 0; i < editPanes.length; i++)
-			editPanes[i].close();
+		for (EditPane ep : editPanes)
+			ep.close();
 
 		// null some variables so that retaining references
 		// to closed views won't hurt as much.
@@ -1606,10 +1616,9 @@ public class View extends JFrame implements InputHandlerProvider
 		}
 
 		EditPane[] editPanes = getEditPanes();
-		for(int i = 0; i < editPanes.length; i++)
+		for (EditPane ep : editPanes)
 		{
-			EditPane ep = editPanes[i];
-			if(ep.getBuffer() == buffer
+			if (ep.getBuffer() == buffer
 				/* ignore zero-height splits, etc */
 				&& ep.getTextArea().getVisibleLines() > 1)
 			{
@@ -1849,13 +1858,16 @@ loop:		while (true)
 		for (int i = 0; i < mbar.getMenuCount(); i++)
 		{
 			JMenu menu = mbar.getMenu(i);
-			int mnemonic = menu.getMnemonic();
-			if (mnemonic != 0)
+			if (menu != null)
 			{
-				Object keyBinding = inputHandler.getKeyBinding("A+" + Character.toLowerCase((char) mnemonic));
-				if (keyBinding != null)
+				int mnemonic = menu.getMnemonic();
+				if (mnemonic != 0)
 				{
-					menu.setMnemonic(0);
+					Object keyBinding = inputHandler.getKeyBinding("A+" + Character.toLowerCase((char) mnemonic));
+					if (keyBinding != null)
+					{
+						menu.setMnemonic(0);
+					}
 				}
 			}
 		}
@@ -2025,9 +2037,9 @@ loop:		while (true)
 			|| msg.getWhat() == BufferUpdate.LOADED)
 		{
 			EditPane[] editPanes = getEditPanes();
-			for(int i = 0; i < editPanes.length; i++)
+			for (EditPane ep : editPanes)
 			{
-				if(editPanes[i].getBuffer() == buffer)
+				if (ep.getBuffer() == buffer)
 				{
 					updateTitle();
 					break;
@@ -2112,8 +2124,8 @@ loop:		while (true)
 	private void updateGutterBorders()
 	{
 		EditPane[] editPanes = getEditPanes();
-		for(int i = 0; i < editPanes.length; i++)
-			editPanes[i].getTextArea().getGutter().updateBorder();
+		for (EditPane editPane : editPanes)
+			editPane.getTextArea().getGutter().updateBorder();
 	} //}}}
 
 	//{{{ getOpenBuffers() method

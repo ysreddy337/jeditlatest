@@ -525,7 +525,7 @@ view.gutter.marker=Marker: {0}
 view.status.add-marker=Shortcut for new marker? [{0}]
 view.status.auto-wrap=Search string not found; wrapping around!
 view.status.bracket=Matches line {0}: {1}
-view.status.caret-tooltip=Offset, line and column number (offset,line,column[-virtual] relative%)
+view.status.caret-tooltip=line, column[-virtual] (offset/length)
 view.status.copy-append-string-register=Register name to copy append to? [{0}]
 view.status.copy-string-register=Register to copy to? [{0}]
 view.status.cut-append-string-register=Register to cut append to? [{0}]
@@ -1357,7 +1357,7 @@ options.editing.noTabs=Soft (emulated with spaces) tabs
 options.editing.elasticTabstops=Indent using elastic tabstops
 options.editing.elasticTabstops.tooltip=Columns in lines above and below a "cell" are kept aligned on tab stops that can grow or shrink depending on the width of the cell.
 options.editing.deepIndent=Deep indent
-options.editing.autoIndent=Automatic indentation
+options.editing.autoIndent=Automatic indentation:
 options.editing.largefilemode.title=Large file mode
 options.editing.largefilemode=What should I do about very big files:
 options.editing.largefilemode.option.ask=<html><b>Ask</b> what to do when opening a large file</html>
@@ -1608,6 +1608,7 @@ options.textarea.fracFontMetrics.tooltip=Not recommended with subpixel antialias
 options.textarea.stripTrailingEOL=Hide final end of line (if any)
 options.textarea.completeFromAllBuffers=Complete words from all open buffers (default is \
     to limit search to currently visible buffers)
+options.textarea.insertCompletionWithDigit=Complete word by typing corresponding digit (otherwise, digit is considered part of the word)
 options.textarea.lineSpacing.label=Extra vertical line spacing (in pixels):
 #}}}
 
@@ -1728,6 +1729,7 @@ helpviewer.title=jEdit Help
 helpviewer.loading=Loading...
 helpviewer.back.label=Back
 helpviewer.forward.label=Forward
+helpviewer.copy-link.label=Copy link to clipboard
 
 helpviewer.toc.loading=Loading...
 helpviewer.toc.label=Contents
@@ -1999,15 +2001,15 @@ install-plugins.info.size=Size
 install-plugins.info.releaseDate=Release date
 install-plugins.info.version=Version
 install-plugins.info.category=Category
+install-plugins.info.author=Author
+install-plugins.info.released=Released
+install-plugins.info.depends=Depends on
+install-plugins.info.optionalDepends=Optionally depends on
 
 install-plugins.totalSize={0} plugin(s), total size: {1}
 install-plugins.select-all=Select All
 install-plugins.install=Install
 install-plugins.show-updates=Show Updates
-
-install-plugins.info=<b>Author</b>: {0}\n\
-	<b>Released</b>: {1}\n\
-	{2}
 
 update-plugins.title=Update
 
@@ -2131,9 +2133,11 @@ macro.rs.CutLinesContaining.LinesCut.message=line(s) cut
 #{{{ Editing
 
 #{{{ Go to column
-macro.rs.GoToColumn.ColumnBefore.label=Column (between 1 and
-macro.rs.GoToColumn.ColumnAfter.label=):
+macro.rs.GoToColumn.label=Column (between 1 and {0}):
 #}}}
+
+# Go To Offset
+macro.rs.GoToOffset.label=Offset (between 0 and {0}): 
 
 #{{{ Key Words to Uppercase
 macro.rs.KeywordsToUpperCase.ConvertedKeywords.message=Converted Keywords to Upper Case

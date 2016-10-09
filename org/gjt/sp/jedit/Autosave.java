@@ -31,7 +31,7 @@ import org.gjt.sp.util.Log;
 
 /**
  * @author Slava Pestov
- * @version $Id: Autosave.java 21831 2012-06-18 22:54:17Z ezust $
+ * @version $Id: Autosave.java 23221 2013-09-29 20:03:32Z shlomy $
  */
 class Autosave implements ActionListener
 {
@@ -91,9 +91,8 @@ class Autosave implements ActionListener
 		}
 		boolean autosaveUntitled = jEdit.getBooleanProperty("autosaveUntitled");
 		Buffer[] bufferArray = jEdit.getBuffers();
-		for(int i = 0; i < bufferArray.length; i++)
+		for (Buffer buffer : bufferArray)
 		{
-			Buffer buffer = bufferArray[i];
 			if (autosaveUntitled || !buffer.isUntitled())
 				buffer.autosave();
 		}

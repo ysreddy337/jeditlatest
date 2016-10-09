@@ -265,7 +265,14 @@ public class ManagePanel extends JPanel
 		PluginJAR.PluginCacheEntry pluginCacheEntry = PluginJAR.getPluginCache(pluginJAR);
 		if (pluginCacheEntry == null)
 		{
-			pluginCacheEntry = pluginJAR.generateCache();
+			try
+			{
+				pluginCacheEntry = pluginJAR.generateCache();
+			}
+			finally
+			{
+				IOUtilities.closeQuietly(pluginJAR.getZipFile());
+			}
 		}
 		if(pluginCacheEntry == null)
 		{
@@ -301,7 +308,7 @@ public class ManagePanel extends JPanel
 	//{{{ Inner classes
 
 	//{{{ Entry class
-	static class Entry
+	class Entry
 	{
 		static final String LOADED = "loaded";
 		static final String NOT_LOADED = "not-loaded";
@@ -317,6 +324,9 @@ public class ManagePanel extends JPanel
 		String clazz, name, version, author, docs;
 		/** The description property of the plugin. */
 		String description;
+		/** The dependencies of the plugin. */
+		Set<String> depends;
+		
 		EditPlugin plugin;
 		/**
 		 * The jars referenced in the props file of the plugin.
@@ -366,7 +376,6 @@ public class ManagePanel extends JPanel
 				docs = jEdit.getProperty("plugin."+clazz+".docs");
 				description = jEdit.getProperty("plugin."+clazz+".description");
 				String jarsProp = jEdit.getProperty("plugin."+clazz+".jars");
-
 				if(jarsProp != null)
 				{
 					String directory = MiscUtilities.getParentOfPath(this.jar);
@@ -397,6 +406,30 @@ public class ManagePanel extends JPanel
 			{
 				status = LOADED;
 			}
+		}
+		
+		/**
+		 * @return A list of the names of the dependencies, e.g. ErrorList or ProjectViewer.
+		 */
+		public Set<String> getDependencies() 
+		{
+			if (plugin == null)
+				return null;
+			Set<String> depends = null;
+			PluginJAR jar = plugin.getPluginJAR();
+			String cn = plugin.getClassName();
+			Set<String> requiredJars = jar.getDependencies(cn);
+			if (requiredJars != null && !requiredJars.isEmpty())
+			{
+				depends = new HashSet<String>();
+				for (String dep : requiredJars)
+				{
+					Entry e = pluginModel.getEntry(dep);
+					if (e != null)
+						depends.add(e.name);
+				}
+			}
+			return depends;
 		}
 	} //}}}
 
@@ -457,6 +490,19 @@ public class ManagePanel extends JPanel
 		public Entry getEntry(int rowIndex)
 		{
 			return entries.get(rowIndex);
+		} //}}}
+
+		//{{{ getEntry() method
+		public Entry getEntry(String classname)
+		{
+			if (classname == null || classname.isEmpty())
+				return null;
+			for (Entry entry : entries)
+			{
+				if (classname.equals(entry.clazz))
+					return entry;
+			}
+			return null;
 		} //}}}
 
 		//{{{ getRowCount() method
@@ -549,7 +595,7 @@ public class ManagePanel extends JPanel
 				}
 				else
 				{
-					if(value.equals(Boolean.TRUE))
+					if(value.equals(Boolean.TRUE)) 
 						return;
 
 					unloadPluginJARWithDialog(jar);
@@ -630,28 +676,44 @@ public class ManagePanel extends JPanel
 		{
 			// unloaded = new HashSet<String>();
 			unloaded = new ConcurrentHashMap<String, Object>();
-			String[] dependents = jar.getDependentPlugins();
+			String[] dependents = jar.getAllDependentPlugins();
 			if(dependents.length == 0)
+			{
 				unloadPluginJAR(jar);
+			}
 			else
 			{
 				List<String> closureSet = new LinkedList<String>();
+				dependents = jar.getDependentPlugins();
 				PluginJAR.transitiveClosure(dependents, closureSet);
-				List<String> listModel = new ArrayList<String>();
-				listModel.addAll(closureSet);
-				Collections.sort(listModel, new StandardUtilities.StringCompare<String>(true));
-
-				int button = GUIUtilities.listConfirm(window,"plugin-manager.dependency",
-					new String[] { jar.getFile().getName() }, listModel.toArray());
-				if(button == JOptionPane.YES_OPTION)
+				List<String> listModel = new ArrayList<String>(new HashSet<String>(closureSet));	// remove dupes
+				boolean confirm = true;
+				if (!listModel.isEmpty())
+				{
+					// show confirmation dialog listing dependencies to be unloaded
+					Collections.sort(listModel, new StandardUtilities.StringCompare<String>(true));
+					int button = GUIUtilities.listConfirm(window,"plugin-manager.dependency",
+						new String[] { jar.getFile().getName() }, listModel.toArray());
+					confirm = button == JOptionPane.YES_OPTION;
+				}
+				if (confirm)
+				{
+					String[] optionals = jar.getOptionallyDependentPlugins();
 					unloadPluginJAR(jar);
+					// reload the optionally dependent plugins since they can run 
+					// without this plugin
+					for (String opt : optionals) 
+					{
+						PluginJAR.load(opt, true);	
+					}
+				}
 			}
 		} //}}}
 
 		//{{{ unloadPluginJAR() method
 		private void unloadPluginJAR(PluginJAR jar)
 		{
-			String[] dependents = jar.getDependentPlugins();
+			String[] dependents = jar.getAllDependentPlugins();
 			for (String dependent : dependents)
 			{
 				if (!unloaded.containsKey(dependent))
@@ -679,10 +741,8 @@ public class ManagePanel extends JPanel
 			if (table != null)
 			{
 				int[] rows = table.getSelectedRows();
-				for (int i=0 ; i<rows.length ; i++)
-				{
-					savedSelection.add(entries.get(rows[i]).jar);
-				}
+				for (int row : rows)
+					savedSelection.add(entries.get(row).jar);
 			}
 		} //}}}
 
@@ -1105,11 +1165,8 @@ public class ManagePanel extends JPanel
 				return;
 
 			Roster roster = new Roster();
-			for (int i = 0; i < mustRemove.size(); i++)
-			{
-				String entry = mustRemove.get(i);
+			for (String entry : mustRemove)
 				roster.addRemove(jarlibs.get(entry));
-			}
 
 			roster.performOperationsInAWTThread(window);
 			pluginModel.update();
@@ -1329,10 +1386,11 @@ public class ManagePanel extends JPanel
 				break;
 			case EDIT_PLUGIN:
 				int[] rows = table.getSelectedRows();
-				for (int i = 0; i < rows.length; i++)
+				for (int row : rows)
 				{
-					Object st = pluginModel.getValueAt(rows[i], 0);
-					pluginModel.setValueAt(st.equals(Boolean.FALSE), rows[i], 0);
+					Object st = pluginModel.getValueAt(row, 0);
+					pluginModel.setValueAt(
+						st.equals(Boolean.FALSE), row, 0);
 				}
 				break;
 			case CLOSE_PLUGIN_MANAGER:

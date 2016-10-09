@@ -3,7 +3,8 @@
  * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
- * Copyright (C) 2002 Kris Kopicki
+ * Copyright (C) 2002-2013 Kris Kopicki, Slava Pestov, Dale Anson,
+ *      Matthieu Casanova, Alan Ezust, Björn "Vampire" Kautler
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -30,6 +31,7 @@ import org.gjt.sp.jedit.io.VFS;
 import org.gjt.sp.jedit.io.VFSManager;
 import org.gjt.sp.util.Log;
 import org.gjt.sp.util.StandardUtilities;
+import org.gjt.sp.util.StringList;
 import org.gjt.sp.util.ThreadUtilities;
 import org.gjt.sp.util.XMLUtilities;
 import org.xml.sax.Attributes;
@@ -52,6 +54,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
 import java.io.InputStream;
+import java.text.MessageFormat;
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -60,7 +63,7 @@ import java.util.List;
 //}}}
 
 /**
- * @version $Id: InstallPanel.java 22967 2013-05-06 09:15:44Z kpouer $
+ * @version $Id: InstallPanel.java 23324 2013-11-08 19:10:58Z kerik-sf $
  */
 class InstallPanel extends JPanel implements EBComponent
 {
@@ -521,7 +524,7 @@ class InstallPanel extends JPanel implements EBComponent
 				else
 				{
 					Entry entry = (Entry)filteredEntries.get(i);
-					entry.parents = new LinkedList<Entry>();
+					entry.dependents = new LinkedList<Entry>();
 					entry.install = false;
 				}
 			}
@@ -535,28 +538,40 @@ class InstallPanel extends JPanel implements EBComponent
 			sort(type);
 		} //}}}
 
-		//{{{ deselectParents() method
-		private void deselectParents(Entry entry)
+		//{{{ deselectDependents() method
+		/**
+		 * deselect all plugins depending upon entry after a warning.
+		 * If user cancels, reinstate install field of entry
+		 * @param entry	the entry that would be no more installed
+		 * @return	confirmed that deselection may proceed
+		 */
+		private boolean deselectDependents(Entry entry)
 		{
-			Entry[] parents = entry.getParents();
+			Entry[] dependents = entry.getTransitiveDependents();
 
-			if (parents.length == 0)
-				return;
+			if (dependents.length == 0)
+				return true;
 
 			String[] args = { entry.name };
 			int result = GUIUtilities.listConfirm(
 				window,"plugin-manager.dependency",
-				args,parents);
+				args,dependents);
 			if (result != JOptionPane.OK_OPTION)
 			{
 				entry.install = true;
-				return;
+				return false;
 			}
 
-			for(int i = 0; i < parents.length; i++)
-				 parents[i].install = false;
-
-			fireTableRowsUpdated(0,getRowCount() - 1);
+			for(Entry dependent: dependents)
+			{
+				 dependent.install = false;
+				 dependent.checked = false;
+				 // must setInstall() to remove the
+				 // plugin from its dependencies 'dependents' list
+				 // so that they can be unchecked if no longer required
+				 updateDeps(dependent);
+			}
+			return true;
 		} //}}}
 
 		//{{{ setValueAt() method
@@ -573,58 +588,102 @@ class InstallPanel extends JPanel implements EBComponent
 			boolean before = entry.install;
 			entry.install = Boolean.TRUE.equals(aValue);
 			if (before == entry.install) return;
-			if (!entry.install)
-				deselectParents(entry);
+
+			// deselect after a warning if entry is required
+			// by some other selected plugin.
+			// If the user cancelled, don't proceed
+			if (!entry.install && !deselectDependents(entry))
+			{
+				return;
+			}
+
+			// checked is set after deselectDependents to prevent
+			// override when the user cancelled deselectDependents
+			entry.checked = entry.install;
+
+			updateDeps(entry);
+
+			/* prune entries to install to keep only the entries
+			 * really checked by the user.
+			 * Removes dependencies no longer required and such */
+
+			List<Entry> selected = new ArrayList<Entry>(entries.size());
+			for(Object en: entries)
+			{
+				if(en instanceof Entry)
+				{
+					Entry temp = (Entry)en;
+					if(temp.install)selected.add(temp);
+				}
+			}
+
+			List<Entry> toRemove = new ArrayList<Entry>(selected.size());
+			boolean changed;
+			do{
+				changed = false;
+				for(Entry temp: selected)
+				{
+					temp.dependents.removeAll(toRemove);
+					if(!temp.checked && temp.dependents.isEmpty())
+					{
+						toRemove.add(temp);
+						temp.install = false;
+						changed = true;
+					}
+				}
+				selected.removeAll(toRemove);
+			}while(changed);
+
+			updateFilteredEntries();
+			// make the row selected after updated filtering
+			for(int i=0; i< filteredEntries.size(); i++)
+			{
+				if(entry == filteredEntries.get(i))
+				{
+					table.setRowSelectionInterval(i, i);
+					break;
+				}
+			}
+		} //}}}
+
+		//{{{ updateDeps() method
+		/***
+		 * recursively add dependencies to install,
+		 * or remove entry from its dependencies' dependents list
+		 * @param entry	entry whose install field has been set
+		 */
+		private void updateDeps(Entry entry)
+		{
 
 			List<PluginList.Dependency> deps = entry.plugin.getCompatibleBranch().deps;
 
-			for (int i = 0; i < deps.size(); i++)
+			for (PluginList.Dependency dep: deps)
 			{
-				PluginList.Dependency dep = deps.get(i);
 				if ("plugin".equals(dep.what))
 				{
-					boolean found = false;
-					for (int j = 0; j < filteredEntries.size(); j++)
+					for (Object en: entries)
 					{
-						Entry temp = (Entry)filteredEntries.get(j);
+						Entry temp = (Entry)en;
 						if (temp.plugin == dep.plugin)
 						{
-							found = true;
 							if (entry.install)
 							{
-								temp.parents.add(entry);
-								setValueAt(Boolean.TRUE,j,0);
+								temp.dependents.add(entry);
+								if(!temp.install)
+								{
+									temp.install = true;
+									updateDeps(temp);
+								}
 							}
 							else
-								temp.parents.remove(entry);
-
-							break;
-						}
-					}
-					if (!found)
-					{
-						// the dependency was not found in the filtered list so we search in
-						// global list.
-						for (int a = 0;a<entries.size();a++)
-						{
-							Entry temp = (Entry) entries.get(a);
-							if (temp.plugin == dep.plugin)
 							{
-								if (entry.install)
-								{
-									temp.parents.add(entry);
-									temp.install = true;
-								}
-								else
-									temp.parents.remove(entry);
-								break;
+								temp.dependents.remove(entry);
 							}
+							break;
 						}
 					}
 				}
 			}
-			updateFilteredEntries();
-			table.setRowSelectionInterval(row, row);
 		} //}}}
 
 		//{{{ sort() method
@@ -676,9 +735,8 @@ class InstallPanel extends JPanel implements EBComponent
 
 			entries.clear();
 			
-			for(int i = 0; i < pluginList.pluginSets.size(); i++)
+			for(PluginList.PluginSet set : pluginList.pluginSets)
 			{
-				PluginList.PluginSet set = pluginList.pluginSets.get(i);
 				for(int j = 0; j < set.plugins.size(); j++)
 				{
 					PluginList.Plugin plugin = pluginList.pluginHash.get(set.plugins.get(j));
@@ -722,9 +780,9 @@ class InstallPanel extends JPanel implements EBComponent
 				}
 			}
 			int[] rows = table.getSelectedRows();
-			for (int i=0 ; i<rows.length ; i++)
+			for (int row: rows)
 			{
-				savedSelection.add(filteredEntries.get(rows[i]).toString());
+				savedSelection.add(filteredEntries.get(row).toString());
 			}
 		} //}}}
 
@@ -782,13 +840,14 @@ class InstallPanel extends JPanel implements EBComponent
 	//{{{ Entry class
 	private static class Entry
 	{
-		String name, installedVersion, version, author, date, description, set;
+		String name, installedVersion, version, author, date, description, set, dependencies;
 
 		long timestamp;
 		int size;
+		boolean checked;
 		boolean install;
 		PluginList.Plugin plugin;
-		List<Entry> parents = new LinkedList<Entry>();
+		List<Entry> dependents = new LinkedList<Entry>();
 
 		Entry(PluginList.Plugin plugin, String set)
 		{
@@ -803,8 +862,10 @@ class InstallPanel extends JPanel implements EBComponent
 			this.size = size;
 			this.date = branch.date;
 			this.description = plugin.description;
+			this.dependencies = branch.depsToString();
 			this.set = set;
 			this.install = false;
+			this.checked = false;
 			this.plugin = plugin;
 			SimpleDateFormat format = new SimpleDateFormat("d MMMM yyyy", Locale.ENGLISH);
 			try
@@ -817,22 +878,22 @@ class InstallPanel extends JPanel implements EBComponent
 			}
 		}
 
-		private void getParents(List<Entry> list)
+		private void getTransitiveDependents(List<Entry> list)
 		{
-			for (Entry entry : parents)
+			for (Entry entry : dependents)
 			{
 				if (entry.install && !list.contains(entry))
 				{
 					list.add(entry);
-					entry.getParents(list);
+					entry.getTransitiveDependents(list);
 				}
 			}
 		}
 
-		Entry[] getParents()
+		Entry[] getTransitiveDependents()
 		{
 			List<Entry> list = new ArrayList<Entry>();
-			getParents(list);
+			getTransitiveDependents(list);
 			Entry[] array = list.toArray(new Entry[list.size()]);
 			Arrays.sort(array,new StandardUtilities.StringCompare<Entry>(true));
 			return array;
@@ -851,7 +912,6 @@ class InstallPanel extends JPanel implements EBComponent
 	 */
 	private class PluginInfoBox extends JEditorPane implements ListSelectionListener
 	{
-		private final String[] params;
 		PluginInfoBox()
 		{
 			setBackground(jEdit.getColorProperty("view.bgColor"));
@@ -859,7 +919,6 @@ class InstallPanel extends JPanel implements EBComponent
 			putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, true);
 			setContentType("text/html");
 			setEditable(false);
-			params = new String[3];
 			table.getSelectionModel().addListSelectionListener(this);
 		}
 
@@ -872,11 +931,25 @@ class InstallPanel extends JPanel implements EBComponent
 			{
 				Entry entry = (Entry) pluginModel.filteredEntries
 					.get(table.getSelectedRow());
-				params[0] = entry.author;
-				params[1] = entry.date;
-				params[2] = entry.description;
-				text = jEdit.getProperty("install-plugins.info", params);
-				text = text.replace("\n", "<br>");
+				String pattern = "<b>{0}</b>: {1}<br><b>{2}</b>: {3}<br>{4}<br><br><b>{5}</b>:<br>{6}";
+				List<String> params = new ArrayList<String>();
+				params.add(jEdit.getProperty("install-plugins.info.author", "Author"));
+				params.add(entry.author);
+				params.add(jEdit.getProperty("install-plugins.info.released", "Released"));
+				params.add(entry.date);
+				params.add(entry.description);
+				if (entry.dependencies == null || entry.dependencies.isEmpty())
+				{
+					pattern = "<b>{0}</b>: {1}<br><b>{2}</b>: {3} {4}";
+				} 
+				else
+				{
+					params.add(jEdit.getProperty("install-plugins.info.depends", "Depends on"));
+					StringList sl = StringList.split(entry.dependencies, "\n");
+					params.add(sl.join(", "));
+					// params.add(entry.dependencies.replaceAll("\n", ", "));
+				}
+				text = MessageFormat.format(pattern, params.toArray(new String[0]));
 			}
 			setText(text);
 			setCaretPosition(0);

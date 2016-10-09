@@ -37,7 +37,7 @@ import org.gjt.sp.util.Log;
  * called through, implements such protection.
  *
  * @author Slava Pestov
- * @version $Id: LineManager.java 21831 2012-06-18 22:54:17Z ezust $
+ * @version $Id: LineManager.java 23220 2013-09-29 19:19:24Z shlomy $
  * @since jEdit 4.2pre3
  */
 public class LineManager
@@ -330,13 +330,13 @@ public class LineManager
 	//}}}
 
 	//{{{ setLineEndOffset() method
-	private final void setLineEndOffset(int line, int end)
+	private void setLineEndOffset(int line, int end)
 	{
 		endOffsets[line] = end;
 	} //}}}
 
 	//{{{ moveGap() method
-	private final void moveGap(int newGapLine, int newGapWidth, String method)
+	private void moveGap(int newGapLine, int newGapWidth, String method)
 	{
 		if(gapLine == -1)
 			gapWidth = newGapWidth;

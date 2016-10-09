@@ -29,7 +29,7 @@ import javax.annotation.Nullable;
  * IO tools that depend on JDK only.
  *
  * @author Matthieu Casanova
- * @version $Id: IOUtilities.java 22995 2013-05-17 09:27:17Z kpouer $
+ * @version $Id: IOUtilities.java 23221 2013-09-29 20:03:32Z shlomy $
  * @since 4.3pre5
  */
 public class IOUtilities
@@ -150,125 +150,14 @@ public class IOUtilities
 			File[] files = file.listFiles();
 			if (files != null)
 			{
-				for (int i = 0; i < files.length; i++)
-				{
-					length += fileLength(files[i]);
-				}
+				for (File f : files)
+					length += fileLength(f);
 			}
 		}
 		return length;
 	} // }}}
 
 	//{{{ closeQuietly() methods
-	/**
-	 * Method that will close an {@link InputStream} ignoring it if it is null and ignoring exceptions.
-	 * @deprecated we want to remove this method without breaking compatibility
-	 * with your plugin. Closeable works for this type as of Java5.
-	 * @see #closeQuietly(Closeable)
-	 * @param in the InputStream to close.
-	 */
-	@Deprecated
-	public static void closeQuietly(@Nullable InputStream in)
-	{
-		if(in != null)
-		{
-			try
-			{
-				in.close();
-			}
-			catch (IOException e)
-			{
-				//ignore
-			}
-		}
-	}
-
-	/**
-	 * Method that will close an {@link OutputStream} ignoring it if it is null and ignoring exceptions.
-	 * @deprecated we want to remove this method without breaking compatibility
-	 * with your plugin. Closeable works for this type as of Java5.
-	 * @see #closeQuietly(Closeable)
-	 * @param out the OutputStream to close.
-	 */
-	@Deprecated
-	public static void closeQuietly(@Nullable OutputStream out)
-	{
-		if(out != null)
-		{
-			try
-			{
-				out.flush();
-			}
-			catch (IOException e)
-			{
-				// ignore
-			}
-			try
-			{
-				out.close();
-			}
-			catch (IOException e)
-			{
-				//ignore
-			}
-		}
-	}
-
-	/**
-	 * Method that will close an {@link Reader} ignoring it if it is null and ignoring exceptions.
-	 * @deprecated we want to remove this method without breaking compatibility
-	 * with your plugin. Closeable works for this type as of Java5.
-	 * @see #closeQuietly(Closeable)
-	 * @param r the Reader to close.
-	 * @since jEdit 4.3pre5
-	 */
-	@Deprecated
-	public static void closeQuietly(@Nullable Reader r)
-	{
-		if(r != null)
-		{
-			try
-			{
-				r.close();
-			}
-			catch (IOException e)
-			{
-				//ignore
-			}
-		}
-	}
-
-	/**
-	 * Method that will close a {@link Writer} ignoring it if it is null and ignoring exceptions.
-	 * @deprecated we want to remove this method without breaking compatibility
-	 * with your plugin. Closeable works for this type as of Java5.
-	 * @see #closeQuietly(Closeable)
-	 * @param out the Writer to close.
-	 */
-	@Deprecated
-	public static void closeQuietly(@Nullable Writer out)
-	{
-		if(out != null)
-		{
-			try
-			{
-				out.flush();
-			}
-			catch (IOException e)
-			{
-				// ignore
-			}
-			try
-			{
-				out.close();
-			}
-			catch (IOException e)
-			{
-				//ignore
-			}
-		}
-	}
-
 	/**
 	 * Method that will close a {@link java.io.Closeable} ignoring it if it is null and ignoring exceptions.
 	 *

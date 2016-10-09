@@ -63,7 +63,7 @@ import org.gjt.sp.util.*;
  *
  * @author Slava Pestov
  * @author John Gellene (API documentation)
- * @version $Id: SearchAndReplace.java 22949 2013-04-23 18:53:15Z thomasmey $
+ * @version $Id: SearchAndReplace.java 23222 2013-09-29 20:43:34Z shlomy $
  */
 public class SearchAndReplace
 {
@@ -743,12 +743,11 @@ loop:		for(;;)
 
 			int retVal = 0;
 
-			for(int i = 0; i < selection.length; i++)
+			for (Selection aSelection : selection)
 			{
-				s = selection[i];
-
-				retVal += replaceInSelection(view,textArea,
-					buffer,matcher,smartCaseReplace,s);
+				s = aSelection;
+				retVal += replaceInSelection(view, textArea, buffer,
+					matcher, smartCaseReplace, s);
 			}
 			
 			if(reverse)

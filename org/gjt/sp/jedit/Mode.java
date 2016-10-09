@@ -48,7 +48,7 @@ import org.gjt.sp.util.StandardUtilities;
  * One instance of this class is created for each supported edit mode.
  *
  * @author Slava Pestov
- * @version $Id: Mode.java 22949 2013-04-23 18:53:15Z thomasmey $
+ * @version $Id: Mode.java 23224 2013-09-30 20:51:42Z shlomy $
  */
 public class Mode
 {
@@ -394,9 +394,9 @@ public class Mode
 			};
 
 			StringBuilder buf = new StringBuilder();
-			for(int i = 0; i < props.length; i++)
+			for (String prop1 : props)
 			{
-				String prop = (String) getProperty(props[i]);
+				String prop = (String) getProperty(prop1);
 				if (prop != null)
 					buf.append(prop);
 			}
@@ -431,10 +431,8 @@ public class Mode
 			"unalignedCloseBracket",
 		};
 
-		for(int i = 0; i < bracketProps.length; i++)
-		{
-			createBracketIndentRules(bracketProps[i], rules);
-		}
+		for (String bracketProp : bracketProps)
+			createBracketIndentRules(bracketProp, rules);
 
 		String[] finalProps = {
 			"unindentThisLine",

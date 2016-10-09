@@ -39,6 +39,7 @@ import java.awt.*;
 import java.awt.im.InputMethodRequests;
 
 import javax.swing.plaf.metal.MetalLookAndFeel;
+import javax.swing.plaf.LayerUI;
 import javax.swing.text.Segment;
 import javax.swing.text.TabExpander;
 
@@ -70,9 +71,9 @@ import org.gjt.sp.util.ThreadUtilities;
  *
  * @author Slava Pestov
  * @author kpouer (rafactoring into standalone text area)
- * @version $Id: TextArea.java 22670 2013-01-12 12:29:48Z thomasmey $
+ * @version $Id: TextArea.java 23661 2014-08-17 01:12:29Z ezust $
  */
-public abstract class TextArea extends JComponent
+public abstract class TextArea extends JPanel
 {
 	//{{{ TextArea constructor
 	/**
@@ -105,12 +106,14 @@ public abstract class TextArea extends JComponent
 		add(ScrollLayout.LEFT,gutter);
 
 		// some plugins add stuff in a "right-hand" gutter
+		RequestFocusLayerUI reqFocus = new RequestFocusLayerUI();
 		verticalBox = new Box(BoxLayout.X_AXIS);
-		verticalBox.add(vertical = new JScrollBar(Adjustable.VERTICAL));
+		verticalBox.add(new JLayer(
+			vertical = new JScrollBar(Adjustable.VERTICAL), reqFocus));
 		vertical.setRequestFocusEnabled(false);
 		add(ScrollLayout.RIGHT,verticalBox);
-		add(ScrollLayout.BOTTOM,
-			horizontal = new JScrollBar(Adjustable.HORIZONTAL));
+		add(ScrollLayout.BOTTOM, new JLayer(
+			horizontal = new JScrollBar(Adjustable.HORIZONTAL), reqFocus));
 		horizontal.setRequestFocusEnabled(false);
 
 		horizontal.setValues(0,0,0,0);
@@ -2082,8 +2085,8 @@ forward_scan:	do
 				buffer.beginCompoundEdit();
 
 				Selection[] selection = getSelection();
-				for(int i = 0; i < selection.length; i++)
-					newCaret = selection[i].setText(buffer,selectedText);
+				for (Selection aSelection : selection)
+					newCaret = aSelection.setText(buffer, selectedText);
 			}
 			finally
 			{
@@ -4075,10 +4078,12 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 				Selection[] selections = getSelection();
 				Selection selection = null;
 				int caretBack = 0;
-				for (int i = 0; i < selections.length; i++)
+				for (Selection selection1 : selections)
 				{
-					selection = selections[i];
-					caretBack = addExplicitFold(selection.start, selection.end, selection.startLine,selection.endLine);
+					selection = selection1;
+					caretBack = addExplicitFold(selection.start,
+						selection.end, selection.startLine,
+						selection.endLine);
 				}
 				// Selection cannot be null because there is at least 1 selection
 				assert selection != null;
@@ -4121,12 +4126,11 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 
 		try
 		{
-			for(int i = 0; i < lines.length; i++)
+			for (int line : lines)
 			{
-				String text = getLineText(lines[i]);
-				buffer.insert(getLineStartOffset(lines[i])
-					+ StandardUtilities.getLeadingWhiteSpace(text),
-					comment);
+				String text = getLineText(line);
+				buffer.insert(getLineStartOffset(line) +
+					StandardUtilities.getLeadingWhiteSpace(text), comment);
 			}
 		}
 		finally
@@ -4171,26 +4175,23 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 				setCaretPosition(oldCaret + commentStart.length());
 			}
 
-			for(int i = 0; i < selection.length; i++)
+			for (Selection s : selection)
 			{
-				Selection s = selection[i];
-				if(s instanceof Selection.Range)
+				if (s instanceof Selection.Range)
 				{
-					buffer.insert(s.start,commentStart);
-					buffer.insert(s.end,commentEnd);
+					buffer.insert(s.start, commentStart);
+					buffer.insert(s.end, commentEnd);
 				}
-				else if(s instanceof Selection.Rect)
+				else if (s instanceof Selection.Rect)
 				{
-					Selection.Rect rect = (Selection.Rect)s;
+					Selection.Rect rect = (Selection.Rect) s;
 					int start = rect.getStartColumn(buffer);
 					int end = rect.getEndColumn(buffer);
 
-					for(int j = s.startLine; j <= s.endLine; j++)
+					for (int j = s.startLine; j <= s.endLine; j++)
 					{
-						buffer.insertAtColumn(j,end,
-							commentEnd);
-						buffer.insertAtColumn(j,start,
-							commentStart);
+						buffer.insertAtColumn(j, end, commentEnd);
+						buffer.insertAtColumn(j, start, commentStart);
 					}
 				}
 			}
@@ -4226,12 +4227,10 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 		{
 			buffer.beginCompoundEdit();
 
-			for(int i = 0; i < selection.length; i++)
+			for (Selection s : selection)
 			{
-				Selection s = selection[i];
-				setSelectedText(s,TextUtilities.format(
-					getSelectedText(s),maxLineLen,
-					buffer.getTabSize()));
+				setSelectedText(s, TextUtilities.format(getSelectedText(s), maxLineLen,
+									buffer.getTabSize()));
 			}
 
 			buffer.endCompoundEdit();
@@ -4312,11 +4311,10 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 		}
 		else
 		{
-			for(int i = 0; i < selection.length; i++)
+			for (Selection s : selection)
 			{
-				Selection s = selection[i];
-				setSelectedText(s,TextUtilities.spacesToTabs(
-					getSelectedText(s),buffer.getTabSize()));
+				setSelectedText(s, TextUtilities.spacesToTabs(
+					getSelectedText(s), buffer.getTabSize()));
 			}
 		}
 
@@ -4347,11 +4345,10 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 		}
 		else
 		{
-			for(int i = 0; i < selection.length; i++)
+			for (Selection s : selection)
 			{
-				Selection s = selection[i];
 				setSelectedText(s, TextUtilities.tabsToSpaces(
-					getSelectedText(s),buffer.getTabSize()));
+					getSelectedText(s), buffer.getTabSize()));
 			}
 		}
 
@@ -4389,11 +4386,8 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 
 		buffer.beginCompoundEdit();
 
-		for(int i = 0; i < selection.length; i++)
-		{
-			Selection s = selection[i];
-			setSelectedText(s,getSelectedText(s).toUpperCase());
-		}
+		for (Selection s : selection)
+			setSelectedText(s, getSelectedText(s).toUpperCase());
 
 		buffer.endCompoundEdit();
 		if (caret != -1)
@@ -4431,11 +4425,8 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 
 		buffer.beginCompoundEdit();
 
-		for (int i = 0; i < selection.length; i++)
-		{
-			Selection s = selection[i];
-			setSelectedText(s,getSelectedText(s).toLowerCase());
-		}
+		for (Selection s : selection)
+			setSelectedText(s, getSelectedText(s).toLowerCase());
 
 		buffer.endCompoundEdit();
 		if (caret != -1)
@@ -4458,6 +4449,12 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 	} //}}}
 
 	//{{{ insertEnterAndIndent() method
+	/**
+	 * Inserts a line break and indents the new line. Moves the caret to
+	 * the first non-whitespace character of the new line. If the newline
+	 * character is an electric key the current line will also be
+	 * re-indented.
+	 */
 	public void insertEnterAndIndent()
 	{
 		if(!isEditable())
@@ -4469,14 +4466,28 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 			{
 				buffer.indentLine(caretLine, true);
 			}
-			
+
 			try
 			{
 				buffer.beginCompoundEdit();
 				setSelectedText("\n");
-				
+
 				if ("full".equals(autoIndent))
-					buffer.indentLine(caretLine, true);
+				{
+					if (!buffer.indentLine(caretLine, true))
+					{
+						// If the line was already correctly indented, the
+						// caret needs to be moved explicitly.
+						if (lineContainsSpaceAndTabs(caretLine))
+						{
+							goToEndOfLine(false);
+						}
+						else
+						{
+							goToStartOfWhiteSpace(false);
+						}
+					}
+				}
 				else if ("simple".equals(autoIndent))
 					buffer.simpleIndentLine(caretLine);
 			}
@@ -4527,20 +4538,17 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 			selectNone();
  		}
  	} //}}}
- 	
+
 	//{{{ turnOnElasticTabstops() method
 	/**
 	 * Turn ON elastic tab stops.
 	 */
 	public void turnOnElasticTabstops()
 	{
-		if(!buffer.isEditable())
-			getToolkit().beep();
-		else
-		{	
-			buffer.indentUsingElasticTabstops();
-			buffer.elasticTabstopsOn = true;
-		}
+		if(buffer.isLoading())
+			return;
+		buffer.indentUsingElasticTabstops();
+		buffer.elasticTabstopsOn = true;
 	} //}}}
 
 	//{{{ shiftIndentLeft() method
@@ -4725,7 +4733,7 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 	{
 		getInputHandler().processKeyEvent(evt, 1 /* source=TEXTAREA (1) */, false);
 		if(!evt.isConsumed())
-			super.processKeyEvent(evt);	
+			super.processKeyEvent(evt);
 
 	} //}}}
 
@@ -4749,6 +4757,50 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 	public void removeTopComponent(Component comp)
 	{
 		remove(comp);
+	} //}}}
+
+	//{{{ addTopLeftComponent() method
+	/**
+	 * Adds a component above the gutter.
+	 *
+	 * @since jEdit 5.2pre1
+	 */
+	public void addTopLeftComponent(Component comp)
+	{
+		add(ScrollLayout.TOP_LEFT, comp);
+	} //}}}
+
+	//{{{ addTopRightComponent() method
+	/**
+	 * Adds a component above the vertical scroll bar.
+	 *
+	 * @since jEdit 5.2pre1
+	 */
+	public void addTopRightComponent(Component comp)
+	{
+		add(ScrollLayout.TOP_RIGHT, comp);
+	} //}}}
+
+	//{{{ addBottomLeftComponent() method
+	/**
+	 * Adds a component below the gutter.
+	 *
+	 * @since jEdit 5.2pre1
+	 */
+	public void addBottomLeftComponent(Component comp)
+	{
+		add(ScrollLayout.BOTTOM_LEFT, comp);
+	} //}}}
+
+	//{{{ addBottomLeftComponent() method
+	/**
+	 * Adds a component below the vertical scroll bar.
+	 *
+	 * @since jEdit 5.2pre1
+	 */
+	public void addBottomRightComponent(Component comp)
+	{
+		add(ScrollLayout.BOTTOM_RIGHT, comp);
 	} //}}}
 
 	//{{{ getInputMethodRequests() method
@@ -4794,24 +4846,24 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 	{
 		if(buffer == null)
 			return;
-		
+
 		if(buffer.getBooleanProperty("elasticTabstops"))
 		{
 			//call this only if it was previously off
 			if(!buffer.elasticTabstopsOn)
-			{	
+			{
 				turnOnElasticTabstops();
-			}	
+			}
 			if(buffer.getColumnBlock()!=null)
-			{	
+			{
 				buffer.getColumnBlock().setTabSizeDirtyStatus(true, true);
-			}	
+			}
 		}
 		else
 		{
 			buffer.elasticTabstopsOn = false;
 		}
-		
+
 		int _tabSize = buffer.getTabSize();
 		char[] foo = new char[_tabSize];
 		for(int i = 0; i < foo.length; i++)
@@ -5093,7 +5145,7 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 			caretTimer.restart();
 
 			if(!displayManager.isLineVisible(caretLine))
-			{			
+			{
 				// If we've jumped outside of a narrowed display, just reset all
 				// folds to their default level, so that we don't get disconnected
 				// islands of visible lines.
@@ -6106,16 +6158,15 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 		{
 			buffer.beginCompoundEdit();
 			int[] lines = getSelectedLines();
-			for(int i = 0; i < lines.length; i++)
+			for (int line : lines)
 			{
-				String text = getLineText(lines[i]);
+				String text = getLineText(line);
 				if (text.trim().length() == 0)
 					continue;
-				buffer.insert(getLineEndOffset(lines[i]) - 1,
-					commentEnd);
-				buffer.insert(getLineStartOffset(lines[i])
-					+ StandardUtilities.getLeadingWhiteSpace(text),
-					commentStart);
+				buffer.insert(getLineEndOffset(line) - 1, commentEnd);
+				buffer.insert(getLineStartOffset(line) +
+					StandardUtilities.getLeadingWhiteSpace(text),
+					      commentStart);
 			}
 		}
 		finally
@@ -6349,7 +6400,7 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 				return offset + 1;
 			}
 			return following + index0Offset;
-			
+
 		}
 
 		public int previousOf(int offset)
@@ -6676,6 +6727,34 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 		}
 	} //}}}
 
+	//{{{ RequestFocusLayerUI class
+	private class RequestFocusLayerUI extends LayerUI<JComponent>
+	{
+		//{{{ processMouseEvent() method
+		@Override
+		protected void processMouseEvent(MouseEvent e, JLayer<? extends JComponent> l)
+		{
+			if (e.getID() == MouseEvent.MOUSE_PRESSED)
+			{
+				requestFocus();
+			}
+		} //}}}
+
+		//{{{ installUI() method
+		@Override
+		public void installUI(JComponent c) {
+			super.installUI(c);
+			((JLayer)c).setLayerEventMask(AWTEvent.MOUSE_EVENT_MASK);
+		} //}}}
+
+		//{{{ uninstallUI() method
+		@Override
+		public void uninstallUI(JComponent c) {
+			super.uninstallUI(c);
+			((JLayer)c).setLayerEventMask(0);
+		} //}}}
+	} //}}}
+
 	//}}}
 
 	//{{{ Class initializer
@@ -6698,7 +6777,7 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 		structureTimer.setRepeats(false);
 	} //}}}
 
-	public TabExpander getTabExpander() 
+	public TabExpander getTabExpander()
 	{
 		if(buffer.getBooleanProperty("elasticTabstops"))
 		{

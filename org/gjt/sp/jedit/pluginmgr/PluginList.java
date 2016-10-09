@@ -40,7 +40,7 @@ import org.gjt.sp.jedit.*;
 /**
  * Plugin list downloaded from server.
  * @since jEdit 3.2pre2
- * @version $Id: PluginList.java 22357 2012-10-13 04:58:01Z ezust $
+ * @version $Id: PluginList.java 23224 2013-09-30 20:51:42Z shlomy $
  */
 class PluginList
 {
@@ -249,17 +249,15 @@ class PluginList
 	{
 		// after the entire list is loaded, fill out plugin field
 		// in dependencies
-		for(int i = 0; i < plugins.size(); i++)
+		for (Plugin plugin : plugins)
 		{
-			Plugin plugin = plugins.get(i);
-			for(int j = 0; j < plugin.branches.size(); j++)
+			for (int j = 0; j < plugin.branches.size(); j++)
 			{
 				Branch branch = plugin.branches.get(j);
-				for(int k = 0; k < branch.deps.size(); k++)
+				for (int k = 0; k < branch.deps.size(); k++)
 				{
 					Dependency dep = branch.deps.get(k);
-					if(dep.what.equals("plugin"))
-						dep.plugin = pluginHash.get(dep.pluginName);
+					if (dep.what.equals("plugin")) dep.plugin = pluginHash.get(dep.pluginName);
 				}
 			}
 		}
@@ -268,9 +266,9 @@ class PluginList
 	//{{{ dump() method
 	void dump()
 	{
-		for(int i = 0; i < plugins.size(); i++)
+		for (Plugin plugin : plugins)
 		{
-			System.err.println(plugins.get(i));
+			System.err.println(plugin);
 			System.err.println();
 		}
 	} //}}}
@@ -392,10 +390,9 @@ class PluginList
 		 */
 		Branch getCompatibleBranch()
 		{
-			for(int i = 0; i < branches.size(); i++)
+			for (Branch branch : branches)
 			{
-				Branch branch = branches.get(i);
-				if(branch.canSatisfyDependencies())
+				if (branch.canSatisfyDependencies())
 					return branch;
 			}
 
@@ -458,10 +455,9 @@ class PluginList
 
 		boolean canSatisfyDependencies()
 		{
-			for(int i = 0; i < deps.size(); i++)
+			for (Dependency dep : deps)
 			{
-				Dependency dep = deps.get(i);
-				if(!dep.canSatisfy())
+				if (!dep.canSatisfy())
 					return false;
 			}
 
@@ -471,11 +467,21 @@ class PluginList
 		void satisfyDependencies(Roster roster, String installDirectory,
 			boolean downloadSource)
 		{
-			for(int i = 0; i < deps.size(); i++)
+			for (Dependency dep : deps)
+				dep.satisfy(roster, installDirectory, downloadSource);
+		}
+		
+		public String depsToString() 
+		{
+			StringBuilder sb = new StringBuilder();
+			for (Dependency dep : deps) 
 			{
-				Dependency dep = deps.get(i);
-				dep.satisfy(roster,installDirectory,downloadSource);
+				if ("plugin".equals(dep.what) && dep.pluginName != null) 
+				{
+					sb.append(dep.pluginName).append('\n');
+				}
 			}
+			return sb.toString();
 		}
 
 		public String toString()

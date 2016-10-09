@@ -94,7 +94,7 @@ import org.gjt.sp.jedit.buffer.FoldHandler;
  *
  * @since jEdit 4.2pre1
  * @author Slava Pestov
- * @version $Id: ServiceManager.java 22920 2013-04-06 15:03:55Z kerik-sf $
+ * @version $Id: ServiceManager.java 23722 2014-11-09 16:26:59Z ezust $
  */
 public class ServiceManager
 {
@@ -109,9 +109,14 @@ public class ServiceManager
 		ServiceListHandler dh = new ServiceListHandler(plugin,uri);
 		try
 		{
-			InputStream in = uri.openStream();
-			if(in == null)
+			InputStream in;
+			try
 			{
+				in = uri.openStream();
+			}
+			catch(FileNotFoundException e)
+			{
+				in = null;
 				// this happened when calling generateCache() in the context of 'find orphan jars'
 				// in org.gjt.sp.jedit.pluginmgr.ManagePanel.FindOrphan.actionPerformed(ActionEvent)
 				// because for not loaded plugins, the plugin will not be added to the list of pluginJars
@@ -120,7 +125,7 @@ public class ServiceManager
 				// Better log a small error message than a big stack trace
 				Log.log(Log.WARNING, ServiceManager.class, "Unable to open: " + uri);
 			}
-			else  if (!XMLUtilities.parseXML(uri.openStream(), dh)
+			if (in!=null && !XMLUtilities.parseXML(uri.openStream(), dh)
 				&& cache != null)
 			{
 				cache.cachedServices = dh.getCachedServices();

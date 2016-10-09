@@ -27,7 +27,7 @@ package org.gjt.sp.jedit.search;
 
 /**
  * Implements literal search using the Boyer-Moore algorithm.
- * @version $Id: BoyerMooreSearchMatcher.java 22941 2013-04-22 11:06:59Z thomasmey $
+ * @version $Id: BoyerMooreSearchMatcher.java 23332 2013-11-13 14:24:31Z kpouer $
  */
 public class BoyerMooreSearchMatcher extends SearchMatcher
 {
@@ -87,10 +87,10 @@ public class BoyerMooreSearchMatcher extends SearchMatcher
 			int _end = returnValue.end;
 			if (wholeWord)
 			{
-				CharSequence subText = text;
+				CharSequence subText;
 				while (!isWholeWord(text, returnValue.start, returnValue.end))
 				{
-					subText = subText.subSequence(returnValue.end, text.length());
+					subText = text.subSequence(returnValue.end, text.length());
 					Match match = nextMatch(subText, start, end, firstTime, reverse);
 					// match == returnValue or null
 					if (match == null)

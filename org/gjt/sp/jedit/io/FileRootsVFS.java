@@ -36,7 +36,7 @@ import org.gjt.sp.jedit.OperatingSystem;
 /**
  * A VFS that lists local root filesystems.
  * @author Slava Pestov
- * @version $Id: FileRootsVFS.java 21831 2012-06-18 22:54:17Z ezust $
+ * @version $Id: FileRootsVFS.java 23221 2013-09-29 20:03:32Z shlomy $
  */
 public class FileRootsVFS extends VFS
 {
@@ -93,11 +93,11 @@ public class FileRootsVFS extends VFS
 
 			roots.add(new File("/"));
 
-			for (int i=0; i<volumes.length; i++)
+			for (File volume : volumes)
 			{
 				// Make sure people don't do stupid things like putting files in /Volumes
-				if (volumes[i].isDirectory())
-					roots.add(volumes[i]);
+				if (volume.isDirectory())
+					roots.add(volume);
 			}
 
 			return roots.toArray(new File[roots.size()]);

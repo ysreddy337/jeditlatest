@@ -3,7 +3,7 @@
  * :tabSize=4:indentSize=4:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
- * Copyright © 2011 Matthieu Casanova
+ * Copyright © 2011-2013 Matthieu Casanova
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -28,8 +28,11 @@ import org.gjt.sp.util.TaskListener;
 import org.gjt.sp.util.TaskManager;
 
 import javax.swing.*;
+import java.awt.Font;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.text.FieldPosition;
+import java.text.MessageFormat;
 //}}}
 
 /**
@@ -52,8 +55,19 @@ public class TaskMonitorWidgetFactory implements StatusWidgetFactory
     //{{{ TaskMonitorWidget class
     private static class TaskMonitorWidget extends JLabel implements Widget, TaskListener
     {
-        private TaskMonitorWidget(final View view)
+		private final MessageFormat messageFormat;
+		private final Object[] args;
+		private final StringBuffer stringBuffer;
+		private FieldPosition fieldPosition;
+
+		private TaskMonitorWidget(final View view)
         {
+			setBorder(BorderFactory.createEmptyBorder(0,2,0,2));
+			setFont(getFont().deriveFont(Font.BOLD));
+			String property = jEdit.getProperty("statusbar.task-monitor.template");
+			args = new Object[1];
+			messageFormat = new MessageFormat(property);
+			fieldPosition = new FieldPosition(0);
             addMouseListener(new MouseAdapter()
             {
                 @Override
@@ -65,7 +79,8 @@ public class TaskMonitorWidgetFactory implements StatusWidgetFactory
                     }
                 }
             });
-        }
+			stringBuffer = new StringBuffer();
+		}
 
         @Override
         public void addNotify()
@@ -99,12 +114,19 @@ public class TaskMonitorWidgetFactory implements StatusWidgetFactory
             int count = TaskManager.instance.countTasks();
             if (count == 0)
             {
+				setIcon(null);
                 setText(null);
             }
             else
             {
-                setText(jEdit.getProperty("statusbar.task-monitor.template", new Object[]{Integer.toString(count)}));
-            }
+				synchronized (messageFormat)
+				{
+					setIcon(GUIUtilities.loadIcon("loader.gif"));
+					args[0] = count;
+					setText(messageFormat.format(args, stringBuffer, fieldPosition).toString());
+					stringBuffer.setLength(0);
+				}
+			}
         }
 
         @Override

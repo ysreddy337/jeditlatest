@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <chapter id="starting">
     <title>Starting jEdit</title>
-
     <!-- jEdit buffer-local properties: -->
-    <!-- :tabSize=1:indentSize=1:noTabs=true: -->
+    <!-- :tabSize=2:indentSize=2:maxLineLen=90:wrap=hard:noTabs=true: -->
     <!-- :xml.root=users-guide.xml: -->
 
     <para>Exactly how jEdit is started depends on the operating system. For
@@ -372,4 +371,79 @@
             </informaltable>
         </section>
     </section>
+    <section id="jvm-options"> 
+    <title> Java Virtual Machine Options </title>
+
+      <para> To enable AntiAliasing in the TextArea, see <xref
+      linkend="text-area-pane" />. </para>
+    
+      <para> It is possible to pass command line options to the Java
+      Virtual Machine (JVM). These options can change certain things about how
+      Java runs, such as the maximum heap size, or whether antialiasing is used
+      in certain places. </para>
+
+      <para> For operating systems such as Linux where jEdit is started via a
+      shell script, you can easily edit the <literal>jedit</literal> script and
+      place JVM arguments in the correct place. If you are using the
+      <userinput>-jar</userinput> command line option with the
+      <literal>java</literal> command to run jEdit (which is how the default
+      shell scripts do it), remember that the <userinput>-jar</userinput>
+      parameter must be the last <literal>java</literal> option, followed
+      immediately by the path to <filename>jedit.jar</filename> and then any
+      jEdit command line options.</para>
+      
+      <para> On a Windows install that uses <literal>jEdit.exe</literal>, the
+      JVM options are located in a separate file, called
+      <literal>jEdit.l4j.ini</literal>. Create or edit this file in the same
+      directory as <literal>jEdit.exe</literal> and place one JVM option per
+      line. </para>
+      
+      <para> There is no complete list of options to <literal>java</literal>,
+      since it can vary from one platform to another. Some of can be found by
+      typing the commands <literal>java -?</literal> or <literal>man
+      java</literal>. Common JVM options that are used with jEdit and work on
+      all platforms are: </para>
+      
+      <informaltable>
+        <tgroup cols="2">
+            <colspec colnum="1" colwidth="1.5in" />
+            <colspec colwidth="1*"/>
+
+            <thead>
+              <row>
+                <entry>Option</entry>
+                <entry>Effect</entry>
+              </row>
+            </thead>
+
+            <tbody>
+              <row>
+                  <entry><userinput>-Dawt.useSystemAAFontSettings=on</userinput></entry>
+                  <entry>Antialias the text in AWT components. </entry>
+              </row>
+              <row>
+                  <entry><userinput>-Dswing.aatext=true</userinput></entry>
+                  <entry>Antialias the text in Swing components. </entry>
+              </row>
+              <row>
+                  <entry><userinput>-Djedit.home=/path/to/jedit</userinput>
+                  </entry> 
+                  <entry> Sets/overrides the java System property
+                  <literal>jedit.home</literal> to be the path to the jEdit
+                  install. This tells jEdit where to find its site properties, 
+                  default keymaps, macros, edit modes, and documentation. You can override
+                  this setting to create a custom install that is shared by multiple
+                  users. See <xref linkend="sitepropertiesfiles"/> for more information.
+                  </entry>
+                  </row>
+              <row>
+                  <entry><userinput>-mx768m</userinput></entry>
+                  <entry> Sets maximum heap size to 768 megabytes. 
+                  Adjust this value depending on your own personal needs /
+                  plugins. </entry> 
+              </row>
+            </tbody> 
+          </tgroup>
+       </informaltable>      
+    </section>    
 </chapter>

@@ -22,12 +22,15 @@
 
 package org.gjt.sp.jedit.msg;
 
+import java.io.File;
+import javax.annotation.Nullable;
+
 import org.gjt.sp.jedit.*;
 
 /**
  * Message sent when plugins are loaded and unloaded.
  * @author Slava Pestov
- * @version $Id: PluginUpdate.java 21831 2012-06-18 22:54:17Z ezust $
+ * @version $Id: PluginUpdate.java 23320 2013-11-07 11:01:28Z kpouer $
  *
  * @since jEdit 4.2pre1
  */
@@ -60,8 +63,14 @@ public class PluginUpdate extends EBMessage
 	 * @since jEdit 4.2pre1
 	 */
 	public static final Object UNLOADED = "UNLOADED";
-	//}}}
 
+	/**
+	 * Plugin removed, as in deleted from disk.
+	 * @since jEdit 5.2
+	 */
+	public static final Object REMOVED = "REMOVED";
+	//}}}
+	
 	//{{{ PluginUpdate constructor
 	/**
 	 * Creates a new plugin update message.
@@ -74,6 +83,11 @@ public class PluginUpdate extends EBMessage
 	{
 		super(jar);
 
+		if (jar == null) {
+			throw new IllegalArgumentException("PluginJAR may not be null.");	
+		}
+		this.jar = jar;
+		
 		if(what == null)
 			throw new NullPointerException("What must be non-null");
 
@@ -83,6 +97,27 @@ public class PluginUpdate extends EBMessage
 			String clazz = plugin.getClassName();
 			version = jEdit.getProperty("plugin."+clazz+".version");
 		}
+		this.what = what;
+		this.exit = exit;
+	} //}}}
+
+	//{{{ PluginUpdate constructor
+	/**
+	 * Creates a new plugin update message. This constructor should be used
+	 * when the plugin is being removed and the PluginJAR is no longer available.
+	 * @param file The file representing the plugin
+	 * @param what What happened
+	 * @param exit Is the editor exiting?
+	 * @since jEdit 4.2pre3
+	 */
+	public PluginUpdate(File file, Object what, boolean exit)
+	{
+		super(file);
+		this.file = file;
+		
+		if(what == null)
+			throw new NullPointerException("What must be non-null");
+
 		this.what = what;
 		this.exit = exit;
 	} //}}}
@@ -111,10 +146,21 @@ public class PluginUpdate extends EBMessage
 	//{{{ getPluginJAR() method
 	/**
 	 * Returns the plugin involved.
+	 * It might be null when the plugin is removed
 	 */
+	@Nullable
 	public PluginJAR getPluginJAR()
 	{
-		return (PluginJAR)getSource();
+		return jar;
+	} //}}}
+
+	//{{{ getFile() method
+	/**
+	 * Returns the file representing the plugin involved.
+	 */
+	public File getFile()
+	{
+		return file;
 	} //}}}
 
 	//{{{ getPluginVersion() method
@@ -137,6 +183,8 @@ public class PluginUpdate extends EBMessage
 	} //}}}
 
 	//{{{ Private members
+	private PluginJAR jar = null;
+	private File file = null;
 	private Object what;
 	private boolean exit;
 	private String version;

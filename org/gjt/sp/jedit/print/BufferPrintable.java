@@ -40,7 +40,7 @@ import org.gjt.sp.util.*;
 //}}}
 
 /**
- * @version $Id: BufferPrintable.java 21831 2012-06-18 22:54:17Z ezust $
+ * @version $Id: BufferPrintable.java 23221 2013-09-29 20:03:32Z shlomy $
  */
 class BufferPrintable implements Printable
 {
@@ -113,10 +113,6 @@ class BufferPrintable implements Printable
 					GUIUtilities.error(view,"print-error",args);
 				}
 			});
-		}
-		finally
-		{
-			//buffer.readUnlock();
 		}
 	} //}}}
 
@@ -319,19 +315,17 @@ print_loop:	for(;;)
 					(float)pageX,(float)(pageY + y + lm.getHeight()));
 			}
 
-			for(int i = 0; i < lineList.size(); i++)
+			for (Chunk chunk : lineList)
 			{
 				y += lm.getHeight();
-				Chunk chunks = lineList.get(i);
-				if(chunks != null && actuallyPaint)
+				Chunk chunks = chunk;
+				if (chunks != null && actuallyPaint)
 				{
 					FontMetrics metrics = gfx.getFontMetrics();
-					Chunk.paintChunkBackgrounds(chunks,gfx,
-						(float)(pageX + lineNumberWidth),
-						(float)(pageY + y), metrics.getHeight());
-					Chunk.paintChunkList(chunks,gfx,
-						(float)(pageX + lineNumberWidth),
-						(float)(pageY + y),glyphVector);
+					Chunk.paintChunkBackgrounds(chunks, gfx, (float) (pageX + lineNumberWidth),
+								    (float) (pageY + y), metrics.getHeight());
+					Chunk.paintChunkList(chunks, gfx, (float) (pageX + lineNumberWidth),
+							     (float) (pageY + y), glyphVector);
 				}
 			}
 

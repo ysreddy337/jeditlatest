@@ -49,17 +49,16 @@ public class PluginsProvider implements DynamicMenuProvider
 		}
 
 		PluginJAR[] pluginArray = jEdit.getPluginJARs();
-		for(int i = 0; i < pluginArray.length; i++)
+		for (PluginJAR jar : pluginArray)
 		{
-			PluginJAR jar = pluginArray[i];
 			EditPlugin plugin = jar.getPlugin();
-			if(plugin == null)
+			if (plugin == null)
 				continue;
 
 			JMenuItem menuItem = plugin.createMenuItems();
-			if(menuItem != null)
+			if (menuItem != null)
 			{
-				addToLetterMap(letters,menuItem);
+				addToLetterMap(letters, menuItem);
 				count++;
 			}
 		}
@@ -74,24 +73,18 @@ public class PluginsProvider implements DynamicMenuProvider
 		}
 
 		// Sort each letter
-		for(int i = 0; i < letters.length; i++)
-		{
-			Collections.sort(letters[i],new MenuItemTextComparator());
-		}
+		for (List<JMenuItem> letter1 : letters)
+			Collections.sort(letter1, new MenuItemTextComparator());
 
 		int maxItems = jEdit.getIntegerProperty("menu.spillover",20);
 
 		// if less than 20 items, put them directly in the menu
 		if(count <= maxItems)
 		{
-			for(int i = 0; i < letters.length; i++)
+			for (List<JMenuItem> items : letters)
 			{
-				Iterator<JMenuItem> iter
-					= letters[i].iterator();
-				while(iter.hasNext())
-				{
-					menu.add(iter.next());
-				}
+				for (JMenuItem item : items)
+					menu.add(item);
 			}
 
 			return;
@@ -119,15 +112,14 @@ public class PluginsProvider implements DynamicMenuProvider
 				submenu = null;
 			}
 
-			Iterator<JMenuItem> iter = letter.iterator();
-			while(iter.hasNext())
+			for (JMenuItem item : letter)
 			{
-				if(submenu == null)
+				if (submenu == null)
 				{
 					submenu = new JMenu();
 					menu.add(submenu);
 				}
-				submenu.add(iter.next());
+				submenu.add(item);
 			}
 
 			count += letter.size();

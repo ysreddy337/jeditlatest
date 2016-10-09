@@ -883,7 +883,7 @@ search.synchronize.tooltip=Установить фильтр и дирекори
 search.findBtn=Искать
 search.findBtn.mnemonic=f
 search.replaceBtn=Заменить
-search.replaceBtn.mnemonic=
+search.replaceBtn.mnemonic=З
 search.replaceAndFindBtn=Заменить и найти
 search.replaceAndFindBtn.mnemonic=r
 search.replaceAllBtn=Заменить все
@@ -1716,6 +1716,8 @@ helpviewer.title=Помощь jEdit
 helpviewer.loading=Загрузка...
 helpviewer.back.label=Назад
 helpviewer.forward.label=Вперёд
+# FIXME: missing translation
+helpviewer.copy-link.label=Copy link to clipboard
 
 helpviewer.toc.loading=Загрузка...
 helpviewer.toc.label=Содержание
@@ -2112,8 +2114,7 @@ macro.rs.CutLinesContaining.LinesCut.message=строк вырезано
 #{{{ Editing
 
 #{{{ Go to column
-macro.rs.GoToColumn.ColumnBefore.label=Столбец (межды 1 и
-macro.rs.GoToColumn.ColumnAfter.label=):
+macro.rs.GoToColumn.label=Столбец (межды 1 и {0}):
 #}}}
 
 #{{{ Key Words to Uppercase

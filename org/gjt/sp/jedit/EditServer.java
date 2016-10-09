@@ -58,7 +58,7 @@ import org.gjt.sp.util.Log;
  * complicated stuff can be done too.
  *
  * @author Slava Pestov
- * @version $Id: EditServer.java 22487 2012-11-18 00:59:11Z ezust $
+ * @version $Id: EditServer.java 23220 2013-09-29 19:19:24Z shlomy $
  */
 public class EditServer extends Thread
 {
@@ -152,22 +152,6 @@ public class EditServer extends Thread
 				if(!abort)
 					Log.log(Log.ERROR,this,e);
 				abort = true;
-			}
-			finally
-			{
-				/* if(client != null)
-				{
-					try
-					{
-						client.close();
-					}
-					catch(Exception e)
-					{
-						Log.log(Log.ERROR,this,e);
-					}
-
-					client = null;
-				} */
 			}
 		}
 	} //}}}

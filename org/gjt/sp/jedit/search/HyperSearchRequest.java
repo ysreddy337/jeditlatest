@@ -38,7 +38,7 @@ import org.gjt.sp.util.*;
 /**
  * HyperSearch results window.
  * @author Slava Pestov
- * @version $Id: HyperSearchRequest.java 22949 2013-04-23 18:53:15Z thomasmey $
+ * @version $Id: HyperSearchRequest.java 23224 2013-09-30 20:51:42Z shlomy $
  */
 class HyperSearchRequest extends Task
 {
@@ -193,23 +193,19 @@ class HyperSearchRequest extends Task
 		{
 			buffer.readLock();
 
-			for(int i = 0; i < selection.length; i++)
+			for (Selection s : selection)
 			{
-				Selection s = selection[i];
-				if(s instanceof Selection.Rect)
+				if (s instanceof Selection.Rect)
 				{
-					for(int j = s.getStartLine();
-						j <= s.getEndLine(); j++)
+					for (int j = s.getStartLine(); j <= s.getEndLine(); j++)
 					{
-						resultCount += doHyperSearch(buffer,
-							s.getStart(buffer,j),
-							s.getEnd(buffer,j));
+						resultCount += doHyperSearch(buffer, s.getStart(buffer, j),
+									     s.getEnd(buffer, j));
 					}
 				}
 				else
 				{
-					resultCount += doHyperSearch(buffer,
-						s.getStart(),s.getEnd());
+					resultCount += doHyperSearch(buffer, s.getStart(), s.getEnd());
 				}
 			}
 		}

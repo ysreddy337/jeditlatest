@@ -38,7 +38,7 @@ import org.gjt.sp.jedit.*;
  * favorite and clicking 'delete' in the browser just deletes the
  * favorite, and not the directory itself.
  * @author Slava Pestov
- * @version $Id: FavoritesVFS.java 22828 2013-03-05 19:40:05Z ezust $
+ * @version $Id: FavoritesVFS.java 23221 2013-09-29 20:03:32Z shlomy $
  */
 public class FavoritesVFS extends VFS
 {
@@ -122,9 +122,9 @@ public class FavoritesVFS extends VFS
 	public boolean _rename(Object session, String from, String to, Component comp)
 	{
 		VFSFile[] favorites = getFavorites();
-		for (int i = 0; i < favorites.length; i++)
+		for (VFSFile fav : favorites)
 		{
-			Favorite favorite = (Favorite) favorites[i];
+			Favorite favorite = (Favorite) fav;
 			if (favorite.getPath().equals(from))
 			{
 				favorite.label = to;
@@ -195,7 +195,7 @@ public class FavoritesVFS extends VFS
 				String p = favorite.getPath();
 				String l = favorite.getLabel();
 				jEdit.setProperty("vfs.favorite." + i, p);
-				if (p.equals(l) || MiscUtilities.abbreviateView(p).equals(l))
+				if (p.equals(l) || MiscUtilities.abbreviate(p).equals(l))
 					jEdit.unsetProperty("vfs.favorite." + i + ".label");
 				else 
 					jEdit.setProperty("vfs.favorite." + i + ".label", l);

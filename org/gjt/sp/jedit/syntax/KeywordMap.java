@@ -32,7 +32,7 @@ import java.util.ArrayList;
  * text substrings without the overhead of creating a new string object.
  *
  * @author Slava Pestov, Mike Dillon
- * @version $Id: KeywordMap.java 21831 2012-06-18 22:54:17Z ezust $
+ * @version $Id: KeywordMap.java 23221 2013-09-29 20:03:32Z shlomy $
  */
 public class KeywordMap
 {
@@ -113,14 +113,14 @@ public class KeywordMap
 
 		// complete-word command needs a list of all non-alphanumeric
 		// characters used in a keyword map.
-loop:		for(int i = 0; i < keyword.length; i++)
+loop:
+		for (char ch : keyword)
 		{
-			char ch = keyword[i];
-			if(!Character.isLetterOrDigit(ch))
+			if (!Character.isLetterOrDigit(ch))
 			{
-				for(int j = 0; j < noWordSep.length(); j++)
+				for (int j = 0; j < noWordSep.length(); j++)
 				{
-					if(noWordSep.charAt(j) == ch)
+					if (noWordSep.charAt(j) == ch)
 						continue loop;
 				}
 
@@ -150,10 +150,10 @@ loop:		for(int i = 0; i < keyword.length; i++)
 	public String[] getKeywords()
 	{
 		List<String> vector = new ArrayList<String>(100);
-		for(int i = 0; i < map.length; i++)
+		for (Keyword kw : map)
 		{
-			Keyword keyword = map[i];
-			while(keyword != null)
+			Keyword keyword = kw;
+			while (keyword != null)
 			{
 				vector.add(new String(keyword.keyword));
 				keyword = keyword.next;
