@@ -31,7 +31,7 @@ import java.util.regex.Pattern;
 /**
  * A set of parser rules.
  * @author mike dillon
- * @version $Id: ParserRuleSet.java 16344 2009-10-14 10:31:01Z kpouer $
+ * @version $Id: ParserRuleSet.java 17560 2010-03-31 09:19:23Z kpouer $
  */
 public class ParserRuleSet
 {
@@ -190,10 +190,10 @@ public class ParserRuleSet
 	public List<ParserRule> getRules(Character key)
 	{
 		List<ParserRule> rulesForNull = ruleMap.get(null);
-		boolean emptyForNull = (rulesForNull == null) || (rulesForNull.size() == 0);
-		Character upperKey = null == key ? null : Character.valueOf(Character.toUpperCase(key.charValue()));
-		List<ParserRule> rulesForKey = null == upperKey ? null : ruleMap.get(upperKey);
-		boolean emptyForKey = (rulesForKey == null) || (rulesForKey.size() == 0);
+		boolean emptyForNull = rulesForNull == null || rulesForNull.isEmpty();
+		Character upperKey = key == null ? null : Character.valueOf(Character.toUpperCase(key.charValue()));
+		List<ParserRule> rulesForKey = upperKey == null ? null : ruleMap.get(upperKey);
+		boolean emptyForKey = rulesForKey == null || rulesForKey.isEmpty();
 		if (emptyForNull && emptyForKey)
 		{
 			return Collections.emptyList();
@@ -209,7 +209,7 @@ public class ParserRuleSet
 		else
 		{
 			int size = rulesForNull.size() + rulesForKey.size();
-			ArrayList<ParserRule> mixed = new ArrayList<ParserRule>(size);
+			List<ParserRule> mixed = new ArrayList<ParserRule>(size);
 			mixed.addAll(rulesForKey);
 			mixed.addAll(rulesForNull);
 			// fill the deprecated ParserRule.next pointer
@@ -373,7 +373,7 @@ public class ParserRuleSet
 
 	private int ruleCount;
 
-	private Map<Character, List<ParserRule>> ruleMap;
+	private final Map<Character, List<ParserRule>> ruleMap;
 
 	private final List<ParserRuleSet> imports;
 

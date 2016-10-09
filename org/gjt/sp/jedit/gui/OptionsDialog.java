@@ -41,7 +41,7 @@ import org.gjt.sp.util.Log;
 /**
  * An abstract options dialog box.
  * @author Slava Pestov
- * @version $Id: OptionsDialog.java 14832 2009-03-22 23:34:45Z vanza $
+ * @version $Id: OptionsDialog.java 16686 2009-12-20 14:16:58Z daleanson $
  */
 public abstract class OptionsDialog extends EnhancedDialog
 	implements ActionListener, TreeSelectionListener

@@ -25,6 +25,7 @@ package org.gjt.sp.jedit.textarea;
 //{{{ Imports
 import javax.swing.text.*;
 import javax.swing.JComponent;
+
 import java.awt.event.MouseEvent;
 import java.awt.font.*;
 import java.awt.geom.AffineTransform;
@@ -35,6 +36,7 @@ import java.util.*;
 import org.gjt.sp.jedit.buffer.IndentFoldHandler;
 import org.gjt.sp.jedit.buffer.JEditBuffer;
 import org.gjt.sp.jedit.syntax.Chunk;
+import org.gjt.sp.jedit.syntax.DefaultTokenHandler;
 import org.gjt.sp.jedit.syntax.SyntaxStyle;
 import org.gjt.sp.jedit.syntax.Token;
 import org.gjt.sp.jedit.Debug;
@@ -55,7 +57,7 @@ import org.gjt.sp.util.Log;
  * @see TextArea
  *
  * @author Slava Pestov
- * @version $Id: TextAreaPainter.java 16233 2009-09-22 22:02:09Z blueyed $
+ * @version $Id: TextAreaPainter.java 18575 2010-09-18 08:48:27Z shlomy $
  */
 public class TextAreaPainter extends JComponent implements TabExpander
 {
@@ -170,6 +172,67 @@ public class TextAreaPainter extends JComponent implements TabExpander
 		textArea.updateMaxHorizontalScrollWidth();
 		textArea.scrollBarsInitialized = true;
 	} //}}}
+
+	//{{{ addNotify() method
+	@Override
+	public void addNotify()
+	{
+		super.addNotify();
+		hiddenCursor = getToolkit().createCustomCursor(
+			getGraphicsConfiguration()
+			.createCompatibleImage(16,16,
+			Transparency.BITMASK),
+			new Point(0,0),"Hidden");
+	} //}}}
+
+	//{{{ setCursor() method
+	/**
+	 * Change the mouse cursor.
+	 * If the cursor is hiddenCursor or TEXT_CURSOR, it is the default cursor and the cursor will not disappear
+	 * anymore while typing until {@link #resetCursor()} is called.
+	 * @param cursor the new cursor
+	 * @since jEdit 4.4pre1
+	 */
+	public void setCursor(Cursor cursor)
+	{
+		defaultCursor = cursor == hiddenCursor || cursor.getType() == Cursor.TEXT_CURSOR;
+		super.setCursor(cursor);
+	} //}}}
+
+	//{{{ setCursor() method
+	/**
+	 * Reset the cursor to it's default value.
+	 * @since jEdit 4.4pre1
+	 */
+	public void resetCursor()
+	{
+		defaultCursor = true;
+	} //}}}
+
+	//{{{ showCursor() method
+	/**
+	 * Show the cursor if it is the default cursor
+	 */
+	void showCursor()
+	{
+		if (defaultCursor)
+		{
+		       setCursor(Cursor.getPredefinedCursor(Cursor.TEXT_CURSOR));
+		}
+	} //}}}
+
+	//{{{ hideCursor() method
+	/**
+	 * Hide the cursor if it is the default cursor
+	 */
+	void hideCursor()
+	{
+		if (defaultCursor)
+		{
+			setCursor(hiddenCursor);
+		}
+	} //}}}
+
 
 	//{{{ getFocusTraversalKeysEnabled() method
 	/**
@@ -317,6 +380,54 @@ public class TextAreaPainter extends JComponent implements TabExpander
 	public final void setLineHighlightEnabled(boolean lineHighlight)
 	{
 		this.lineHighlight = lineHighlight;
+		textArea.repaint();
+	} //}}}
+
+	//{{{ getSelectionFgColor() method
+	/**
+	 * Returns the selection foreground color, if one is set.
+	 * @since jEdit 4.4.1
+	 */
+	public final Color getSelectionFgColor()
+	{
+		return selectionFgColor;
+	} //}}}
+
+	//{{{ setSelectionFgColor() method
+	/**
+	 * Sets the selection foreground color.
+	 * @param selectionFgColor The selection foreground color
+	 * @since jEdit 4.4.1
+	 */
+	public final void setSelectionFgColor(Color selectionFgColor)
+	{
+		this.selectionFgColor = selectionFgColor;
+		if (isSelectionFgColorEnabled())
+			textArea.repaint();
+	} //}}}
+
+	//{{{ isSelectionFgColorEnabled() method
+	/**
+	 * Returns true if selection foreground color is enabled - i.e. a specific
+	 * color is used for the selection foreground instead of the syntax highlight
+	 * color.
+	 * @since jEdit 4.4.1
+	 */
+	public final boolean isSelectionFgColorEnabled()
+	{
+		return selectionFg;
+	} //}}}
+
+	//{{{ setSelectionFgColorEnabled() method
+	/**
+	 * Enables or disables selection foreground color.
+	 * @param selectionFg True if selection foreground should be enabled,
+	 * false otherwise
+	 * @since jEdit 4.4.1
+	 */
+	public final void setSelectionFgColorEnabled(boolean selectionFg)
+	{
+		this.selectionFg = selectionFg;
 		textArea.repaint();
 	} //}}}
 
@@ -834,6 +945,8 @@ public class TextAreaPainter extends JComponent implements TabExpander
 	AntiAlias antiAlias;
 	boolean fracFontMetrics;
 	RenderingHints renderingHints;
+	boolean selectionFg;
+	Color selectionFgColor;
 	// should try to use this as little as possible.
 	FontMetrics fm;
 	//}}}
@@ -869,6 +982,7 @@ public class TextAreaPainter extends JComponent implements TabExpander
 		addExtension(BRACKET_HIGHLIGHT_LAYER,new StructureMatcher
 			.Highlight(textArea));
 		addExtension(TEXT_LAYER,new PaintText());
+		addExtension(TEXT_LAYER,new PaintSelectionText());
 		caretExtension = new PaintCaret();
 	} //}}}
 
@@ -881,6 +995,8 @@ public class TextAreaPainter extends JComponent implements TabExpander
 	private final PaintCaret caretExtension;
 	private FontRenderContext fontRenderContext;
 	private final Map fonts;
+	private Cursor hiddenCursor;
+	private boolean defaultCursor = true;
 	//}}}
 
 	private static Object sm_hrgbRender;
@@ -1077,6 +1193,130 @@ public class TextAreaPainter extends JComponent implements TabExpander
 
 			gfx.fillRect(x1,y,x2 - x1,fm.getHeight());
 		} //}}}
+	} //}}}
+
+	//{{{ PaintSelectionText class
+	private class PaintSelectionText extends TextAreaExtension
+	{
+		// All screen lines of the same physical line use the same indentation
+		private float indent;
+		private boolean indentFound = false;
+
+		//{{{ paintValidLine() method
+		@Override
+		public void paintValidLine(Graphics2D gfx, int screenLine,
+			int physicalLine, int start, int end, int y)
+		{
+			if(textArea.getSelectionCount() == 0)
+				return;
+			if ((! isSelectionFgColorEnabled()) || (getSelectionFgColor() == null)) 
+				return;
+
+			Iterator<Selection> iter = textArea.getSelectionIterator();
+			while(iter.hasNext())
+			{
+				Selection s = iter.next();
+				paintSelection(gfx,screenLine,physicalLine,y,s);
+			}
+		} //}}}
+
+		//{{{ paintSelection() method
+		private void paintSelection(Graphics2D gfx, int screenLine,
+			int physicalLine, int y, Selection s)
+		{
+			if ((physicalLine < s.getStartLine()) || (physicalLine > s.getEndLine()))
+				return;
+
+			float x = indent = textArea.getHorizontalOffset();
+			float baseLine = y + fm.getHeight() -
+				(fm.getLeading()+1) - fm.getDescent();
+
+			DefaultTokenHandler tokenHandler = new DefaultTokenHandler();
+			textArea.getBuffer().markTokens(physicalLine, tokenHandler);
+			Token token = tokenHandler.getTokens();
+
+			int lineStart = textArea.getLineStartOffset(physicalLine);
+			int startOffset, endOffset;
+			if (s instanceof Selection.Rect)
+			{
+				Selection.Rect r = (Selection.Rect)s;
+				startOffset = r.getStart(textArea.getBuffer(), physicalLine);
+				endOffset = r.getEnd(textArea.getBuffer(), physicalLine);
+			}
+			else
+			{
+				startOffset = (s.getStart() > lineStart) ? s.getStart() : lineStart;
+				endOffset = s.getEnd();
+			}
+			// Soft-wrap
+			int screenLineStart = textArea.getScreenLineStartOffset(screenLine);
+			int screenLineEnd = textArea.getScreenLineEndOffset(screenLine);
+			if (screenLineStart > startOffset)
+				startOffset = screenLineStart;
+			if (screenLineEnd < endOffset)
+				endOffset = screenLineEnd;
+			indentFound = false;
+
+			int tokenStart = lineStart;
+			while(token.id != Token.END)
+			{
+				int next = tokenStart + token.length;
+				String sub = null;
+				SyntaxStyle style = styles[token.id];
+				if (next > startOffset)	// Reached selection start
+				{
+					if (tokenStart >= endOffset)	// Got past selection
+						break;
+					if(style != null)
+					{
+						gfx.setFont(style.getFont());
+						gfx.setColor(getSelectionFgColor());
+						int strStart;
+						if (startOffset > tokenStart)
+						{
+							strStart = startOffset;
+							x = nextX(x, style, sub, tokenStart, startOffset);
+						}
+						else
+							strStart = tokenStart; 
+						int strEnd = (endOffset > next) ? next : endOffset;
+						sub = textArea.getText(strStart, strEnd - strStart);
+						gfx.drawString(sub, x, baseLine);
+						x = nextX(x, style, sub, strStart, strEnd);
+					}
+				}
+				if (sub == null)
+					x = nextX(x, style, null, tokenStart, next);
+				tokenStart = next;
+				token = token.next;
+				if (tokenStart == screenLineStart)
+					x = indent;
+			}
+		} //}}}
+
+		//{{{
+		float nextX(float x, SyntaxStyle style, String s, int startOffset,
+			int endOffset)
+		{
+			if (s == null)
+				s = textArea.getText(startOffset, endOffset - startOffset);
+			if (s.equals("\t"))
+			{
+				int horzOffset = textArea.getHorizontalOffset();
+				x = nextTabStop(x - horzOffset, endOffset) + horzOffset;
+			}
+			else
+			{
+				if ((! indentFound) && (! s.equals(" ")))
+				{
+					indentFound = true;
+					indent = x;
+				}
+				Font font = (style != null) ? style.getFont() : getFont();
+				x += font.getStringBounds(s, getFontRenderContext()).getWidth();
+			}
+			return x;
+		}
 	} //}}}
 
 	//{{{ PaintWrapGuide class

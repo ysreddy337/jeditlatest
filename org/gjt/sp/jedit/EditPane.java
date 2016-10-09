@@ -34,10 +34,10 @@ import java.util.Map;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
+import org.gjt.sp.jedit.EditBus.EBHandler;
 import org.gjt.sp.jedit.buffer.JEditBuffer;
 import org.gjt.sp.jedit.bufferset.BufferSet;
 import org.gjt.sp.jedit.bufferset.BufferSetListener;
-import org.gjt.sp.jedit.bufferset.BufferSetManager;
 import org.gjt.sp.jedit.gui.BufferSwitcher;
 import org.gjt.sp.jedit.gui.StatusBar;
 import org.gjt.sp.jedit.io.VFSManager;
@@ -59,7 +59,7 @@ import org.gjt.sp.jedit.textarea.TextAreaExtension;
 import org.gjt.sp.jedit.textarea.TextAreaPainter;
 import org.gjt.sp.jedit.textarea.TextAreaTransferHandler;
 import org.gjt.sp.util.SyntaxUtilities;
-
+import org.gjt.sp.util.ThreadUtilities;
 //}}}
 
 /**
@@ -88,9 +88,9 @@ import org.gjt.sp.util.SyntaxUtilities;
  * @see View#getEditPanes()
  *
  * @author Slava Pestov
- * @version $Id: EditPane.java 17498 2010-03-19 17:20:31Z kpouer $
+ * @version $Id: EditPane.java 19610 2011-06-20 22:53:22Z Vampire0 $
  */
-public class EditPane extends JPanel implements EBComponent, BufferSetListener
+public class EditPane extends JPanel implements BufferSetListener
 {
 	//{{{ getView() method
 	/**
@@ -146,7 +146,6 @@ public class EditPane extends JPanel implements EBComponent, BufferSetListener
 	 */
 	public void setBuffer(final Buffer buffer, boolean requestFocus)
 	{
-
 		if(buffer == null)
 			throw new NullPointerException();
 
@@ -205,22 +204,21 @@ public class EditPane extends JPanel implements EBComponent, BufferSetListener
 			});
 		}
 
-		// Only do this after all I/O requests are complete
-		Runnable runnable = new Runnable()
+		// If the buffer is loading, the caret info will be loaded on
+		// BufferUpdate.LOADED. Otherwise, we don't need to wait for IO.
+		if (!buffer.isLoading())
 		{
-			public void run()
+			ThreadUtilities.runInDispatchThread(new Runnable()
 			{
-				// avoid a race condition
-				// see bug #834338
-				if(buffer == getBuffer())
-					loadCaretInfo();
-			}
-		};
-
-		if(buffer.isPerformingIO())
-			VFSManager.runInAWTThread(runnable);
-		else
-			runnable.run();
+				public void run()
+				{
+					// avoid a race condition
+					// see bug #834338
+					if(buffer == getBuffer())
+						loadCaretInfo();
+				}
+			});
+		}
 	} //}}}
 
 	//{{{ prevBuffer() method
@@ -638,16 +636,12 @@ public class EditPane extends JPanel implements EBComponent, BufferSetListener
 		buffer.addMarker(shortcut,caret);
 	} //}}}
 
-	//{{{ handleMessage() method
-	public void handleMessage(EBMessage msg)
+	//{{{ handlePropertiesChanged() method
+	@EBHandler
+	public void handlePropertiesChanged(PropertiesChanged msg)
 	{
-		if(msg instanceof PropertiesChanged)
-		{
-			propertiesChanged();
-			loadBufferSwitcher();
-		}
-		else if(msg instanceof BufferUpdate)
-			handleBufferUpdate((BufferUpdate)msg);
+		propertiesChanged();
+		loadBufferSwitcher();
 	} //}}}
 
 	//{{{ getMinimumSize() method
@@ -670,130 +664,6 @@ public class EditPane extends JPanel implements EBComponent, BufferSetListener
 	public BufferSet getBufferSet()
 	{
 		return bufferSet;
-	} //}}}
-
-	//{{{ getBufferSetScope() method
-	/**
-	 * Get the current scope of bufferSet.
-	 * @since jEdit 4.3pre17
-	 */
-	public BufferSet.Scope getBufferSetScope()
-	{
-		return bufferSetScope;
-	} //}}}
-
-	//{{{ setBufferSetScope() methods
-	/**
-	 * Set the scope of bufferSet for the EditPane.
-	 * @param scope the new scope
-	 * @since jEdit 4.3pre17
-	 */
-	public void setBufferSetScope(BufferSet.Scope scope)
-	{
-		if (this.bufferSetScope != scope)
-		{
-			BufferSet oldBufferSet = this.bufferSet;
-			BufferSet newBufferSet;
-			switch (scope)
-			{
-				case editpane:
-					newBufferSet = new BufferSet();
-					break;
-				case view:
-					newBufferSet = view.getLocalBufferSet();
-					break;
-				default:
-					scope = BufferSet.Scope.global;
-				case global:
-					newBufferSet = jEdit.getGlobalBufferSet();
-					break;
-			}
-
-			BufferSetManager bufferSetManager = jEdit.getBufferSetManager();
-
-			if (jEdit.isStartupDone())	// Ignore "new buffersets contain:" option when loading perspective
-			{
-				String action = jEdit.getProperty("editpane.bufferset.new");
-				BufferSetManager.NewBufferSetAction bufferSetAction = BufferSetManager.NewBufferSetAction.fromString(action);
-				View activeView = jEdit.getActiveView();
-				switch (bufferSetAction)
-				{
-					case copy:
-						if (oldBufferSet == null)
-						{
-							EditPane editPane = view.getEditPane();
-							if (editPane == null)
-							{
-								if (activeView != null)
-									editPane = activeView.getEditPane();
-
-							}
-							if (editPane == null)
-							{
-								bufferSetManager.addAllBuffers(newBufferSet);
-							}
-							else
-							{
-								bufferSetManager.mergeBufferSet(newBufferSet, editPane.bufferSet);
-							}
-						}
-						else
-							bufferSetManager.mergeBufferSet(newBufferSet, oldBufferSet);
-						break;
-					case empty:
-						break;
-					case currentbuffer:
-						if (activeView == null)
-							break;
-						EditPane editPane = activeView.getEditPane();
-						Buffer buffer = editPane.getBuffer();
-						bufferSetManager.addBuffer(newBufferSet,buffer);
-						break;
-				}
-			}
-			if (buffer != null)
-				bufferSetManager.addBuffer(newBufferSet, buffer);
-
-
-			this.bufferSet = newBufferSet;
-			this.bufferSetScope = scope;
-			if (newBufferSet.size() == 0)
-			{
-				jEdit.newFile(this);
-			}
-
-			// This must be after updating this.bufferSet since
-			// removeBufferSetListener() uses
-			// EditPane#getBufferSet() on this EditPane.
-			if (oldBufferSet != null)
-			{
-				oldBufferSet.removeBufferSetListener(this);
-			}
-
-			newBufferSet.addBufferSetListener(this);
-			if (bufferSwitcher != null)
-			{
-				bufferSwitcher.updateBufferList();
-			}
-			EditBus.send(new EditPaneUpdate(this, EditPaneUpdate.BUFFERSET_CHANGED));
-			if (newBufferSet.indexOf(recentBuffer) == -1)
-			{
-				// the recent buffer is not in the bufferSet
-				recentBuffer =  null;
-			}
-			if (newBufferSet.indexOf(buffer) == -1)
-			{
-				// the current buffer is not contained in the bufferSet, we must change the current buffer
-				if (recentBuffer != null)
-					setBuffer(recentBuffer);
-				else
-				{
-					setBuffer(newBufferSet.getBuffer(0));
-				}
-			}
-			if (jEdit.isStartupDone())	// Do not mark perspective dirty on startup
-				PerspectiveManager.setPerspectiveDirty(true);
-		}
 	} //}}}
 
 	//{{{ bufferAdded() method
@@ -888,16 +758,45 @@ public class EditPane extends JPanel implements EBComponent, BufferSetListener
 	{
 		return getClass().getName() + '['
 			+ (view.getEditPane() == this
-			? "active" : "inactive")
-			+ ',' + bufferSetScope + ']';
+			? "active]" : "inactive]");
 	} //}}}
 
 	//{{{ Package-private members
 
 	//{{{ EditPane constructor
-	EditPane(View view, Buffer buffer, BufferSet.Scope scope)
+	EditPane(View view, BufferSet bufferSetSource, Buffer buffer)
 	{
 		super(new BorderLayout());
+		BufferSet.Scope scope = jEdit.getBufferSetManager().getScope();
+		BufferSet source = bufferSetSource;
+		switch (scope)
+		{
+			case editpane:
+				// do nothing
+				break;
+			case view:
+				{
+					EditPane editPane = view.getEditPane();
+					if (editPane != null)
+					{
+						// if we have an editpane we copy it
+						source = editPane.getBufferSet();
+					}
+				}
+				break;
+			case global:
+				View activeView = jEdit.getActiveView();
+				if (activeView != null)
+				{
+					EditPane editPane = activeView.getEditPane();
+					if (editPane != null)
+					{
+						source = editPane.getBufferSet();
+					}
+				}
+				break;
+		}
+		bufferSet = new BufferSet(source);
 
 		init = true;
 
@@ -905,6 +804,7 @@ public class EditPane extends JPanel implements EBComponent, BufferSetListener
 
 
 		textArea = new JEditTextArea(view);
+		bufferSet.addBufferSetListener(this);
 		textArea.getPainter().setAntiAlias(new AntiAlias(jEdit.getProperty("view.antiAlias")));
 		textArea.setMouseHandler(new MouseHandler(textArea));
 		textArea.setTransferHandler(new TextAreaTransferHandler());
@@ -929,15 +829,13 @@ public class EditPane extends JPanel implements EBComponent, BufferSetListener
 		add(BorderLayout.CENTER,textArea);
 
 		propertiesChanged();
-		this.buffer = buffer;
-		setBufferSetScope(scope);
-		this.buffer = null;
-		if(buffer == null)
-		{
-			setBuffer(jEdit.getFirstBuffer());
-		}
-		else
-			setBuffer(buffer);
+		setBuffer(buffer);
+
+		// need to add the buffer to the bufferSet.
+		// It may not have been done by the setBuffer() because the EditPane is not yet known by jEdit, and for
+		// view and global scope it is added through this list
+		if (bufferSet.indexOf(buffer) == -1)
+			bufferSet.addBuffer(buffer);
 
 		loadBufferSwitcher();
 
@@ -950,7 +848,6 @@ public class EditPane extends JPanel implements EBComponent, BufferSetListener
 	{
 		saveCaretInfo();
 		EditBus.send(new EditPaneUpdate(this,EditPaneUpdate.DESTROYED));
-		bufferSet.removeBufferSetListener(this);
 		EditBus.removeFromBus(this);
 		textArea.dispose();
 	} //}}}
@@ -965,8 +862,7 @@ public class EditPane extends JPanel implements EBComponent, BufferSetListener
 	/** The View where the edit pane is. */
 	private final View view;
 
-	private BufferSet bufferSet;
-	private BufferSet.Scope bufferSetScope;
+	private final BufferSet bufferSet;
 
 	/** The current buffer. */
 	private Buffer buffer;
@@ -1127,6 +1023,11 @@ public class EditPane extends JPanel implements EBComponent, BufferSetListener
 		painter.setFractionalFontMetricsEnabled(jEdit.getBooleanProperty(
 			"view.fracFontMetrics"));
 
+		painter.setSelectionFgColor(jEdit.getColorProperty(
+			"view.selectionFgColor"));
+		painter.setSelectionFgColorEnabled(jEdit.getBooleanProperty(
+			"view.selectionFg"));
+
 		String defaultFont = jEdit.getProperty("view.font");
 		int defaultFontSize = jEdit.getIntegerProperty("view.fontsize",12);
 		painter.setStyles(SyntaxUtilities.loadStyles(defaultFont,defaultFontSize));
@@ -1163,7 +1064,8 @@ public class EditPane extends JPanel implements EBComponent, BufferSetListener
 	} //}}}
 
 	//{{{ handleBufferUpdate() method
-	private void handleBufferUpdate(BufferUpdate msg)
+	@EBHandler
+	public void handleBufferUpdate(BufferUpdate msg)
 	{
 		Buffer _buffer = msg.getBuffer();
 		if(msg.getWhat() == BufferUpdate.CREATED)

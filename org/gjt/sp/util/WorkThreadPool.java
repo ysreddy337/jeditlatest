@@ -24,16 +24,18 @@ package org.gjt.sp.util;
 
 //{{{ Imports
 import javax.swing.event.EventListenerList;
-import javax.swing.SwingUtilities;
+import java.awt.EventQueue;
 //}}}
 
 /**
  * A pool of work threads.
  * @author Slava Pestov
- * @version $Id: WorkThreadPool.java 12504 2008-04-22 23:12:43Z ezust $
- * @see org.gjt.sp.util.WorkThread
+ * @version $Id: WorkThreadPool.java 18300 2010-08-05 13:14:02Z kpouer $
+ * @deprecated
+ * @see org.gjt.sp.util.ThreadUtilities
  * @since jEdit 2.6pre1
  */
+@Deprecated
 public class WorkThreadPool
 {
 	//{{{ WorkThreadPool constructor
@@ -106,11 +108,7 @@ public class WorkThreadPool
 			{
 //				Log.log(Log.DEBUG,this,"AWT immediate: " + run);
 
-				if(SwingUtilities.isEventDispatchThread())
-					run.run();
-				else
-					SwingUtilities.invokeLater(run);
-
+				ThreadUtilities.runInDispatchThread(run);
 				return;
 			} //}}}
 
@@ -177,7 +175,7 @@ public class WorkThreadPool
 			}
 		}
 
-		if(SwingUtilities.isEventDispatchThread())
+		if(EventQueue.isDispatchThread())
 		{
 			// do any queued AWT runnables
 			doAWTRequests();
@@ -186,7 +184,7 @@ public class WorkThreadPool
 		{
 			try
 			{
-				SwingUtilities.invokeAndWait(new RunRequestsInAWTThread());
+				EventQueue.invokeAndWait(new RunRequestsInAWTThread());
 			}
 			catch(Exception e)
 			{
@@ -371,7 +369,7 @@ public class WorkThreadPool
 	private Request lastAWTRequest;
 	private int awtRequestCount;
 
-	private EventListenerList listenerList;
+	private final EventListenerList listenerList;
 	//}}}
 
 	//{{{ doAWTRequests() method
@@ -414,7 +412,7 @@ public class WorkThreadPool
 		if(!awtRunnerQueued)
 		{
 			awtRunnerQueued = true;
-			SwingUtilities.invokeLater(new RunRequestsInAWTThread());
+			EventQueue.invokeLater(new RunRequestsInAWTThread());
 //			Log.log(Log.DEBUG,this,"AWT runner queued");
 		}
 	} //}}}
@@ -467,7 +465,7 @@ public class WorkThreadPool
 
 		public String toString()
 		{
-			return "[id=" + id + ",run=" + run + "]";
+			return "[id=" + id + ",run=" + run + ']';
 		}
 	} //}}}
 

@@ -31,10 +31,10 @@ import org.gjt.sp.jedit.buffer.JEditBuffer;
  *
  * @since jEdit 4.3pre16
  * @author Shlomy Reinstein
- * @version $Id: FoldPainter.java 15570 2009-06-25 00:43:57Z ezust $
+ * @version $Id: FoldPainter.java 18569 2010-09-16 08:35:11Z kpouer $
  */
-public interface FoldPainter {
-	
+public interface FoldPainter
+{
 	/**
 	 * Paints the beginning of a fold in the gutter.
 	 * @param gutter The gutter in which the fold is drawn.

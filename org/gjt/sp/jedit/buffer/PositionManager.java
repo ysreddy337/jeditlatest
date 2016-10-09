@@ -33,10 +33,10 @@ import org.gjt.sp.util.Log;
  * directly.
  *
  * @author Slava Pestov
- * @version $Id: PositionManager.java 13125 2008-07-31 09:55:38Z kpouer $
+ * @version $Id: PositionManager.java 17813 2010-05-12 14:20:37Z k_satoda $
  * @since jEdit 4.2pre3
  */
-public class PositionManager
+class PositionManager
 {
 	//{{{ PositionManager constructor
 	public PositionManager(JEditBuffer buffer)

@@ -82,7 +82,7 @@ import org.gjt.sp.jedit.buffer.JEditBuffer;
  *
  * @author Slava Pestov
  * @author John Gellene (API documentation)
- * @version $Id: MiscUtilities.java 16559 2009-11-28 18:40:50Z ezust $
+ * @version $Id: MiscUtilities.java 17972 2010-06-03 13:53:26Z voituk $
  */
 public class MiscUtilities
 {
@@ -132,11 +132,6 @@ public class MiscUtilities
 						trim--;
 					}
 				path = path.substring(0,trim);
-		}
-		else if(OperatingSystem.isMacOS())
-		{
-			// do the same on OS X
-			path = path.replace(':','/');
 		}
 
 		if(path.startsWith('~' + File.separator))
@@ -1210,7 +1205,9 @@ public class MiscUtilities
 	} //}}}
 
 	//{{{ formatFileSize() method
+	@Deprecated
 	public static final DecimalFormat KB_FORMAT = new DecimalFormat("#.# kB");
+	@Deprecated
 	public static final DecimalFormat MB_FORMAT = new DecimalFormat("#.# MB");
 
 	/**
@@ -1218,21 +1215,12 @@ public class MiscUtilities
 	 * 1.2 MB).
 	 * @param length The size
 	 * @since jEdit 4.2pre1
+	 * @deprecated use {@link org.gjt.sp.util.StandardUtilities#formatFileSize(long)} 
 	 */
+	@Deprecated
 	public static String formatFileSize(long length)
 	{
-		if(length < 1024)
-		{
-			return length + " Bytes";
-		}
-		else if(length < 1024 << 10)
-		{
-			return KB_FORMAT.format((double)length / 1024);
-		}
-		else
-		{
-			return MB_FORMAT.format((double)length / 1024 / 1024);
-		}
+		return StandardUtilities.formatFileSize(length);
 	} //}}}
 
 	//{{{ getLongestPrefix() methods
@@ -1462,7 +1450,7 @@ loop:		for(;;)
 		int bugfix = Integer.parseInt(build.substring(9,11));
 
 		return major + "." + minor
-			+ (beta != 99 ? "rc" + beta :
+			+ (beta != 99 ? "pre" + beta :
 			(bugfix != 0 ? "." + bugfix : ""));
 	} //}}}
 
@@ -1702,7 +1690,7 @@ loop:		for(;;)
 	{
 		return XMLUtilities.findEntity(systemId, test, where);
 	} //}}}
-
+	
 	//{{{ Private members
 	private MiscUtilities() {}
 
@@ -1781,11 +1769,12 @@ loop:		for(;;)
 			Map<String, String> env = pb.environment();
 			if (OperatingSystem.isUnix())
 				prefixMap.put(System.getProperty("user.home"), "~");
-			for (String k: env.keySet())
+			for (Map.Entry<String, String> entry: env.entrySet())
 			{
+				String k = entry.getKey();
 				if (k.equalsIgnoreCase("pwd") || k.equalsIgnoreCase("oldpwd")) continue;
 				if (!Character.isLetter(k.charAt(0))) continue;
-				String v = env.get(k);
+				String v = entry.getValue();
 				// only add possible candidates to the prefix map
 				if (!canBePathPrefix(v)) continue;
 				// no need for trailing file separator

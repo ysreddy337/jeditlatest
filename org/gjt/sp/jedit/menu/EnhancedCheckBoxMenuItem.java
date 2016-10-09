@@ -50,9 +50,14 @@ public class EnhancedCheckBoxMenuItem extends JCheckBoxMenuItem
 		this.context = context;
 		this.action = action;
 		this.shortcut = GUIUtilities.getShortcutLabel(action);
+		String toolTip = jEdit.getProperty(action+ ".tooltip");
+		if (toolTip != null) {
+			setToolTipText(toolTip);
+		}
+		
 		if(OperatingSystem.hasScreenMenuBar() && shortcut != null)
 		{
-			setText(label + " (" + shortcut + ")");
+			setText(label + " (" + shortcut + ')');
 			shortcut = null;
 		}
 		else
@@ -72,6 +77,7 @@ public class EnhancedCheckBoxMenuItem extends JCheckBoxMenuItem
 	} //}}}
 
 	//{{{ getPreferredSize() method
+	@Override
 	public Dimension getPreferredSize()
 	{
 		Dimension d = super.getPreferredSize();
@@ -85,6 +91,7 @@ public class EnhancedCheckBoxMenuItem extends JCheckBoxMenuItem
 	} //}}}
 
 	//{{{ paint() method
+	@Override
 	public void paint(Graphics g)
 	{
 		super.paint(g);
@@ -108,9 +115,9 @@ public class EnhancedCheckBoxMenuItem extends JCheckBoxMenuItem
 	//{{{ Private members
 
 	//{{{ Instance variables
-	private ActionContext context;
+	private final ActionContext context;
 	private String shortcut;
-	private String action;
+	private final String action;
 	//}}}
 
 	//}}}
@@ -118,6 +125,7 @@ public class EnhancedCheckBoxMenuItem extends JCheckBoxMenuItem
 	//{{{ Model class
 	class Model extends DefaultButtonModel
 	{
+		@Override
 		public boolean isSelected()
 		{
 			if(!isShowing())
@@ -142,6 +150,7 @@ public class EnhancedCheckBoxMenuItem extends JCheckBoxMenuItem
 			}
 		}
 
+		@Override
 		public void setSelected(boolean b) {}
 	} //}}}
 
@@ -150,6 +159,7 @@ public class EnhancedCheckBoxMenuItem extends JCheckBoxMenuItem
 	{
 		boolean msgSet = false;
 
+		@Override
 		public void mouseReleased(MouseEvent evt)
 		{
 			if(msgSet)
@@ -160,6 +170,7 @@ public class EnhancedCheckBoxMenuItem extends JCheckBoxMenuItem
 			}
 		}
 
+		@Override
 		public void mouseEntered(MouseEvent evt)
 		{
 			String msg = jEdit.getProperty(action + ".mouse-over");
@@ -171,6 +182,7 @@ public class EnhancedCheckBoxMenuItem extends JCheckBoxMenuItem
 			}
 		}
 
+		@Override
 		public void mouseExited(MouseEvent evt)
 		{
 			if(msgSet)

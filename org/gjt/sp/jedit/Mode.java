@@ -47,7 +47,7 @@ import org.gjt.sp.util.StandardUtilities;
  * One instance of this class is created for each supported edit mode.
  *
  * @author Slava Pestov
- * @version $Id: Mode.java 16022 2009-08-22 02:14:59Z daleanson $
+ * @version $Id: Mode.java 18844 2010-10-25 19:15:40Z daleanson $
  */
 public class Mode
 {
@@ -75,6 +75,7 @@ public class Mode
 	{
 		try
 		{
+			filenameRE = null;
 			String filenameGlob = (String)getProperty("filenameGlob");
 			if(filenameGlob != null && filenameGlob.length() != 0)
 			{
@@ -82,6 +83,7 @@ public class Mode
 							     Pattern.CASE_INSENSITIVE);
 			}
 
+			firstlineRE = null;
 			String firstlineGlob = (String)getProperty("firstlineGlob");
 			if(firstlineGlob != null && firstlineGlob.length() != 0)
 			{
@@ -245,6 +247,25 @@ public class Mode
 		return filenameRE != null && filenameRE.matcher(fileName).matches();
 	} //}}}
 
+	//{{{ acceptFilenameIdentical() method
+	/**
+	 * Returns true if the buffer name is identical to the file name glob.
+	 * This works only for regular expressions that only represent themselves,
+	 * i.e. without any meta-characters.
+	 * @param fileName The buffer's name
+	 * @return true if the file name matches the file name glob.
+	 * @since jEdit 4.4pre1
+	 */
+	public boolean acceptFilenameIdentical(String fileName)
+	{
+		if (fileName == null) 
+		{
+			return false;	
+		}
+		return (fileName.equals((String)getProperty("filenameGlob")) &&
+		       (filenameRE == null || filenameRE.matcher(fileName).matches()));
+	} //}}}	
+	
 	//{{{ acceptFirstLine() method
 	/**
 	 * Returns true if the first line matches the first line glob.

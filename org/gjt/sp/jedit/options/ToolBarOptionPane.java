@@ -30,6 +30,7 @@ import java.awt.event.*;
 import java.awt.*;
 import java.net.*;
 import java.util.*;
+
 import org.gjt.sp.jedit.browser.VFSBrowser;
 import org.gjt.sp.jedit.gui.*;
 import org.gjt.sp.jedit.*;
@@ -41,7 +42,7 @@ import org.gjt.sp.util.StandardUtilities;
 /**
  * Tool bar editor.
  * @author Slava Pestov
- * @version $Id: ToolBarOptionPane.java 14665 2009-02-17 20:21:54Z scarlac $
+ * @version $Id: ToolBarOptionPane.java 18968 2010-11-15 23:31:24Z ezust $
  */
 public class ToolBarOptionPane extends AbstractOptionPane
 {
@@ -484,6 +485,7 @@ class ToolBarEditDialog extends EnhancedDialog
 				}
 			}
 		}
+		Collections.sort(vec, new ActionSetCompare());
 		combo = new JComboBox(vec);
 		if (selectedItem != null)
 			combo.setSelectedItem(selectedItem);
@@ -761,4 +763,13 @@ class ToolBarEditDialog extends EnhancedDialog
 			}
 		}
 	} //}}}
+	class ActionSetCompare implements Comparator<ActionSet> {
+
+		@Override
+		public int compare(ActionSet o1, ActionSet o2)
+		{
+			return StandardUtilities.compareStrings(o1.getLabel(), o2.getLabel(), false);
+		}
+		
+	}
 } //}}}

@@ -48,7 +48,7 @@ import org.gjt.sp.jedit.msg.PositionChanging;
  *
  * @author Slava Pestov
  * @author John Gellene (API documentation)
- * @version $Id: JEditTextArea.java 16763 2009-12-28 16:20:33Z k_satoda $
+ * @version $Id: JEditTextArea.java 16738 2009-12-26 09:19:38Z k_satoda $
  */
 public class JEditTextArea extends TextArea
 {

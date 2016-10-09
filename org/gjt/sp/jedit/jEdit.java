@@ -22,15 +22,11 @@
 package org.gjt.sp.jedit;
 
 //{{{ Imports
+import org.gjt.sp.jedit.datatransfer.JEditTransferableService;
+import org.gjt.sp.jedit.textarea.TextArea;
 import org.gjt.sp.jedit.visitors.JEditVisitor;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.DefaultKeyboardFocusManager;
-import java.awt.Font;
-import java.awt.Frame;
-import java.awt.KeyboardFocusManager;
-import java.awt.Toolkit;
-import java.awt.Window;
+
+import java.awt.*;
 
 import org.gjt.sp.jedit.View.ViewConfig;
 import org.gjt.sp.jedit.bsh.UtilEvalError;
@@ -40,6 +36,7 @@ import java.io.*;
 import java.net.*;
 import java.text.MessageFormat;
 import java.util.*;
+import java.util.List;
 
 import org.xml.sax.SAXParseException;
 
@@ -53,6 +50,7 @@ import org.gjt.sp.jedit.help.HelpViewer;
 import org.gjt.sp.jedit.io.*;
 import org.gjt.sp.jedit.pluginmgr.PluginManager;
 import org.gjt.sp.jedit.search.SearchAndReplace;
+import org.gjt.sp.jedit.syntax.Chunk;
 import org.gjt.sp.jedit.syntax.ModeProvider;
 import org.gjt.sp.jedit.syntax.TokenMarker;
 import org.gjt.sp.jedit.syntax.XModeHandler;
@@ -70,7 +68,7 @@ import org.gjt.sp.util.SyntaxUtilities;
 /**
  * The main class of the jEdit text editor.
  * @author Slava Pestov
- * @version $Id: jEdit.java 17785 2010-05-09 16:56:10Z Vampire0 $
+ * @version $Id: jEdit.java 19611 2011-06-20 22:54:04Z Vampire0 $
  */
 public class jEdit
 {
@@ -91,7 +89,7 @@ public class jEdit
 	public static String getBuild()
 	{
 		// (major).(minor).(<99 = preX, 99 = "final").(bug fix)
-		return "04.03.99.03";
+		return "04.04.99.01";
 	} //}}}
 
 	//{{{ main() method
@@ -102,13 +100,13 @@ public class jEdit
 	 */
 	public static void main(String[] args)
 	{
-		//{{{ Check for Java 1.5 or later
+		//{{{ Check for Java 1.6 or later
 		String javaVersion = System.getProperty("java.version");
-		if(javaVersion.compareTo("1.5") < 0)
+		if(javaVersion.compareTo("1.6") < 0)
 		{
 			System.err.println("You are running Java version "
 				+ javaVersion + '.');
-			System.err.println("jEdit requires Java 1.5 or later.");
+			System.err.println("jEdit requires Java 1.6 or later.");
 			System.exit(1);
 		} //}}}
 
@@ -408,10 +406,7 @@ public class jEdit
 		GUIUtilities.advanceSplashProgress("init GUI");
 		GUIUtilities.init();
 
-		globalBufferSet = new BufferSet();
 		bufferSetManager = new BufferSetManager();
-
-		///Options.SIMPLIFIED_KEY_HANDLING = jEdit.getBooleanProperty("newkeyhandling");
 		//}}}
 
 		//{{{ Initialize server
@@ -441,8 +436,6 @@ public class jEdit
 		GUIUtilities.advanceSplashProgress("init resources");
 		initResources();
 		SearchAndReplace.load();
-
-
 
 		if(loadPlugins)
 		{
@@ -481,6 +474,13 @@ public class jEdit
 		{
 			jars.elementAt(i).activatePluginIfNecessary();
 		} //}}}
+
+		String[] serviceNames = ServiceManager.getServiceNames(JEditTransferableService.class);
+		for (String serviceName : serviceNames)
+		{
+			JEditTransferableService service = ServiceManager.getService(JEditTransferableService.class, serviceName);
+			org.gjt.sp.jedit.datatransfer.TransferHandler.getInstance().registerTransferableService(service);
+		}
 
 		//{{{ Load macros and run startup scripts, after plugins and settings are loaded
 		GUIUtilities.advanceSplashProgress("init macros");
@@ -945,8 +945,9 @@ public class jEdit
 			buffer = buffer.next;
 		}
 
-		HistoryModel.setMax(getIntegerProperty("history",25));
+		HistoryModel.setDefaultMax(getIntegerProperty("history",25));
 		KillRing.getInstance().propertiesChanged(getIntegerProperty("history",25));
+		Chunk.propertiesChanged(propertyManager);
 
 		EditBus.send(new PropertiesChanged(null));
 	} //}}}
@@ -1144,16 +1145,6 @@ public class jEdit
 			String path = MiscUtilities.constructPath(directory,plugin);
 			if (jEdit.getBooleanProperty("plugin-blacklist."+plugin))
 				continue;
-			// remove this when 4.1 plugin API is deprecated
-			if(plugin.equals("EditBuddy.jar")
-				|| plugin.equals("PluginManager.jar")
-				|| plugin.equals("Firewall.jar")
-				|| plugin.equals("Tidy.jar")
-				|| plugin.equals("DragAndDrop.jar"))
-			{
-				pluginError(path,"plugin-error.obsolete",null);
-				continue;
-			}
 
 			addPluginJAR(path);
 		}
@@ -1317,16 +1308,15 @@ public class jEdit
 
 	//{{{ reloadModes() method
 	/**
-	 * Reloads all edit modes.
+	 * Reloads all edit modes.  User defined edit modes are loaded after
+	 * global modes so that user modes supercede global modes.
 	 * @since jEdit 3.2pre2
 	 */
 	public static void reloadModes()
 	{
-		/* Try to guess the eventual size to avoid unnecessary
-		 * copying */
 		ModeProvider.instance.removeAll();
 
-		//{{{ Load the global catalog
+		//{{{ Load the global catalog first
 		if(jEditHome == null)
 			loadModeCatalog("/modes/catalog",true);
 		else
@@ -1335,7 +1325,7 @@ public class jEdit
 				"modes","catalog"),false);
 		} //}}}
 
-		//{{{ Load user catalog
+		//{{{ Load user catalog second so user modes override global modes.
 		if(settingsDirectory != null)
 		{
 			File userModeDir = new File(MiscUtilities.constructPath(
@@ -1573,7 +1563,7 @@ public class jEdit
 					return null;
 				addBufferToList(newBuffer);
 				if (editPane != null)
-					bufferSetManager.addBuffer(editPane.getBufferSet(), newBuffer);
+					bufferSetManager.addBuffer(editPane, newBuffer);
 				else
 					bufferSetManager.addBuffer(jEdit.getActiveView(), newBuffer);
 			}
@@ -1855,14 +1845,46 @@ public class jEdit
 	 */
 	public static void closeBuffer(EditPane editPane, Buffer buffer)
 	{
-		int bufferSetsCount = bufferSetManager.countBufferSets(buffer);
-		if (bufferSetsCount < 2)
+		switch (bufferSetManager.getScope())
 		{
-			closeBuffer(editPane.getView(), buffer);
-		}
-		else
-		{
-			bufferSetManager.removeBuffer(editPane, buffer);
+			case global:
+				closeBuffer(editPane.getView(), buffer);
+				break;
+			case view:
+				View[] views = jEdit.getViews();
+				int viewOwner = 0;
+				for (View view : views)
+				{
+					BufferSet bufferSet = view.getEditPane().getBufferSet();
+					// no need to check every bufferSet since it's view scope
+					if (bufferSet.indexOf(buffer) != -1)
+					{
+						viewOwner++;
+						if (viewOwner > 1)
+							break;
+					}
+				}
+				if (viewOwner > 1)
+				{
+					// the buffer is in several view, we can remove it from bufferSet
+					bufferSetManager.removeBuffer(editPane, buffer);
+				}
+				else
+				{
+					closeBuffer(editPane.getView(), buffer);
+				}
+				break;
+			case editpane:
+				int bufferSetsCount = bufferSetManager.countBufferSets(buffer);
+				if (bufferSetsCount < 2)
+				{
+					closeBuffer(editPane.getView(), buffer);
+				}
+				else
+				{
+					bufferSetManager.removeBuffer(editPane, buffer);
+				}
+				break;
 		}
 	} //}}}
 
@@ -2205,18 +2227,6 @@ public class jEdit
 		bufferSetManager.moveBuffer(editPane, oldPosition, newPosition);
 	} //}}}
 
-	//{{{ getGlobalBufferSet() method
-	/**
-	 * Returns the global buffer set, which can be shared by several
-	 * views/editpanes.
-	 * @return the global buffer set
-	 * @since jEdit 4.3pre17
-	 */
-	public static BufferSet getGlobalBufferSet()
-	{
-		return globalBufferSet;
-	} //}}}
-
 	//{{{ getBufferSetManager() method
 	/**
 	 * Returns the bufferSet manager.
@@ -2428,7 +2438,7 @@ public class jEdit
 					index = startupDone.size();
 					startupDone.add(false);
 				}
-				SwingUtilities.invokeLater(new DockingLayoutSetter(
+				EventQueue.invokeLater(new DockingLayoutSetter(
 					newView, config, index));
 			}
 
@@ -2992,9 +3002,9 @@ public class jEdit
 
 	//{{{ pluginError() method
 	/**
-	 *
+	 * @param path
 	 * @param messageProp - a property of a message to print
-	 * @param args a list of arguments whch correspond to {0} and {1} in the string to print.
+	 * @param args a list of arguments which correspond to {0} and {1} in the string to print.
 	 */
 	static void pluginError(String path, String messageProp,
 		Object[] args)
@@ -3008,16 +3018,16 @@ public class jEdit
 				new ErrorListDialog.ErrorEntry(
 				path,messageProp,args);
 
-			for(int i = 0; i < pluginErrors.size(); i++)
+			for (ErrorListDialog.ErrorEntry pluginError : pluginErrors)
 			{
-				if(pluginErrors.get(i).equals(newEntry))
+				if (pluginError.equals(newEntry))
 					return;
 			}
 			pluginErrors.addElement(newEntry);
 
 			if(isStartupDone())
 			{
-				SwingUtilities.invokeLater(new Runnable()
+				EventQueue.invokeLater(new Runnable()
 				{
 					public void run()
 					{
@@ -3066,7 +3076,6 @@ public class jEdit
 	private static boolean saveCaret;
 	private static InputHandler inputHandler;
 
-	private static BufferSet globalBufferSet;
 	private static BufferSetManager bufferSetManager;
 
 	// buffer link list
@@ -3345,7 +3354,7 @@ public class jEdit
 
 		// Perhaps if Xerces wasn't slightly brain-damaged, we would
 		// not need this
-		SwingUtilities.invokeLater(new Runnable()
+		EventQueue.invokeLater(new Runnable()
 		{
 			public void run()
 			{
@@ -3578,6 +3587,16 @@ public class jEdit
 				secondaryFontString);
 		}
 
+		// Though the cause is not known, this must precede
+		// UIManager.setLookAndFeel(), so that menu bar
+		// interaction by ALT key interacts with swing.JMenuBar
+		// (which uses L&F) instead of awt.MenuBar which we
+		// don't use (and doesn't use L&F).
+		// The difference of the behavior was seen on Sun JRE
+		// 6u16 on Windows XP and Windows L&F.
+		KeyboardFocusManager.setCurrentKeyboardFocusManager(
+			new MyFocusManager());
+
 		try
 		{
 			String lf = getProperty("lookAndFeel");
@@ -3648,9 +3667,6 @@ public class jEdit
 			getBooleanProperty("decorate.frames"));
 		JDialog.setDefaultLookAndFeelDecorated(
 			getBooleanProperty("decorate.dialogs"));
-
-		KeyboardFocusManager.setCurrentKeyboardFocusManager(
-			new MyFocusManager());
 	} //}}}
 
 	//{{{ getNextUntitledBufferId() method
@@ -3732,7 +3748,7 @@ public class jEdit
 	//{{{ initProxy() method
 	private static void initProxy()
 	{
-		boolean socksEnabled = jEdit.getBooleanProperty("socks.enabled");
+		boolean socksEnabled = jEdit.getBooleanProperty("firewall.socks.enabled");
 		if(!socksEnabled)
 		{
 			Log.log(Log.DEBUG,jEdit.class,"SOCKS proxy disabled");
@@ -3830,7 +3846,7 @@ public class jEdit
 	private static void finishStartup(final boolean gui, final boolean restore,
 		final boolean newPlainView, final String userDir, final String[] args)
 	{
-		SwingUtilities.invokeLater(new Runnable()
+		EventQueue.invokeLater(new Runnable()
 		{
 			public void run()
 			{

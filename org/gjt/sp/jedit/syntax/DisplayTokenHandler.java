@@ -23,8 +23,6 @@
 package org.gjt.sp.jedit.syntax;
 
 //{{{ Imports
-import org.gjt.sp.jedit.buffer.JEditBuffer;
-
 import javax.swing.text.*;
 import java.awt.font.*;
 import java.util.List;
@@ -32,7 +30,7 @@ import java.util.List;
 
 /**
  * Creates {@link Chunk} objects that can be painted on screen.
- * @version $Id: DisplayTokenHandler.java 12504 2008-04-22 23:12:43Z ezust $
+ * @version $Id: DisplayTokenHandler.java 18562 2010-09-14 17:22:54Z kpouer $
  */
 public class DisplayTokenHandler extends DefaultTokenHandler
 {
@@ -42,7 +40,7 @@ public class DisplayTokenHandler extends DefaultTokenHandler
 	//{{{ init() method
 	/**
 	 * Init some variables that will be used when marking tokens.
-	 * This is called before {@link JEditBuffer#markTokens(int, TokenHandler)}
+	 * This is called before {@link org.gjt.sp.jedit.buffer.JEditBuffer#markTokens(int, TokenHandler)}
 	 * to store some data that will be required and that we don't want
 	 * to put in the parameters
 	 *
@@ -67,7 +65,7 @@ public class DisplayTokenHandler extends DefaultTokenHandler
 
 		// SILLY: allow for anti-aliased characters' "fuzz"
 		if(wrapMargin != 0.0f)
-			this.wrapMargin = wrapMargin += 2.0f;
+			this.wrapMargin = wrapMargin + 2.0f;
 		else
 			this.wrapMargin = 0.0f;
 

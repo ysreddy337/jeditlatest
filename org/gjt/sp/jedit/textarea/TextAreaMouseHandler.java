@@ -33,7 +33,7 @@ import java.awt.*;
 /** Standalone TextArea MouseHandler.
  *
  * @author Matthieu Casanova
- * @version $Id: TextAreaMouseHandler.java 16573 2009-12-01 17:54:23Z shlomy $
+ * @version $Id: TextAreaMouseHandler.java 18557 2010-09-14 08:05:17Z kpouer $
  */
 public class TextAreaMouseHandler extends MouseInputAdapter
 {
@@ -291,9 +291,6 @@ public class TextAreaMouseHandler extends MouseInputAdapter
 			textArea.startDragAndDrop(evt,control);
 			return;
 		}
-
-		if(textArea.isDragInProgress())
-			return;
 
 		if(textArea.getBuffer().isLoading())
 			return;
@@ -594,8 +591,7 @@ public class TextAreaMouseHandler extends MouseInputAdapter
 	//{{{ showCursor() method
 	protected void showCursor()
 	{
-		textArea.getPainter().setCursor(
-			Cursor.getPredefinedCursor(Cursor.TEXT_CURSOR));
+		textArea.getPainter().showCursor();
 	} //}}}
 
 	//}}}

@@ -28,7 +28,7 @@ import java.io.*;
  * IO tools that depends on JDK only.
  *
  * @author Matthieu Casanova
- * @version $Id: IOUtilities.java 14929 2009-04-14 18:31:50Z daleanson $
+ * @version $Id: IOUtilities.java 17805 2010-05-11 16:56:35Z kpouer $
  * @since 4.3pre5
  */
 public class IOUtilities
@@ -104,8 +104,12 @@ public class IOUtilities
 			out.write(buffer, 0, n);
 			copied += n;
 			if(progress != null)
+			{
+				progress.setStatus(StandardUtilities.formatFileSize(copied));
 				progress.setValue(copied);
-			if(canStop && Thread.interrupted()) return false;
+			}
+			if(canStop && Thread.interrupted()) 
+				return false;
 		}
 		return true;
 	}
@@ -181,11 +185,9 @@ public class IOUtilities
 	{
 		if(out != null)
 		{
-			try {
-				if (out instanceof Flushable)
-				{
-					((Flushable)out).flush();
-				}
+			try
+			{
+				out.flush();
 			}
 			catch (IOException e)
 			{
@@ -232,11 +234,9 @@ public class IOUtilities
 	{
 		if(out != null)
 		{
-			try {
-				if (out instanceof Flushable)
-				{
-					((Flushable)out).flush();
-				}
+			try
+			{
+				out.flush();
 			}
 			catch (IOException e)
 			{
@@ -263,7 +263,8 @@ public class IOUtilities
 	{
 		if(closeable != null)
 		{
-			try {
+			try
+			{
 				if (closeable instanceof Flushable)
 				{
 					((Flushable)closeable).flush();

@@ -43,7 +43,7 @@ import java.util.List;
 
 /**
  * @author Slava Pestov
- * @version $Id: TextAreaTransferHandler.java 19418 2011-03-03 17:52:18Z k_satoda $
+ * @version $Id: TextAreaTransferHandler.java 19550 2011-06-08 21:37:11Z ezust $
  */
 public class TextAreaTransferHandler extends TransferHandler
 {
@@ -416,7 +416,7 @@ public class TextAreaTransferHandler extends TransferHandler
 	@Override
 	public boolean canImport(TransferSupport support)
 	{
-		if (support.getTransferable() instanceof TextAreaSelection)
+		if (dragSource != null)
 			return true;
 		else
 		{
@@ -446,13 +446,6 @@ public class TextAreaTransferHandler extends TransferHandler
 			{
 				if(textArea.isEditable())
 					returnValue = true;
-			}
-			else if (flavors[i].getRepresentationClass().equals(java.io.InputStream.class))
-			{
-				//workaround for Ubuntu/Gnome/Nautilus import flavors, otherwise
-				//doesn't work on all Ubuntu installations
-				returnValue = true;
-				break;
 			}
 		}
 

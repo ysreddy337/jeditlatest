@@ -32,10 +32,10 @@ import javax.swing.text.Segment;
  * called through, implements such protection.
  *
  * @author Slava Pestov
- * @version $Id: ContentManager.java 16338 2009-10-14 09:59:08Z kpouer $
+ * @version $Id: ContentManager.java 17813 2010-05-12 14:20:37Z k_satoda $
  * @since jEdit 4.0pre1
  */
-public class ContentManager
+class ContentManager
 {
 	//{{{ getLength() method
 	public final int getLength()
@@ -103,7 +103,12 @@ public class ContentManager
 	//{{{ getSegment() method
 	/**
 	 * Returns a read-only segment of the buffer.
+	 * It doesn't copy the text
 	 *
+	 * @param start The start offset
+	 * @param len The number of characters to get
+	 *
+	 * @return a CharSequence that contains the text wanted text
 	 * @since jEdit 4.3pre15
 	 */
 	public CharSequence getSegment(int start, int len)

@@ -85,7 +85,7 @@ import org.gjt.sp.jedit.buffer.FoldHandler;
  *
  * @since jEdit 4.2pre1
  * @author Slava Pestov
- * @version $Id: ServiceManager.java 14125 2008-12-01 10:06:24Z kpouer $
+ * @version $Id: ServiceManager.java 17827 2010-05-16 20:51:45Z ezust $
  */
 public class ServiceManager
 {
@@ -205,7 +205,14 @@ public class ServiceManager
 			new String[returnValue.size()]);
 	} //}}}
 
-	//{{{ getService() method
+
+	//{{{ getServiceNames() method
+	public static String[] getServiceNames(Class clazz)
+	{
+		return getServiceNames(clazz.getName());
+	} //}}}
+
+	//{{{ getService() methods
 	/**
 	 * Returns an instance of the given service. The first time this is
 	 * called for a given service, the BeanShell code is evaluated. The
@@ -218,7 +225,7 @@ public class ServiceManager
 	 */
 	public static Object getService(String clazz, String name)
 	{
-		// they never taught you this in undergrad computer science
+
 		Descriptor key = new Descriptor(clazz,name);
 		Descriptor value = serviceMap.get(key);
 		if(value == null)
@@ -239,12 +246,29 @@ public class ServiceManager
 		}
 	} //}}}
 
+    /**
+     * Returns an instance of the given service. The first time this is
+	 * called for a given service, the BeanShell code is evaluated. The
+	 * result is cached for future invocations, so in effect services are
+	 * singletons.
+     *
+     * @param clazz The service class
+	 * @param name The service name
+     * @return the service instance
+     * @since jEdit 4.4pre1
+     */
+	public static <E> E getService(Class<E> clazz, String name)
+	{
+		return (E) getService(clazz.getName(), name);
+	} //}}}
+
 	//{{{ Package-private members
 
 	//{{{ registerService() method
 	/**
 	 * Registers a service.
 	 *
+	 * @param d the service descriptor
 	 * @since jEdit 4.2pre1
 	 */
 	static void registerService(Descriptor d)

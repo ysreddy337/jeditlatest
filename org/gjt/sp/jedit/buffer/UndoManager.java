@@ -34,7 +34,7 @@ import org.gjt.sp.util.Log;
  * called through, implements such protection.
  *
  * @author Slava Pestov
- * @version $Id: UndoManager.java 16098 2009-08-27 21:59:29Z shlomy $
+ * @version $Id: UndoManager.java 16728 2009-12-25 14:12:38Z shlomy $
  * @since jEdit 4.0pre1
  */
 public class UndoManager
@@ -54,7 +54,7 @@ public class UndoManager
 	//{{{ clear() method
 	public void clear()
 	{
-		undosFirst = undosLast = redosFirst = redosLast = null;
+		undosFirst = undosLast = redosFirst = null;
 		undoCount = 0;
 	} //}}}
 
@@ -270,7 +270,6 @@ public class UndoManager
 
 	// queue of redos. first is most recent, last is oldest
 	private Edit redosFirst;
-	private Edit redosLast;
 
 	private int limit;
 	private int undoCount;
@@ -292,7 +291,7 @@ public class UndoManager
 			undosLast = edit;
 		}
 
-		redosFirst = redosLast = null;
+		redosFirst = null;
 
 		undoCount++;
 

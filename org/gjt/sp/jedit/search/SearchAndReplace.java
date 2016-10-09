@@ -36,9 +36,7 @@ import org.gjt.sp.jedit.msg.PositionChanging;
 import org.gjt.sp.jedit.msg.SearchSettingsChanged;
 import org.gjt.sp.jedit.textarea.*;
 import org.gjt.sp.jedit.textarea.TextArea;
-import org.gjt.sp.util.ReverseCharSequence;
-import org.gjt.sp.util.Log;
-import org.gjt.sp.util.StandardUtilities;
+import org.gjt.sp.util.*;
 //}}}
 
 /**
@@ -66,7 +64,7 @@ import org.gjt.sp.util.StandardUtilities;
  *
  * @author Slava Pestov
  * @author John Gellene (API documentation)
- * @version $Id: SearchAndReplace.java 13907 2008-10-19 08:22:44Z k_satoda $
+ * @version $Id: SearchAndReplace.java 19553 2011-06-09 01:23:57Z ezust $
  */
 public class SearchAndReplace
 {
@@ -406,8 +404,9 @@ public class SearchAndReplace
 			}
 			else
 				s = null;
-			VFSManager.runInWorkThread(new HyperSearchRequest(view,
-				matcher,results,s));
+			ThreadUtilities.runInBackground(
+				new HyperSearchRequest(view,
+					matcher,results,s));
 			return true;
 		}
 		catch(Exception e)
@@ -607,22 +606,24 @@ loop:			for(;;)
 		}
 
 		CharSequence text;
-		boolean startOfBuffer;
-		boolean endOfBuffer;
+		boolean startOfLine;
+		boolean endOfLine;
 		if(reverse)
 		{
 			text = new ReverseCharSequence(buffer.getSegment(0,start));
-			startOfBuffer = true;
-			endOfBuffer = (start == buffer.getLength());
+			startOfLine = true;
+			endOfLine = (buffer.getLineEndOffset(
+				buffer.getLineOfOffset(start)) - 1 == start);
 		}
 		else
 		{
 			text = buffer.getSegment(start,buffer.getLength() - start);
-			startOfBuffer = (start == 0);
-			endOfBuffer = true;
+			startOfLine = (buffer.getLineStartOffset(
+				buffer.getLineOfOffset(start)) == start);
+			endOfLine = true;
 		}
 		SearchMatcher.Match match = matcher.nextMatch(text,
-			startOfBuffer,endOfBuffer,firstTime,reverse);
+			startOfLine,endOfLine,firstTime,reverse);
 		if(match != null)
 		{
 			jEdit.commitTemporary(buffer);
@@ -1165,8 +1166,8 @@ loop:		for(int counter = 0; ; counter++)
 			if(occur == null)
 				break loop;
 
-			String found = text.subSequence(
-				occur.start, occur.end).toString();
+			CharSequence found = text.subSequence(
+				occur.start, occur.end);
 
 			int length = replaceOne(view,buffer,occur,offset,
 				found,smartCaseReplace);
@@ -1189,11 +1190,11 @@ loop:		for(int counter = 0; ; counter++)
 	 * replacement string.
 	 */
 	private static int replaceOne(View view, JEditBuffer buffer,
-		SearchMatcher.Match occur, int offset, String found,
+		SearchMatcher.Match occur, int offset, CharSequence found,
 		boolean smartCaseReplace)
 		throws Exception
 	{
-		String subst = replaceOne(view,occur,found);
+		String subst = replaceOne(view,buffer,occur,found);
 		if(smartCaseReplace && ignoreCase)
 		{
 			int strCase = TextUtilities.getStringCase(found);
@@ -1220,21 +1221,21 @@ loop:		for(int counter = 0; ; counter++)
 	} //}}}
 
 	//{{{ replaceOne() method
-	private static String replaceOne(View view,
-		SearchMatcher.Match occur, String found)
+	private static String replaceOne(View view, JEditBuffer buffer,
+		SearchMatcher.Match occur, CharSequence found)
 		throws Exception
 	{
 		if(regexp)
 		{
 			if(replaceMethod != null)
-				return regexpBeanShellReplace(view,occur);
+				return regexpBeanShellReplace(view,buffer,occur);
 			else
 				return regexpReplace(occur,found);
 		}
 		else
 		{
 			if(replaceMethod != null)
-				return literalBeanShellReplace(view,found);
+				return literalBeanShellReplace(view,buffer,found);
 			else
 				return replace;
 		}
@@ -1242,8 +1243,9 @@ loop:		for(int counter = 0; ; counter++)
 
 	//{{{ regexpBeanShellReplace() method
 	private static String regexpBeanShellReplace(View view,
-		SearchMatcher.Match occur) throws Exception
+		JEditBuffer buffer, SearchMatcher.Match occur) throws Exception
 	{
+		replaceNS.setVariable("buffer", buffer, false);
 		for(int i = 0; i < occur.substitutions.length; i++)
 		{
 			replaceNS.setVariable("_" + i,
@@ -1252,6 +1254,16 @@ loop:		for(int counter = 0; ; counter++)
 
 		Object obj = BeanShell.runCachedBlock(
 			replaceMethod,view,replaceNS);
+
+		for(int i = 0; i < occur.substitutions.length; i++)
+		{
+			replaceNS.setVariable("_" + i,
+				null, false);
+		}
+		// Not really necessary because it is already cleared in the end of
+		// BeanShell.runCachedBlock()
+		replaceNS.setVariable("buffer", null, false);
+
 		if(obj == null)
 			return "";
 		else
@@ -1260,7 +1272,7 @@ loop:		for(int counter = 0; ; counter++)
 
 	//{{{ regexpReplace() method
 	private static String regexpReplace(SearchMatcher.Match occur,
-		String found) throws Exception
+		CharSequence found) throws Exception
 	{
 		StringBuilder buf = new StringBuilder();
 
@@ -1349,13 +1361,21 @@ loop:		for(int counter = 0; ; counter++)
 	} //}}}
 
 	//{{{ literalBeanShellReplace() method
-	private static String literalBeanShellReplace(View view, String found)
+	private static String literalBeanShellReplace(View view,
+		JEditBuffer buffer, CharSequence found)
 		throws Exception
 	{
+		replaceNS.setVariable("buffer",buffer);
 		replaceNS.setVariable("_0",found);
 		Object obj = BeanShell.runCachedBlock(
 			replaceMethod,
 			view,replaceNS);
+
+		replaceNS.setVariable("_0", null, false);
+		// Not really necessary because it is already cleared in the end of
+		// BeanShell.runCachedBlock()
+		replaceNS.setVariable("buffer", null, false);
+
 		if(obj == null)
 			return "";
 		else

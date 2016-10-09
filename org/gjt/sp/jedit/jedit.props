@@ -101,6 +101,10 @@ search.keepDialog.toggle=true
 # When this limit is reached a dialog appears to cancel the search
 hypersearch.maxWarningResults=1000
 
+# If the hypersearch query is longer than this value it will be truncated
+# on display in the results
+hypersearch.displayQueryLength=100
+
 # Style for highlighting matches in hypersearch results
 hypersearch.results.highlight=bgColor:#ccccff
 
@@ -120,6 +124,9 @@ autoReload=true
 
 # When to check file status on disk (0 = upon app focus; 1 = upon app focus, visiting the buffer or saving any buffer; 2 = upon visiting the buffer or saving any buffer; 3 = visiting the buffer; 4 = upon saving the buffer)
 checkFileStatus=0
+
+# Encoding detectors
+encodingDetectors=BOM XML-PI html python
 
 #}}}
 
@@ -255,10 +262,6 @@ view.minStartupHeight=200
 
 # The default bufferSet scope
 editpane.bufferset.default=global
-
-# Copy the current bufferSet content when creating a new bufferSet for an
-# EditPane
-editpane.bufferset.new=copy
 
 #{{{ Gutter
 
@@ -436,7 +439,7 @@ vfs.browser.colors.0.glob={CVS,#*,*~,\\.*}
 vfs.browser.colors.0.color=#a0a0a0
 vfs.browser.colors.1.glob=*.class
 vfs.browser.colors.1.color=#660066
-vfs.browser.colors.2.glob={build.xml,makefile*}
+vfs.browser.colors.2.glob={build.xml,makefile*,*.hxml}
 vfs.browser.colors.2.color=#666600
 vfs.browser.colors.3.glob=*.{gif,jpg,jpeg,png,bmp,xpm,svg}
 vfs.browser.colors.3.color=#009933
@@ -473,3 +476,5 @@ server.brokenToFront=false
 
 # restore remote VFS files by default (new option)
 options.general.restore.remote=true
+
+mime2mode.text/html=html

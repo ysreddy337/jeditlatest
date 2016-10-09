@@ -75,6 +75,12 @@
 	</CODE>
 </ACTION>
 
+<ACTION NAME="backspace-word-std-after">
+	<CODE>
+		textArea.backspaceWord(true, true);
+	</CODE>
+</ACTION>
+
 <ACTION NAME="bottom-docking-area">
 	<CODE>
 		wm.getBottomDockingArea().showMostRecent();
@@ -271,7 +277,7 @@
 
 <ACTION NAME="edit-syntax-style">
 	<CODE>
-		buffer.editSyntaxStyle(textArea);
+		StyleEditor.invokeForCaret(textArea);
 	</CODE>
 </ACTION>
 
@@ -365,6 +371,12 @@
 	</CODE>
 </ACTION>
 
+<ACTION NAME="focus-on-textarea">
+	<CODE>
+		editPane.focusOnTextArea();
+	</CODE>
+</ACTION>
+
 <ACTION NAME="format-paragraph">
 	<CODE>
 		textArea.formatParagraph();
@@ -378,12 +390,14 @@
 </ACTION>
 <ACTION NAME="global-bufferset">
 	<CODE>
-		editPane.setBufferSetScope(BufferSet.Scope.global);
+		bufferSetManager = jEdit.getBufferSetManager();
+		bufferSetManager.setScope(BufferSet.Scope.global);
 	</CODE>
 </ACTION>
 <ACTION NAME="view-bufferset">
 	<CODE>
-		editPane.setBufferSetScope(BufferSet.Scope.view);
+		bufferSetManager = jEdit.getBufferSetManager();
+		bufferSetManager.setScope(BufferSet.Scope.view);
 	</CODE>
 </ACTION>
 
@@ -399,7 +413,8 @@
 
 <ACTION NAME="editpane-bufferset">
 	<CODE>
-		editPane.setBufferSetScope(BufferSet.Scope.editpane);
+		bufferSetManager = jEdit.getBufferSetManager();
+		bufferSetManager.setScope(BufferSet.Scope.editpane);
 	</CODE>
 </ACTION>
 
@@ -618,7 +633,15 @@
 
 <ACTION NAME="new-view">
 	<CODE>
+	bsm = jEdit.getBufferSetManager(); 
+	if (bsm.getScope() == BufferSet.Scope.global) {
 		jEdit.newView(view);
+	}
+	else {
+		View.ViewConfig config = new View.ViewConfig();
+		config.docking = view.getViewConfig().docking;
+		jEdit.newView(view,bsm.createUntitledBuffer(),config);
+	}
 	</CODE>
 </ACTION>
 
@@ -735,6 +758,12 @@
 	</CODE>
 </ACTION>
 
+<ACTION NAME="paste-special">
+	<CODE>
+		new PasteSpecialDialog(view, textArea);
+	</CODE>
+</ACTION>
+
 <ACTION NAME="paste-string-register" NO_REPEAT="TRUE" NO_RECORD="TRUE">
 	<CODE>
 		view.getInputHandler().readNextChar(
@@ -842,6 +871,12 @@
 <ACTION NAME="prev-word-std">
 	<CODE>
 		textArea.goToPrevWord(false,true);
+	</CODE>
+</ACTION>
+
+<ACTION NAME="prev-word-std-after">
+	<CODE>
+		textArea.goToPrevWord(false,true,true);
 	</CODE>
 </ACTION>
 
@@ -1036,12 +1071,14 @@
 
 <ACTION NAME="scroll-and-center">
    <CODE>
+   	view.closeAllMenus();
    	textArea.scrollAndCenterCaret();
    </CODE>
 </ACTION>
 
 <ACTION NAME="scroll-to-current-line">
 	<CODE>
+		view.closeAllMenus();
 		if(!textArea.getDisplayManager().isLineVisible(
 			textArea.getCaretLine()))
 		{
@@ -1272,6 +1309,12 @@
 	</CODE>
 </ACTION>
 
+<ACTION NAME="select-prev-word-std-after">
+	<CODE>
+		textArea.goToPrevWord(true,true,true);
+	</CODE>
+</ACTION>
+
 <ACTION NAME="select-visible-home">
 	<CODE>
 		textArea.goToFirstVisibleLine(true);
@@ -1305,6 +1348,12 @@
 <ACTION NAME="shift-right">
 	<CODE>
 		textArea.shiftIndentRight();
+	</CODE>
+</ACTION>
+
+<ACTION NAME="set-view-title">
+	<CODE>
+		view.showUserTitleDialog();
 	</CODE>
 </ACTION>
 

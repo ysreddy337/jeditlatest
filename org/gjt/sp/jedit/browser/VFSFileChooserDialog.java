@@ -45,7 +45,7 @@ import org.gjt.sp.util.*;
  * Wraps the VFS browser in a modal dialog.
  * Shows up when "File-Open" is used. 
  * @author Slava Pestov
- * @version $Id: VFSFileChooserDialog.java 16560 2009-11-29 19:06:17Z kerik-sf $
+ * @version $Id: VFSFileChooserDialog.java 17393 2010-02-27 12:13:39Z k_satoda $
  */
 public class VFSFileChooserDialog extends EnhancedDialog
 {
@@ -196,7 +196,10 @@ public class VFSFileChooserDialog extends EnhancedDialog
 					if(browser.getMode() == VFSBrowser.BROWSER_DIALOG)
 					{
 						Hashtable props = new Hashtable();
-						props.put(JEditBuffer.ENCODING,browser.currentEncoding);
+						if(browser.currentEncoding != null)
+						{
+							props.put(JEditBuffer.ENCODING,browser.currentEncoding);
+						}
 						jEdit.openFile(browser.getView(),
 							browser.getDirectory(),
 							path,false,props);

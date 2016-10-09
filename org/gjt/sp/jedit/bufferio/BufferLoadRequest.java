@@ -39,7 +39,7 @@ import org.gjt.sp.util.*;
 /**
  * A buffer load request.
  * @author Slava Pestov
- * @version $Id: BufferLoadRequest.java 12504 2008-04-22 23:12:43Z ezust $
+ * @version $Id: BufferLoadRequest.java 17734 2010-05-04 22:08:41Z kpouer $
  */
 public class BufferLoadRequest extends BufferIORequest
 {
@@ -243,7 +243,7 @@ public class BufferLoadRequest extends BufferIORequest
 				encodingProviders.addAll(AutoDetection.getEncodingDetectors());
 				// If the detected encoding fail, fallback to
 				// the original encoding.
-				encodingProviders.add(buffer.getStringProperty(Buffer.ENCODING));
+				encodingProviders.add(buffer.getStringProperty(JEditBuffer.ENCODING));
 
 				String fallbackEncodings = jEdit.getProperty("fallbackEncodings");
 				if(fallbackEncodings != null && fallbackEncodings.length() > 0)
@@ -257,7 +257,7 @@ public class BufferLoadRequest extends BufferIORequest
 			else
 			{
 				gzipped = buffer.getBooleanProperty(Buffer.GZIPPED);
-				encodingProviders.add(buffer.getStringProperty(Buffer.ENCODING));
+				encodingProviders.add(buffer.getStringProperty(JEditBuffer.ENCODING));
 			}
 
 			if(gzipped)
@@ -304,7 +304,7 @@ public class BufferLoadRequest extends BufferIORequest
 						{
 							buffer.setBooleanProperty(Buffer.GZIPPED,true);
 						}
-						buffer.setProperty(Buffer.ENCODING, encoding);
+						buffer.setProperty(JEditBuffer.ENCODING, encoding);
 					}
 					return;
 				}
@@ -341,7 +341,7 @@ public class BufferLoadRequest extends BufferIORequest
 			VFSManager.error(view,path,"ioerror.encoding-error",pp);
 			markedStream = rewindContentsStream(markedStream, gzipped);
 			read(EncodingServer.getEncoding(
-				buffer.getStringProperty(Buffer.ENCODING)
+				buffer.getStringProperty(JEditBuffer.ENCODING)
 				).getPermissiveTextReader(markedStream)
 				, length, false);
 			if(autodetect && gzipped)

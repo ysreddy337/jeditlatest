@@ -52,16 +52,18 @@ import java.util.regex.Pattern;
  * This class is partially thread-safe, however you must pay attention to two
  * very important guidelines:
  * <ul>
- * <li>Changes to a buffer can only be made from the AWT thread.
+ * <li>Operations such as insert() and remove(),
+ * undo(), change Buffer data in a writeLock(), and must
+ * be called from the AWT thread.
  * <li>When accessing the buffer from another thread, you must
- * grab a read lock if you plan on performing more than one call, to ensure that
- * the buffer contents are not changed by the AWT thread for the duration of the
- * lock. Only methods whose descriptions specify thread safety can be invoked
- * from other threads.
+ * call readLock() before and readUnLock() after,  if you plan on performing
+ * more than one read, to ensure that  the buffer contents are not changed by
+ * the AWT thread for the duration of the lock. Only methods whose descriptions
+ * specify thread safety can be invoked from other threads.
  * </ul>
  *
  * @author Slava Pestov
- * @version $Id: JEditBuffer.java 17654 2010-04-16 10:59:28Z kpouer $
+ * @version $Id: JEditBuffer.java 18698 2010-10-01 20:40:40Z daleanson $
  *
  * @since jEdit 4.3pre3
  */
@@ -475,7 +477,7 @@ public class JEditBuffer
 		{
 			readUnlock();
 		}
-	} 
+	}
 
 	/**
 	 * Returns the specified line in a <code>Segment</code>.<p>
@@ -564,6 +566,23 @@ public class JEditBuffer
 	}
 
 	/**
+	 * Returns the full buffer content. This method is thread-safe
+	 * @since 4.4.1
+	 */
+	public String getText()
+	{
+		try
+		{
+			readLock();
+			return contentMgr.getText(0, getLength());
+		}
+		finally
+		{
+			readUnlock();
+		}
+	}
+
+	/**
 	 * Returns the specified text range in a <code>Segment</code>.<p>
 	 *
 	 * Using a <classname>Segment</classname> is generally more
@@ -597,10 +616,12 @@ public class JEditBuffer
 	//{{{ getSegment() method
 	/**
 	 * Returns the specified text range. This method is thread-safe.
+	 * It doesn't copy the text
 	 *
 	 * @param start The start offset
 	 * @param length The number of characters to get
 	 *
+	 * @return a CharSequence that contains the text wanted text
 	 * @since jEdit 4.3pre15
 	 */
 	public CharSequence getSegment(int start, int length)
@@ -1264,6 +1285,7 @@ loop:		for(int i = 0; i < seg.count; i++)
 	 * @since jEdit 4.3pre2
 	 * @deprecated Use #isElectricKey(char,int)
 	 */
+	@Deprecated
 	public boolean isElectricKey(char ch)
 	{
 		return mode.isElectricKey(ch);
@@ -1414,8 +1436,6 @@ loop:		for(int i = 0; i < seg.count; i++)
 		}
 		else
 		{
-			if (folding != null)
-				Log.log(Log.WARNING, this, "invalid 'folding' property: " + folding);
 			setFoldHandler(new DummyFoldHandler());
 		}
 	} //}}}
@@ -2452,12 +2472,12 @@ loop:		for(int i = 0; i < seg.count; i++)
 	protected void fireBeginRedo()
 	{
 	} //}}}
-	
+
 	//{{{ fireEndRedo() method
 	protected void fireEndRedo()
 	{
 	} //}}}
-	
+
 	//{{{ fireTransactionComplete() method
 	protected void fireTransactionComplete()
 	{
@@ -2584,17 +2604,26 @@ loop:		for(int i = 0; i < seg.count; i++)
 	//{{{ parseBufferLocalProperties() method
 	protected void parseBufferLocalProperties()
 	{
-		int lastLine = Math.min(9,getLineCount() - 1);
-		parseBufferLocalProperties(getSegment(0,getLineEndOffset(lastLine) - 1));
+		int maxRead = 10000;
+		int lineCount = getLineCount();
+		int lastLine = Math.min(9, lineCount - 1);
+		int max = Math.min(maxRead, getLineEndOffset(lastLine) - 1);
+		parseBufferLocalProperties(getSegment(0, max));
 
 		// first line for last 10 lines, make sure not to overlap
 		// with the first 10
-		int firstLine = Math.max(lastLine + 1, getLineCount() - 10);
-		if(firstLine < getLineCount())
+		int firstLine = Math.max(lastLine + 1, lineCount - 10);
+		if(firstLine < lineCount)
 		{
-			int length = getLineEndOffset(getLineCount() - 1)
-				- (getLineStartOffset(firstLine) + 1);
-			parseBufferLocalProperties(getSegment(getLineStartOffset(firstLine),length));
+			int firstLineStartOffset = getLineStartOffset(firstLine);
+			int length = getLineEndOffset(lineCount - 1)
+				- (firstLineStartOffset + 1);
+			if (length > maxRead)
+			{
+				firstLineStartOffset += length - maxRead;
+				length = maxRead;
+			}
+			parseBufferLocalProperties(getSegment(firstLineStartOffset,length));
 		}
 	} //}}}
 
@@ -2697,7 +2726,8 @@ loop:		for(int i = 0; i < seg.count; i++)
 		StringBuilder buf = new StringBuilder();
 		String name = null;
 		boolean escape = false;
-		for(int i = 0; i < prop.length(); i++)
+		int length = prop.length();
+		for(int i = 0; i < length; i++)
 		{
 			char c = prop.charAt(i);
 			switch(c)

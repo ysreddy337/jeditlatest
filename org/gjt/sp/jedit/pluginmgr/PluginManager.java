@@ -28,19 +28,18 @@ import javax.swing.event.*;
 import javax.swing.*;
 import java.awt.event.*;
 import java.awt.*;
-import org.xml.sax.SAXParseException;
-import org.gjt.sp.jedit.io.VFSManager;
+import org.gjt.sp.jedit.EditBus.EBHandler;
 import org.gjt.sp.jedit.msg.*;
 import org.gjt.sp.jedit.options.*;
 import org.gjt.sp.jedit.*;
-import org.gjt.sp.util.Log;
-import org.gjt.sp.util.WorkRequest;
+import org.gjt.sp.util.Task;
+import org.gjt.sp.util.ThreadUtilities;
 //}}}
 
 /**
- * @version $Id: PluginManager.java 16343 2009-10-14 10:29:47Z kpouer $
+ * @version $Id: PluginManager.java 17953 2010-06-02 08:30:24Z kpouer $
  */
-public class PluginManager extends JFrame implements EBComponent
+public class PluginManager extends JFrame
 {
 	
 	//{{{ getInstance() method
@@ -54,6 +53,7 @@ public class PluginManager extends JFrame implements EBComponent
 	} //}}}
 
 	//{{{ dispose() method
+	@Override
 	public void dispose()
 	{
 		instance = null;
@@ -62,36 +62,32 @@ public class PluginManager extends JFrame implements EBComponent
 		super.dispose();
 	} //}}}
 
-	//{{{ handleMessage() method
-	public void handleMessage(EBMessage message)
+	//{{{ handlePropertiesChanged() method
+	@EBHandler
+	public void handlePropertiesChanged(PropertiesChanged message)
 	{
-		if (message instanceof PropertiesChanged)
+		if (shouldUpdatePluginList())
 		{
-			if (shouldUpdatePluginList())
-			{
-				pluginList = null;
-				updatePluginList();
-				if(tabPane.getSelectedIndex() != 0)
-				{
-					installer.updateModel();
-					updater.updateModel();
-				}
-			}
+			pluginList = null;
+			updatePluginList();
 		}
-		else if (message instanceof PluginUpdate)
+	} //}}}
+
+	//{{{ handlePluginUpdate() method
+	@EBHandler
+	public void handlePluginUpdate(PluginUpdate msg)
+	{
+		if(!queuedUpdate)
 		{
-			if(!queuedUpdate)
+			SwingUtilities.invokeLater(new Runnable()
 			{
-				SwingUtilities.invokeLater(new Runnable()
+				public void run()
 				{
-					public void run()
-					{
-						queuedUpdate = false;
-						manager.update();
-					}
-				});
-				queuedUpdate = true;
-			}
+					queuedUpdate = false;
+					manager.update();
+				}
+			});
+			queuedUpdate = true;
 		}
 	} //}}}
 
@@ -139,7 +135,7 @@ public class PluginManager extends JFrame implements EBComponent
 	private final Frame parent;
 	//}}}
 
-	static public final String PROPERTY_PLUGINSET = "plugin-manager.pluginset.path";
+	public static final String PROPERTY_PLUGINSET = "plugin-manager.pluginset.path";
 
 	//{{{ PluginManager constructor
 	private PluginManager(Frame parent)
@@ -235,11 +231,10 @@ public class PluginManager extends JFrame implements EBComponent
 			return;
 		}
 
-		final Exception[] exception = new Exception[1];
-
-		VFSManager.runInWorkThread(new WorkRequest()
+		ThreadUtilities.runInBackground(new Task()
 		{
-			public void run()
+			@Override
+			public void _run()
 			{
 				try
 				{
@@ -248,72 +243,30 @@ public class PluginManager extends JFrame implements EBComponent
 						"plugin-manager.list-download-connect"));
 					pluginList = new PluginList(this);
 				}
-				catch(Exception e)
-				{
-					exception[0] = e;
-				}
 				finally
 				{
 					downloadingPluginList = false;
 				}
-			}
-		});
-
-		VFSManager.runInAWTThread(new Runnable()
-		{
-			public void run()
-			{
-				if(exception[0] instanceof SAXParseException)
+				ThreadUtilities.runInDispatchThread(new Runnable()
 				{
-					SAXParseException se = (SAXParseException)
-						exception[0];
-
-					int line = se.getLineNumber();
-					String path = jEdit.getProperty(
-						"plugin-manager.export-url");
-					String message = se.getMessage();
-					Log.log(Log.ERROR,this,path + ':' + line
-						+ ": " + message);
-					String[] pp = { path,
-						String.valueOf(line),
-						message };
-					GUIUtilities.error(PluginManager.this,
-						"plugin-list.xmlerror",pp);
-				}
-				else if(exception[0] != null)
-				{
-					Exception e = exception[0];
-
-					Log.log(Log.ERROR,this,e);
-					String[] pp = { e.toString() };
-
-					String ok = jEdit.getProperty(
-						"common.ok");
-					String proxyButton = jEdit.getProperty(
-						"plugin-list.ioerror.proxy-servers");
-					int retVal =
-						JOptionPane.showOptionDialog(
-						PluginManager.this,
-						jEdit.getProperty("plugin-list.ioerror.message",pp),
-						jEdit.getProperty("plugin-list.ioerror.title"),
-						JOptionPane.YES_NO_OPTION,
-						JOptionPane.ERROR_MESSAGE,
-						null,
-						new Object[] {
-							proxyButton,
-							ok
-						},
-						ok);
-
-					if(retVal == 0)
+					public void run()
 					{
-						new GlobalOptions(
-							PluginManager.this,
-							"firewall");
+						pluginListUpdated();
 					}
-				}
+				});
 			}
 		});
+	} //}}}
+
+	//{{{ processKeyEvent() method
+	private void pluginListUpdated()
+	{
+		Component selected = tabPane.getSelectedComponent();
+		if(selected == installer || selected == updater)
+		{
+			installer.updateModel();
+			updater.updateModel();
+		}
 	} //}}}
 
 	//{{{ processKeyEvent() method
@@ -355,8 +308,6 @@ public class PluginManager extends JFrame implements EBComponent
 			if(selected == installer || selected == updater)
 			{
 				updatePluginList();
-				installer.updateModel();
-				updater.updateModel();
 			}
 			else if(selected == manager)
 				manager.update();

@@ -61,13 +61,12 @@ import javax.swing.event.HyperlinkListener;
 import javax.swing.text.html.HTMLDocument;
 import javax.swing.text.html.HTMLFrameHyperlinkEvent;
 
-import org.gjt.sp.jedit.EBComponent;
-import org.gjt.sp.jedit.EBMessage;
 import org.gjt.sp.jedit.EditBus;
 import org.gjt.sp.jedit.GUIUtilities;
 import org.gjt.sp.jedit.jEdit;
 import org.gjt.sp.jedit.MiscUtilities;
 
+import org.gjt.sp.jedit.EditBus.EBHandler;
 import org.gjt.sp.jedit.msg.PluginUpdate;
 import org.gjt.sp.jedit.msg.PropertiesChanged;
 
@@ -80,9 +79,9 @@ import static org.gjt.sp.jedit.help.HelpHistoryModel.HistoryEntry;
  * jEdit's searchable help viewer. It uses a Swing JEditorPane to display the HTML,
  * and implements a URL history.
  * @author Slava Pestov
- * @version $Id: HelpViewer.java 15433 2009-06-12 15:19:27Z Kpouer $
+ * @version $Id: HelpViewer.java 18419 2010-08-26 09:21:29Z kerik-sf $
  */
-public class HelpViewer extends JFrame implements HelpViewerInterface, EBComponent, HelpHistoryModelListener
+public class HelpViewer extends JFrame implements HelpViewerInterface, HelpHistoryModelListener
 {
 	//{{{ HelpViewer constructor
 	/**
@@ -153,9 +152,13 @@ public class HelpViewer extends JFrame implements HelpViewerInterface, EBCompone
 		rightPanel.add(BorderLayout.NORTH,toolBar);
 
 		viewer = new JEditorPane();
+		viewer.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES,
+			Boolean.TRUE);
+		
 		viewer.setEditable(false);
 		viewer.addHyperlinkListener(new LinkHandler());
-		viewer.setFont(new Font("Monospaced",Font.PLAIN,12));
+			 
+		viewer.setFont(jEdit.getFontProperty("helpviewer.font"));
 		viewer.addPropertyChangeListener(new PropertyChangeHandler());
 		viewer.addKeyListener(new KeyHandler());
 
@@ -209,7 +212,7 @@ public class HelpViewer extends JFrame implements HelpViewerInterface, EBCompone
 	 * 			 history?
 	 * @param scrollPosition The vertical scrollPosition
 	 */
-	public void gotoURL(String url, boolean addToHistory, final int scrollPosition)
+	public void gotoURL(String url, final boolean addToHistory, final int scrollPosition)
 	{
 		// the TOC pane looks up user's guide URLs relative to the
 		// doc directory...
@@ -248,8 +251,8 @@ public class HelpViewer extends JFrame implements HelpViewerInterface, EBCompone
 
 		try
 		{
-			URL _url = new URL(url);
-
+			final URL _url = new URL(url);
+			final String _shortURL = shortURL;
 			if(!_url.equals(viewer.getPage()))
 			{
 				title.setText(jEdit.getProperty("helpviewer.loading"));
@@ -261,21 +264,59 @@ public class HelpViewer extends JFrame implements HelpViewerInterface, EBCompone
 			}
 
 			historyModel.setCurrentScrollPosition(viewer.getPage(),getCurrentScrollPosition());
-			viewer.setPage(_url);
-			if (0 != scrollPosition)
+			
+			/* call setPage asynchronously, because it can block when
+			   one can't connect to host.
+			   Calling setPage outside from the EDT violates
+			   the single-tread rule of Swing, but it's an experienced workaround
+			   (see merge request #2984022 - fix blocking HelpViewer
+			   https://sourceforge.net/tracker/?func=detail&aid=2984022&group_id=588&atid=1235750
+			   for discussion).
+			   Once jEdit sets JDK 7 as dependency, all this should be
+			   reverted to synchronous code.
+			 */
+			Thread t = new Thread()
 			{
-				SwingUtilities.invokeLater(new Runnable()
+				public void run()
 				{
-					public void run()
+					try
 					{
-						viewerScrollPane.getVerticalScrollBar().setValue(scrollPosition);
+						viewer.setPage(_url);
+						SwingUtilities.invokeLater(new Runnable()
+						{
+							public void run()
+							{
+								if (0 != scrollPosition)
+								{
+									viewerScrollPane.getVerticalScrollBar().setValue(scrollPosition);
+								}
+								if(addToHistory)
+								{
+									historyModel.addToHistory(_url.toString());
+								}
+		
+								HelpViewer.this.shortURL = _shortURL;
+						
+								// select the appropriate tree node.
+								if(_shortURL != null)
+								{
+									toc.selectNode(_shortURL);
+								}
+								
+								viewer.requestFocus();
+							}
+						});
 					}
-				});
-			}
-			if(addToHistory)
-			{
-				historyModel.addToHistory(url);
-			}
+					catch(IOException io)
+					{
+						Log.log(Log.ERROR,this,io);
+						String[] args = { _url.toString(), io.toString() };
+						GUIUtilities.error(HelpViewer.this,"read-error",args);
+						return;
+					}
+				}
+			};
+			t.start();
 		}
 		catch(MalformedURLException mf)
 		{
@@ -284,23 +325,6 @@ public class HelpViewer extends JFrame implements HelpViewerInterface, EBCompone
 			GUIUtilities.error(this,"badurl",args);
 			return;
 		}
-		catch(IOException io)
-		{
-			Log.log(Log.ERROR,this,io);
-			String[] args = { url, io.toString() };
-			GUIUtilities.error(this,"read-error",args);
-			return;
-		}
-
-		this.shortURL = shortURL;
-
-		// select the appropriate tree node.
-		if(shortURL != null)
-		{
-			toc.selectNode(shortURL);
-		}
-		
-		viewer.requestFocus();
 	} //}}}
 
 	//{{{ getCurrentScrollPosition() method
@@ -322,13 +346,11 @@ public class HelpViewer extends JFrame implements HelpViewerInterface, EBCompone
 		super.dispose();
 	} //}}}
 
-	//{{{ handleMessage() method
-	public void handleMessage(EBMessage msg)
+	//{{{ handlePluginUpdate() method
+	@EBHandler
+	public void handlePluginUpdate(PluginUpdate pmsg)
 	{
-		if(msg instanceof PluginUpdate)
-		{
-			PluginUpdate pmsg = (PluginUpdate)msg;
-			if(pmsg.getWhat() == PluginUpdate.LOADED
+		if(pmsg.getWhat() == PluginUpdate.LOADED
 				|| pmsg.getWhat() == PluginUpdate.UNLOADED)
 			{
 				if(!pmsg.isExiting())
@@ -338,11 +360,13 @@ public class HelpViewer extends JFrame implements HelpViewerInterface, EBCompone
 					queuedTOCReload = true;
 				}
 			}
-		}
-		else if (msg instanceof PropertiesChanged)
-		{
-			GUIUtilities.initContinuousLayout(splitter);
-		}
+	} //}}}
+
+	//{{{ handlePropertiesChanged() method
+	@EBHandler
+	public void handlePropertiesChanged(PropertiesChanged msg)
+	{
+		GUIUtilities.initContinuousLayout(splitter);
 	} //}}}
 
 	//{{{ getBaseURL() method

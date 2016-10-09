@@ -24,8 +24,25 @@
 package org.gjt.sp.jedit;
 
 //{{{ Imports
+import java.io.File;
+import java.io.IOException;
+import java.net.Socket;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Vector;
+
+import javax.swing.Icon;
+import javax.swing.JOptionPane;
+import javax.swing.text.AttributeSet;
+import javax.swing.text.Segment;
+
 import org.gjt.sp.jedit.browser.VFSBrowser;
-import org.gjt.sp.jedit.buffer.*;
+import org.gjt.sp.jedit.buffer.BufferChangeListener;
+import org.gjt.sp.jedit.buffer.BufferListener;
+import org.gjt.sp.jedit.buffer.BufferUndoListener;
+import org.gjt.sp.jedit.buffer.FoldHandler;
+import org.gjt.sp.jedit.buffer.JEditBuffer;
 import org.gjt.sp.jedit.bufferio.BufferAutosaveRequest;
 import org.gjt.sp.jedit.bufferio.BufferIORequest;
 import org.gjt.sp.jedit.bufferio.MarkersSaveRequest;
@@ -36,30 +53,18 @@ import org.gjt.sp.jedit.io.VFS;
 import org.gjt.sp.jedit.io.VFSFile;
 import org.gjt.sp.jedit.io.VFSManager;
 import org.gjt.sp.jedit.msg.BufferUpdate;
-import org.gjt.sp.jedit.syntax.*;
+import org.gjt.sp.jedit.options.GeneralOptionPane;
+import org.gjt.sp.jedit.syntax.DefaultTokenHandler;
+import org.gjt.sp.jedit.syntax.ModeProvider;
+import org.gjt.sp.jedit.syntax.ParserRuleSet;
+import org.gjt.sp.jedit.syntax.Token;
 import org.gjt.sp.jedit.textarea.JEditTextArea;
-import org.gjt.sp.util.IntegerArray;
-import org.gjt.sp.util.Log;
 import org.gjt.sp.jedit.visitors.JEditVisitorAdapter;
 import org.gjt.sp.jedit.visitors.SaveCaretInfoVisitor;
-import org.gjt.sp.jedit.options.GeneralOptionPane;
-
-import javax.swing.*;
-import javax.swing.text.AttributeSet;
-import javax.swing.text.Segment;
-import java.io.File;
-import java.io.IOException;
-import java.net.Socket;
-import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Vector;
-import java.util.Map;
-//}}}
+import org.gjt.sp.util.IntegerArray;
+import org.gjt.sp.util.Log;
+import org.gjt.sp.util.StandardUtilities;
+import org.gjt.sp.util.ThreadUtilities;
 
 /**
  * A <code>Buffer</code> represents the contents of an open text
@@ -76,16 +81,19 @@ import java.util.Map;
  * This class is partially thread-safe, however you must pay attention to two
  * very important guidelines:
  * <ul>
- * <li>Changes to a buffer can only be made from the AWT thread.
+ * <li>Operations such as insert() and remove(),
+ * undo(), change Buffer data in a writeLock(), and must
+ * be called from the AWT thread.
  * <li>When accessing the buffer from another thread, you must
- * grab a read lock if you plan on performing more than one call, to ensure that
- * the buffer contents are not changed by the AWT thread for the duration of the
- * lock. Only methods whose descriptions specify thread safety can be invoked
- * from other threads.
+ * call readLock() before and readUnLock() after, if you plan on performing
+ * more than one read, to ensure that  the buffer contents are not changed by
+ * the AWT thread for the duration of the lock. Only methods whose descriptions
+ * specify thread safety can be invoked from other threads.
  * </ul>
+
  *
  * @author Slava Pestov
- * @version $Id: Buffer.java 17764 2010-05-08 09:46:42Z k_satoda $
+ * @version $Id: Buffer.java 19187 2011-01-09 16:59:29Z ezust $
  */
 public class Buffer extends JEditBuffer
 {
@@ -368,7 +376,10 @@ public class Buffer extends JEditBuffer
 		if(files == null)
 			return false;
 
-		return save(view,files[0],rename);
+		boolean saved = save(view, files[0], rename);
+		if (saved)
+			setReadOnly(false);
+		return saved;
 	} //}}}
 
 	//{{{ save() method
@@ -699,6 +710,7 @@ public class Buffer extends JEditBuffer
 	public void setAutoReload(boolean value)
 	{
 		setFlag(AUTORELOAD, value);
+		autoreloadOverridden = isAutoreloadPropertyOverriden();
 	} //}}}
 
 	//{{{ getAutoReloadDialog() method
@@ -722,6 +734,7 @@ public class Buffer extends JEditBuffer
 	public void setAutoReloadDialog(boolean value)
 	{
 		setFlag(AUTORELOAD_DIALOG, value);
+		autoreloadOverridden = isAutoreloadPropertyOverriden();
 	} //}}}
 
 	//{{{ getVFS() method
@@ -987,8 +1000,11 @@ public class Buffer extends JEditBuffer
 	public void propertiesChanged()
 	{
 		super.propertiesChanged();
-		setAutoReloadDialog(jEdit.getBooleanProperty("autoReloadDialog"));
-		setAutoReload(jEdit.getBooleanProperty("autoReload"));
+		if (!autoreloadOverridden)
+		{
+			setAutoReloadDialog(jEdit.getBooleanProperty("autoReloadDialog"));
+			setAutoReload(jEdit.getBooleanProperty("autoReload"));
+		}
 		if (!isTemporary())
 			EditBus.send(new BufferUpdate(this,null,BufferUpdate.PROPERTIES_CHANGED));
 	} //}}}
@@ -1506,7 +1522,7 @@ public class Buffer extends JEditBuffer
 		Object session = vfs.createVFSSession(path, view);
 		if(session == null)
 			return false;
-		VFSManager.runInWorkThread(
+		ThreadUtilities.runInBackground(
 			new MarkersSaveRequest(
 				view, this, session, vfs, path));
 		return true;
@@ -1746,7 +1762,7 @@ public class Buffer extends JEditBuffer
 			}
 		}
 	} //}}}
-	
+
 	//{{{ fireEndRedo() method
 	protected void fireEndRedo()
 	{
@@ -1785,6 +1801,13 @@ public class Buffer extends JEditBuffer
 		return (flags & mask) == mask;
 	} //}}}
 
+	//{{{ getFlag() method
+	private boolean isAutoreloadPropertyOverriden()
+	{
+		return getFlag(AUTORELOAD) != jEdit.getBooleanProperty("autoReload") ||
+			getFlag(AUTORELOAD_DIALOG) != jEdit.getBooleanProperty("autoReloadDialog");
+	} //}}}
+
 	//{{{ Flag values
 	private static final int CLOSED = 0;
 	private static final int NEW_FILE = 3;
@@ -1801,6 +1824,8 @@ public class Buffer extends JEditBuffer
 	//}}}
 
 	//{{{ Instance variables
+	/** Indicate if the autoreload property was overridden */
+	private boolean autoreloadOverridden;
 	private String path;
 	private String symlinkPath;
 	private String name;
@@ -2002,32 +2027,7 @@ public class Buffer extends JEditBuffer
 		final byte[] dummy = new byte[1];
 		if (!jEdit.getBooleanProperty("useMD5forDirtyCalculation"))
 			return dummy;
-		ByteBuffer bb = null;
-		readLock();
-		try
-		{
-			// Log.log(Log.NOTICE, this, "calculateHash()");
-			int length = getLength();
-			bb = ByteBuffer.allocate(length * 2);	// Chars are 2 bytes
-			CharBuffer cb = bb.asCharBuffer();
-			cb.append( getSegment(0, length) );
-		}
-		finally
-		{
-			readUnlock();
-		}
-		try
-		{
-			MessageDigest digest = java.security.MessageDigest.getInstance("MD5");
-			digest.update( bb );
-			return digest.digest();
-		}
-		catch (NoSuchAlgorithmException nsae)
-		{
-			Log.log(Log.ERROR, this, "Can't Calculate MD5 hash!", nsae);
-			return dummy;
-		}
-
+		return StandardUtilities.md5(getText());
 	}
 
 	/** Update the buffer's members with the current hash and length,
@@ -2102,27 +2102,18 @@ public class Buffer extends JEditBuffer
 				}
 
 				setPath(path);
-				final HashSet<BufferSet> bufferSets = new HashSet<BufferSet>();
-				final HashSet<EditPane> editPanesCurrent = new HashSet<EditPane>();
 				jEdit.visit(new JEditVisitorAdapter()
 				{
 					@Override
 					public void visit(EditPane editPane)
 					{
-						BufferSet bufferSet = editPane.getBufferSet(); 
+						BufferSet bufferSet = editPane.getBufferSet();
 						if (bufferSet.indexOf(Buffer.this) != -1)
 						{
-							bufferSets.add(bufferSet);
-							if (editPane.getBuffer() == Buffer.this)
-								editPanesCurrent.add(editPane);
+							bufferSet.sort();
 						}
 					}
 				});
-				jEdit.getBufferSetManager().removeBuffer(this);
-				for (BufferSet bufferSet: bufferSets)
-					jEdit.getBufferSetManager().addBuffer(bufferSet, this);
-				for (EditPane editPane: editPanesCurrent)
-					editPane.setBuffer(this);
 			}
 			else
 			{
@@ -2213,44 +2204,14 @@ public class Buffer extends JEditBuffer
 	 *
 	 * @param textArea the textarea where your caret is
 	 * @since jEdit 4.3pre11
+	 * @deprecated
+	 *   This method implicitly assumes (textArea.getBuffer() == this).
+	 *   Use gui.StyleEditor#invokeForCaret(JEditTextArea) instead.
 	 */
+	@Deprecated
 	public void editSyntaxStyle(JEditTextArea textArea)
 	{
-		int lineNum = textArea.getCaretLine();
-		int start = getLineStartOffset(lineNum);
-		int position = textArea.getCaretPosition();
-
-		DefaultTokenHandler tokenHandler = new DefaultTokenHandler();
-		markTokens(lineNum,tokenHandler);
-		Token token = tokenHandler.getTokens();
-
-		while(token.id != Token.END)
-		{
-			int next = start + token.length;
-			if (start <= position && next > position)
-				break;
-			start = next;
-			token = token.next;
-		}
-		if (token.id == Token.END || token.id == Token.NULL)
-		{
-			JOptionPane.showMessageDialog(jEdit.getActiveView(),
-				jEdit.getProperty("syntax-style-no-token.message"),
-				jEdit.getProperty("syntax-style-no-token.title"),
-				JOptionPane.PLAIN_MESSAGE);
-			return;
-		}
-		String typeName = Token.tokenToString(token.id);
-		String property = "view.style." + typeName.toLowerCase();
-		SyntaxStyle currentStyle = GUIUtilities.parseStyle(
-				jEdit.getProperty(property), "Dialog",12);
-		SyntaxStyle style = new StyleEditor(jEdit.getActiveView(),
-				currentStyle, typeName).getStyle();
-		if(style != null)
-		{
-			jEdit.setProperty(property, GUIUtilities.getStyleString(style));
-			jEdit.propertiesChanged();
-		}
+		StyleEditor.invokeForCaret(textArea);
 	} //}}}
 	//}}}
 }

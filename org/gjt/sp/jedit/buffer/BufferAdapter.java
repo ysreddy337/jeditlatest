@@ -26,7 +26,7 @@ package org.gjt.sp.jedit.buffer;
  * An adapter you can subclass to avoid having to implement all the methods
  * of the {@link BufferListener} interface.
  * @author Slava Pestov
- * @version $Id: BufferAdapter.java 12504 2008-04-22 23:12:43Z ezust $
+ * @version $Id: BufferAdapter.java 17966 2010-06-03 08:27:12Z kpouer $
  * @since jEdit 4.3pre3
  */
 public abstract class BufferAdapter implements BufferListener
@@ -57,6 +57,7 @@ public abstract class BufferAdapter implements BufferListener
 		int numLines, int length) {}
 	//}}}
 
+	//{{{ preContentInserted() method
 	/**
 	 * Called when text is about to be inserted in the buffer.
 	 *
@@ -69,7 +70,7 @@ public abstract class BufferAdapter implements BufferListener
 	 */
 	public void preContentInserted(JEditBuffer buffer, int startLine, int offset, int numLines, int length)
 	{
-	}
+	} //}}}
 
 	//{{{ preContentRemoved() method
 	/**

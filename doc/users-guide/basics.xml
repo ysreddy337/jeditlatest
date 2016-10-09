@@ -7,7 +7,7 @@
 
     <section id="overview">
         <title>Interface Overview</title>
-
+        
         <para>A <firstterm>View</firstterm> is the jEdit term for an editor main
         window. It is possible to have multiple views open at once, and each
         View can be split into multiple panes. jEdit remembers the state of open
@@ -218,48 +218,37 @@
             </para></listitem>
         </orderedlist>
 
-        <para> The Buffer Set scope can be Global, View, or EditPane, and can be
-        changed from many places. The default can be set from
-        <guimenu>Utilities</guimenu>&gt;<guimenuitem>Global Options</guimenuitem>
-        &gt; <guimenuitem>View</guimenuitem> &gt; <guilabel>BufferSet scope for new EditPanes</guilabel>.
+        <para> Bufferset scope can be set from <guimenu>Utilities</guimenu>&gt;<guimenuitem>Global Options</guimenuitem> &gt; <guimenuitem>View</guimenuitem> &gt;
+        <guilabel>BufferSet scope:</guilabel>.
         </para>
 
-        <para> A new BufferSet can be created in a number of ways, such as when a new
-        View is created (and the default BufferSet scope is not global) or when the
-        View is split (and the default BufferSet scope is EditPane), or when the
-        BufferSet scope is changed to EditPane via the statusbar or menu action. </para>
+        <para> <guimenu>File</guimenu> &gt; <guimenuitem>Close</guimenuitem> removes the current buffer from the EditPane's BufferSet only. If it was the last BufferSet to contain that buffer, the buffer is also closed. </para>
 
-        <para> New BufferSets are initially empty, or populated with the current buffer only, or a copy of the
-        existing BufferSet. This behavior can be changed from
-        <guimenuitem>Global Options</guimenuitem> &gt; <guimenuitem>View</guimenuitem> &gt; <guilabel>New (View/EditPane) BufferSets contain: copies of current BufferSet/Current
-        Buffer/Untitled Buffer </guilabel>.</para>
-
-        <para> <guimenu>File</guimenu> &gt; <guimenuitem>Close</guimenuitem> behavior has changed in 4.3pre15: now it will remove the current buffer from the EditPane's BufferSet only. If it
-        was the last BufferSet to contain that buffer, the buffer is also closed. </para>
-
-        <para> The <guimenu> File </guimenu> &gt; <guimenuitem>Close (global)</guimenuitem> action closes the buffer in all EditPanes, as the regular <guimenu> File </guimenu> &gt; <guimenuitem>Close</guimenuitem> action did before. </para>
+        <para> The <guimenu> File </guimenu> &gt; <guimenuitem>Close (global)</guimenuitem> action closes the buffer in all EditPanes, as the jEdit 4.2 <guimenu> File </guimenu> &gt; <guimenuitem>Close</guimenuitem> action did before. </para>
 
         <para> When <guimenuitem>Exclusive Buffersets</guimenuitem> are enabled, any time a buffer is opened from one EditPane, it should be automatically closed in other EditPanes which use a disjoint (non-intersecting) BufferSet. </para>
 
-        <para> <guimenuitem>Clear BufferSet except active</guimenuitem> will clear the BufferSet of the
+        <para> <guimenuitem>Close Others</guimenuitem> will clear the BufferSet of the
         current EditPane by performing a <guimenuitem>Close</guimenuitem> on all items except those buffers which are displayed in another active EditPane. </para>
 
         <bridgehead> Switching Bufferset Scopes </bridgehead>
 
         <para> The statusbar shows you which BufferSet scope is active
         (look for the letter "G", "E" or "V"). Double-clicking on that
-        will allow you to change the scope. Currently, it changes
-        your scope for the current editpane, but this behavior will someday change
-        and cause a global scope-change on all editapnes immediately.
-        </para>
+        will allow you to change the scope without going into global options.
 
-        <para> The scope for BufferSets can also be changed from <guimenu>View</guimenu>&gt;<guimenu>Buffer Sets</guimenu> &gt;
-        <guimenu>(Global|View|EditPane) Buffer Set</guimenu>. </para>
+        The BufferSet Scope can also be changed from
+        <guimenu>View</guimenu>&gt;<guimenu>Buffer Sets</guimenu>  &gt;
+        <guimenu>(Global|View|EditPane) Buffer Set</guimenu>.
+        Changes to the bufferset scope affects all editpanes immediately.
+        </para>
 
     </section>
 
     <section id="docking">
-        <title>Window Docking</title>
+        <title>Window Docking Layouts</title>
+
+        <para> A docking layout is similar to an Eclipse "Perspective" in that it describes a set of dockable windows that are visible to the user at any given time, hiding the rest. </para>
 
         <para>Various jEdit and plugin windows can be docked into the View for
         convenience. Dockable windows have a popup button in their top-left
@@ -274,20 +263,29 @@
         floating instance of the current window.</para>
 
         <para>The commands in the
-        <guimenu>View</guimenu>&gt;<guisubmenu>Docking</guisubmenu> menu move
-        keyboard focus between docking areas.</para>
+        <guimenu>View</guimenu>&gt;<guisubmenu>Docking</guisubmenu> menu move keyboard focus between docking areas.</para>
 
-        <para>Dockable windows can also be configured in the
+
+        <para>
+        After you have customized the layout of your dockables and wish to save it for export/import, use the actions <guimenu>View</guimenu> - <guimenu>Docking</guimenu> - <guimenuitem>Save/Load Docking Layout</guimenuitem>. </para>
+        <para> It is possible to configure a Dockable layout for just one or a handful of edit modes. This makes it possible to save or load your dockable layout with the same keyboard shortcut (or automatically) based on the edit mode of your current buffer.
+        </para>
+
+        <para>
+        It is also possible to save/load a layout for a particular edit mode. The loading and saving can be done automatically, as configured in the global options docking pane when the mode of the buffer changes, or manually in response to invoking <guimenu>View</guimenu> - <guimenu>Docking</guimenu> - <guimenuitem>Save/Load Docking Layout for current mode.</guimenuitem>
+        </para>
+
+        <para>Dockable windows can be further configured in the
         <guilabel>Docking</guilabel> pane of the
         <guimenu>Utilities</guimenu>&gt;<guimenuitem>Global
-        Options</guimenuitem> dialog box.</para>
+        Options</guimenuitem> dialog box. See <xref linkend="docking-pane"/> for details.
+        </para>
+
 
         <sidebar>
-            <title>For power users</title>
+            <title>For keyboard/power users</title>
 
-            <para>Each dockable has three commands associated with it; one is
-            part of the menu bar and opens the dockable. The other two commands
-            are:</para>
+            <para>Each dockable has three commands associated with it; one is part of the menu bar and opens the dockable. The other two commands are:</para>
 
             <itemizedlist>
                 <listitem>
@@ -465,7 +463,7 @@
         <para>To use the action bar, input a command and press
         <keycap>Enter</keycap>. The following commands are supported:</para>
 
-        <bridgehead renderas="section">Action invocations</bridgehead>
+        <bridgehead>Action invocations</bridgehead>
 
         <para>Each menu item and tool bar button is bound to an
         <firstterm>action</firstterm>. To find out the name of an action, invoke
@@ -486,7 +484,7 @@
         invoking <guimenu>Utilities</guimenu>&gt;<guimenuitem>Global
         Options</guimenuitem>.</para>
 
-        <bridgehead renderas="section">Buffer-local properties</bridgehead>
+        <bridgehead>Buffer-local properties</bridgehead>
 
         <para>Entering <userinput>buffer.property=value</userinput> sets the
         value of the buffer-local property named <userinput>property</userinput>
@@ -499,7 +497,7 @@
         <para>See <xref linkend="buffer-local" /> for information about
         buffer-local properties.</para>
 
-        <bridgehead renderas="section">Global properties</bridgehead>
+        <bridgehead>Global properties</bridgehead>
 
         <para>Entering <userinput>property=value</userinput> sets the value of
         the global property named <userinput>property</userinput> to
@@ -507,7 +505,7 @@
         plugin developers, since the properties jEdit uses to store its settings
         are not currently documented.</para>
 
-        <bridgehead renderas="section">Command repetition</bridgehead>
+        <bridgehead>Command repetition</bridgehead>
 
         <para>To repeat a command multiple times, enter a number in the action
         bar, then press the key-combination that invokes the command.

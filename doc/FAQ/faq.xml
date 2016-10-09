@@ -4,7 +4,7 @@
 <!--                                                      -->
 <!-- jEdit FAQ                                            -->
 <!-- Copyright (C) 2001-2002 John Gellene                 -->
-<!-- $Id: faq.xml 10448 2007-08-29 06:09:55Z ezust $
+<!-- $Id: faq.xml 17727 2010-05-03 08:10:13Z kerik-sf $
 -->
 <!-- Changes required for posting on jEdit Community:     -->
 <!-- Title should be <h2> without class;                  -->
@@ -12,8 +12,8 @@
 <!-- Command line for processing:                         -->
 <!--                                                      -->
 <!-- xsltproc -catalogs -output .\html\ faq.xsl faq.xml -->
-<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
-"http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
+<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
+"http://www.oasis-open.org/docbook/xml/4.4/docbookx.dtd" [
 <!-- Changes required for posting on jEdit Community: -->
 <!-- Title should be <h2> without class;              -->
 <!-- all <h1> headings should be changed to <h2>      -->

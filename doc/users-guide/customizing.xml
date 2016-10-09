@@ -84,6 +84,7 @@
         <informaltable>
             <tgroup cols="2">
                 <colspec colnum="1" colwidth="1.5in" />
+                <colspec colwidth="*"/>
 
                 <thead>
                     <row>
@@ -261,13 +262,6 @@
             take effect.</para>
         </section>
 
-        <section id="autosave-backups-pane">
-            <title>The Autosave and Backup Pane</title>
-
-            <para>The <guibutton>Autosave</guibutton> option pane contains
-            settings for the autosave and backup features. See <xref
-            linkend="autosave" /> and <xref linkend="backups" />.</para>
-        </section>
 
         <section id="context-pane">
             <title>The Context Menu Pane</title>
@@ -280,10 +274,15 @@
         <section id="docking-pane">
             <title>The Docking Pane</title>
 
-            <para>The <guibutton>Docking</guibutton> option pane specifies
-            docking location for various dockable windows. Another way to
-            specify docking locations is to use the popup menus associated with
-            each dockable window; see <xref linkend="docking" />.</para>
+            <para>The <guibutton>Docking</guibutton> option pane shows a 
+            list of available dockables, and allows you to specify
+            docking locations for each of them. Another way to
+            specify docking locations is to use the popup menus associated with each dockable window. </para>
+
+            <para> It is possible to configure jEdit to automatically load and/or save <emphasis role="bold">Docking Layouts</emphasis> (similar to eclipse perspectives) based on the edit mode of your current b uffer through the checkboxes in this pane. See <xref linkend="docking" />.
+            </para>
+
+
         </section>
 
         <section id="editing-pane">
@@ -321,16 +320,45 @@
             <para> In previous versions of jEdit, there was very little encoding autodetection, so <guilabel>use autodetection when possible</guilabel> is an option you can switch on or off.
             </para>
 
-            <para>The <literal>List of Encoding Autodetector Names</literal> is
-            an experimental feature that allows for jEdit and plugins to offer
-            additional encoding autodetector routines. At the moment, there are
-            two techniques known by jEdit: the <literal>BOM</literal> (Byte
-            Order Mark), and the <literal>XML-PI</literal> (XML processing
-            instruction) techniques. Others can be defined as services and added
-            to this space-separated list. See <ulink
+            <para>The <literal>List of Encoding Autodetector Names</literal>
+            can be used to control what encoding detections are used on each
+            file when it is loaded. The order they appear in this list
+            determines the order of detectors that are tried.
+            There are some detectors which are available with jEdit core:
+            <itemizedlist>
+              <listitem><para>
+                <literal>BOM</literal>:
+                detects <ulink url="http://www.unicode.org/faq/utf_bom.html#BOM">
+                Byte Order Mark</ulink>.
+              </para></listitem>
+              <listitem><para>
+                <literal>XML-PI</literal>:
+                detects <ulink url="http://www.w3.org/TR/REC-xml/#charencoding">
+                encoding declaration in XML Processing Instruction</ulink>.
+              </para></listitem>
+              <listitem><para>
+                <literal>html</literal>:
+                detects <ulink url="http://www.w3.org/TR/html4/struct/global.html#edef-META">
+                charset description in HTML META element</ulink>.
+              </para></listitem>
+              <listitem><para>
+                <literal>python</literal>:
+                detects <ulink url="http://docs.python.org/reference/lexical_analysis.html#encoding-declarations">
+                various encoding declaration accepted in Python</ulink>. This
+                accepts encoding declarations for GNU Emacs or Bram Moolenaar's
+                VIM.
+              </para></listitem>
+              <listitem><para>
+                <literal>buffer-local-property</literal>:
+                detects same syntax described at <xref linkend="buffer-local" />
+                for property name "encoding".
+                (The above "python" encoding detector also accepts this syntax.)
+              </para></listitem>
+            </itemizedlist>
+            Others can be defined in plugins as services and added to this
+            space-separated list. See <ulink
             url="../api/org/gjt/sp/jedit/io/EncodingDetector.html">EncodingDetector</ulink>
-            for details on how to offer this service. The order they appear in this
-            list determines the order of detectors that are tried on each file. </para>
+            for details on how to offer additional encoding autodetector.</para>
 
             <para>The <literal>List of Fallback Encodings</literal> is used when
             a file fails to open in the default encoding, and the Encoding
@@ -398,6 +426,14 @@
             connections, for example when downloading plugins.</para>
         </section>
 
+        <section id="autosave-backups-pane">
+            <title>The Saving and Backup Pane</title>
+
+            <para>The <guibutton>Saving and Backup</guibutton> option pane contains
+            settings for the autosave and backup features. See <xref
+            linkend="autosave" /> and <xref linkend="backups" />.</para>
+        </section>
+        
         <section id="shortcuts-pane">
             <title>The Shortcuts Pane</title>
 
@@ -427,10 +463,16 @@
         <section id="status-bar-pane">
             <title>The Status Bar Pane</title>
 
-            <para>The <guibutton>Status Bar</guibutton> option pane contains
-            settings to customize the status bar, or disable it completely. See
-            <xref linkend="status-bar" />.</para>
+            <para>The <guibutton>Status Bar</guibutton>, its API, and its coprresponding option pane were redesigned in jEdit 4.3. Now, the pane contains settings to customize which widgets are in the status bar, their order, and what separators exist between them. Or, you can disable it completely, for regular and/or plain views. See <xref linkend="status-bar" />.</para>
+
+            <para> From the <literal>Options</literal> tab, you can
+            customize information about the caret display in the lower
+            left corner. </para>
+
+            <para> Selecting the <literal>Widgets</literal> tab of this option pane shows you what widgets on the right, and their order. You can add or remove widgets and separators/labels here. </para>
+
         </section>
+
 
         <section id="syntax-hilite-pane">
             <title>The Syntax Highlighting Pane</title>

@@ -53,7 +53,7 @@ import org.gjt.sp.util.*;
  * <li>Displaying memory status
  * </ul>
  *
- * @version $Id: StatusBar.java 17692 2010-04-24 15:51:12Z k_satoda $
+ * @version $Id: StatusBar.java 17443 2010-03-09 19:53:40Z kpouer $
  * @author Slava Pestov
  * @since jEdit 3.2pre2
  */
@@ -142,7 +142,10 @@ public class StatusBar extends JPanel implements WorkThreadProgressListener
 					Widget widget = getWidget(token);
 					if (widget == null)
 					{
-						Log.log(Log.WARNING, this, "Widget " + token + " doesn't exist");
+						JLabel label = new JLabel(token);
+						label.setBackground(bg);
+						label.setForeground(fg);
+						box.add(label);
 						continue;
 					}
 					Component c = widget.getComponent();
@@ -211,7 +214,7 @@ public class StatusBar extends JPanel implements WorkThreadProgressListener
 				}
 				else
 				{
-					Object[] args = {Integer.valueOf(requestCount)};
+					Object[] args = {requestCount};
 					setMessage(jEdit.getProperty(
 						"view.status.io",args));
 					currentMessageIsIO = true;
@@ -335,21 +338,18 @@ public class StatusBar extends JPanel implements WorkThreadProgressListener
 			int start = textArea.getLineStartOffset(currLine);
 			int dot = caretPosition - start;
 
- 			if(dot < 0)
- 				return;
- 
+			if(dot < 0)
+				return;
+
 			int bufferLength = buffer.getLength();
 
- 			buffer.getText(start,dot,seg);
- 			int virtualPosition = StandardUtilities.getVirtualWidth(seg,
- 				buffer.getTabSize());
+			buffer.getText(start,dot,seg);
+			int virtualPosition = StandardUtilities.getVirtualWidth(seg,
+				buffer.getTabSize());
 			// for GC
 			seg.array = null;
 			seg.count = 0;
- 
-			// per lengthy discussion on dev list, format for caret
-			// position is lineno,dot-virtual (caret/total) e.g.
-			// 388,10-31 (8835/13414).  No more "Top" nor "Bottom".
+
 			if (jEdit.getBooleanProperty("view.status.show-caret-linenumber", true))
 			{
 				buf.append(currLine + 1);
@@ -365,7 +365,7 @@ public class StatusBar extends JPanel implements WorkThreadProgressListener
 				buf.append('-');
 				buf.append(virtualPosition + 1);
 			}
-			if (buf.length() > 0) 
+			if (buf.length() > 0)
 			{
 				buf.append(' ');
 			}
@@ -390,10 +390,10 @@ public class StatusBar extends JPanel implements WorkThreadProgressListener
 				buf.append(bufferLength);
 				buf.append(')');
 			}
-				
- 			caretStatus.setText(buf.toString());
- 			buf.setLength(0);
- 		}			
+
+			caretStatus.setText(buf.toString());
+			buf.setLength(0);
+		}
 	} //}}}
 
 	//{{{ updateBufferStatus() method
@@ -439,7 +439,6 @@ public class StatusBar extends JPanel implements WorkThreadProgressListener
 	private boolean showCaretStatus;
 	//}}}
 
-	//static final String caretTestStr = "99999999,9999,999-999 99%";
 	static final String caretTestStr = "9999,999-999 (99999999/99999999)";
 
 	//{{{ getWidget() method
@@ -472,7 +471,6 @@ public class StatusBar extends JPanel implements WorkThreadProgressListener
 		(StatusWidgetFactory) ServiceManager.getService("org.gjt.sp.jedit.gui.statusbar.StatusWidget", name);
 		if (widgetFactory == null)
 		{
-			Log.log(Log.ERROR, this, "Widget " + name + " doesn't exist");
 			return null;
 		}
 		return widgetFactory.getWidget(view);

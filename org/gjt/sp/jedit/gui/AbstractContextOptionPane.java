@@ -34,7 +34,7 @@ import org.gjt.sp.util.StandardUtilities;
  *
  * @author Slava Pestov
  * @author Marcelo Vanzin
- * @version $Id: AbstractContextOptionPane.java 15613 2009-06-30 07:07:43Z voituk $
+ * @version $Id: AbstractContextOptionPane.java 18968 2010-11-15 23:31:24Z ezust $
  * @since jEdit 4.3pre13
  */
 public abstract class AbstractContextOptionPane extends AbstractOptionPane
@@ -141,7 +141,7 @@ public abstract class AbstractContextOptionPane extends AbstractOptionPane
     {
         public int compare(MenuItem obj1, MenuItem obj2)
         {
-            return StandardUtilities.compareStrings(obj1.label, obj2.label, true);
+            return StandardUtilities.compareStrings(obj1.label, obj2.label, false);
         }
     }
 

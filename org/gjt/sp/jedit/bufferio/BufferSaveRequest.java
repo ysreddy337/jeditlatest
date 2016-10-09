@@ -35,7 +35,7 @@ import java.nio.charset.UnsupportedCharsetException;
 /**
  * A buffer save request.
  * @author Slava Pestov
- * @version $Id: BufferSaveRequest.java 12504 2008-04-22 23:12:43Z ezust $
+ * @version $Id: BufferSaveRequest.java 17453 2010-03-11 16:33:41Z voituk $
  */
 public class BufferSaveRequest extends BufferIORequest
 {
@@ -215,8 +215,9 @@ public class BufferSaveRequest extends BufferIORequest
 		if(buffer.getProperty(Buffer.BACKED_UP) == null
 			|| jEdit.getBooleanProperty("backupEverySave"))
 		{
-			vfs._backup(session,path,view);
-			buffer.setBooleanProperty(Buffer.BACKED_UP,true);
+			if (jEdit.getIntegerProperty("backups",1) > 0)
+				vfs._backup(session,path,view);
+			buffer.setBooleanProperty(Buffer.BACKED_UP, true);
 		}
 	} //}}}
 

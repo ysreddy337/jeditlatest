@@ -4,6 +4,7 @@
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1999, 2003 Slava Pestov
+ * Portions Copyright (C) 2010 Matthieu Casanova
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -25,9 +26,13 @@ package org.gjt.sp.jedit;
 //{{{ Imports
 import java.awt.datatransfer.*;
 import java.awt.Toolkit;
+import java.awt.datatransfer.DataFlavor;
 import java.io.*;
 
 import org.gjt.sp.jedit.buffer.JEditBuffer;
+import org.gjt.sp.jedit.datatransfer.JEditDataFlavor;
+import org.gjt.sp.jedit.datatransfer.JEditRichText;
+import org.gjt.sp.jedit.datatransfer.TransferHandler;
 import org.gjt.sp.jedit.gui.HistoryModel;
 import org.gjt.sp.jedit.textarea.TextArea;
 import org.gjt.sp.jedit.textarea.Selection;
@@ -49,15 +54,15 @@ import org.gjt.sp.util.Log;
  * system clipboard. jEdit assigns a
  * {@link Registers.ClipboardRegister} to the register indexed under
  * the character <code>$</code>. A
- * {@link Registers.StringRegister} is created for registers assigned
+ * {@link Registers.DefaultRegister} is created for registers assigned
  * by the user. In addition, jEdit assigns <code>%</code> to
  * the last text segment selected in the text area. On Windows this is a
- * {@link Registers.StringRegister}, on Unix under Java 2 version 1.4, a
+ * {@link Registers.DefaultRegister}, on Unix under Java 2 version 1.4, a
  * {@link Registers.ClipboardRegister}.
  *
  * @author Slava Pestov
  * @author John Gellene (API documentation)
- * @version $Id: Registers.java 14793 2009-03-17 22:43:27Z ezust $
+ * @version $Id: Registers.java 17641 2010-04-14 09:01:44Z kpouer $
  */
 public class Registers
 {
@@ -76,7 +81,8 @@ public class Registers
 		if(selection == null)
 			return;
 
-		setRegister(register,selection);
+		Transferable transferable = TransferHandler.getInstance().getTransferable(textArea, selection);
+		setRegister(register, transferable);
 		HistoryModel.getModel("clipboard").addItem(selection);
 
 	} //}}}
@@ -98,7 +104,8 @@ public class Registers
 			if(selection == null)
 				return;
 
-			setRegister(register,selection);
+			Transferable transferable = TransferHandler.getInstance().getTransferable(textArea, selection);
+			setRegister(register,transferable);
 			HistoryModel.getModel("clipboard").addItem(selection);
 
 			textArea.setSelectedText("");
@@ -158,17 +165,31 @@ public class Registers
 
 		if(reg != null)
 		{
-			String registerContents = reg.toString();
-			if(registerContents != null)
+			Transferable transferable = reg.getTransferable();
+			if (transferable.isDataFlavorSupported(DataFlavor.stringFlavor))
 			{
-				if(registerContents.endsWith(separator))
-					selection = registerContents + selection;
-				else
-					selection = registerContents + separator + selection;
+				try
+				{
+					String registerContents = (String) transferable.getTransferData(DataFlavor.stringFlavor);
+					if(registerContents != null)
+					{
+						if(registerContents.endsWith(separator))
+							selection = registerContents + selection;
+						else
+							selection = registerContents + separator + selection;
+					}
+				}
+				catch (UnsupportedFlavorException e)
+				{
+				}
+				catch (IOException e)
+				{
+					Log.log(Log.ERROR, Registers.class, e);
+				}
 			}
 		}
-
-		setRegister(register,selection);
+		Transferable transferable = TransferHandler.getInstance().getTransferable(textArea, selection);
+		setRegister(register,transferable);
 		HistoryModel.getModel("clipboard").addItem(selection);
 
 		if(cut)
@@ -185,6 +206,19 @@ public class Registers
 	public static void paste(TextArea textArea, char register)
 	{
 		paste(textArea,register,false);
+	}
+
+	/**
+	 * Insets the contents of the specified register into the text area.
+	 * @param textArea The text area
+	 * @param register The register
+     * @param preferredDataFlavor the preferred dataflavor. If not available
+	 * <tt>DataFlavor.stringFlavor</tt> will be used
+	 * @since jEdit 4.4pre1
+	 */
+	public static void paste(TextArea textArea, char register, DataFlavor preferredDataFlavor)
+	{
+		paste(textArea,register,false, preferredDataFlavor);
 	}
 
 	/**
@@ -210,14 +244,37 @@ public class Registers
 			textArea.getToolkit().beep();
 			return;
 		}
-
-		String selection = reg.toString();
+		Transferable transferable = reg.getTransferable();
+		Mode mode = null;
+		String selection = null;
+		if (transferable.isDataFlavorSupported(JEditDataFlavor.jEditRichTextDataFlavor))
+		{
+			try
+			{
+				JEditRichText data = (JEditRichText) transferable.getTransferData(JEditDataFlavor.jEditRichTextDataFlavor);
+				mode = data.getMode();
+				selection = data.getText();
+			}
+			catch (UnsupportedFlavorException e)
+			{
+				Log.log(Log.ERROR, Registers.class, e);
+			}
+			catch (IOException e)
+			{
+				Log.log(Log.ERROR, Registers.class, e);
+			}
+		}
+		else if (transferable.isDataFlavorSupported(DataFlavor.stringFlavor))
+		{
+			selection = getTextFromTransferable(transferable, DataFlavor.stringFlavor);
+		}
 		if(selection == null)
 		{
 			textArea.getToolkit().beep();
 			return;
 		}
 		JEditBuffer buffer = textArea.getBuffer();
+		applyMode(mode, buffer);
 		try
 		{
 			buffer.beginCompoundEdit();
@@ -260,11 +317,158 @@ public class Registers
 				textArea.replaceSelection(selection);
 			}
 		}
-		finally {
+		finally
+		{
 			buffer.endCompoundEdit();
 		}
+
 		HistoryModel.getModel("clipboard").addItem(selection);
 	} //}}}
+
+	private static void applyMode(Mode mode, JEditBuffer buffer)
+	{
+		if (mode != null &&
+			"text".equals(buffer.getMode().getName()) &&
+		!mode.equals(buffer.getMode()) &&
+		buffer.getLength() == 0)
+		{
+			buffer.setMode(mode);
+		}
+	}
+
+	/**
+	 * Inserts the contents of the specified register into the text area.
+	 * @param textArea The text area
+	 * @param register The register
+	 * @param vertical Vertical (columnar) paste
+	 * @param preferredDataFlavor the preferred dataflavor. If not available
+	 * <tt>DataFlavor.stringFlavor</tt> will be used
+	 * @since jEdit 4.4pre1
+	 */
+	public static void paste(TextArea textArea, char register,
+		boolean vertical, DataFlavor preferredDataFlavor)
+	{
+		if (JEditDataFlavor.jEditRichTextDataFlavor.equals(preferredDataFlavor))
+		{
+			paste(textArea,register,vertical);
+			return;
+		}
+		if(!textArea.isEditable())
+		{
+			textArea.getToolkit().beep();
+			return;
+		}
+
+		Register reg = getRegister(register);
+
+		if(reg == null)
+		{
+			textArea.getToolkit().beep();
+			return;
+		}
+		Transferable transferable = reg.getTransferable();
+		String selection = null;
+		if (transferable.isDataFlavorSupported(preferredDataFlavor))
+		{
+			selection = getTextFromTransferable(transferable, preferredDataFlavor);
+		}
+		else if (transferable.isDataFlavorSupported(DataFlavor.stringFlavor))
+		{
+			selection = getTextFromTransferable(transferable, DataFlavor.stringFlavor);
+		}
+		if(selection == null)
+		{
+			textArea.getToolkit().beep();
+			return;
+		}
+		JEditBuffer buffer = textArea.getBuffer();
+		 /*
+		 Commented because it must not use jEdit class.
+		 Need to rewrite a property manager that is independant
+		String mime = preferredDataFlavor.getMimeType();
+		int i = mime.indexOf(';');
+		if (i != -1)
+		{
+			mime = mime.substring(0,i); 
+		}
+		String mode = jEdit.getProperty("mime2mode."+mime);
+		if (mode != null)
+		{
+			Mode _mode = ModeProvider.instance.getMode(mode);
+			if (_mode != null)
+			{
+				applyMode(_mode, buffer);
+			}
+		}     */
+		try
+		{
+			buffer.beginCompoundEdit();
+
+			/* vertical paste */
+			if(vertical && textArea.getSelectionCount() == 0)
+			{
+				int caret = textArea.getCaretPosition();
+				int caretLine = textArea.getCaretLine();
+				Selection.Rect rect = new Selection.Rect(
+					caretLine,caret,caretLine,caret);
+				textArea.setSelectedText(rect,selection);
+				caretLine = textArea.getCaretLine();
+
+				if(caretLine != textArea.getLineCount() - 1)
+				{
+
+					int startColumn = rect.getStartColumn(
+						buffer);
+					int offset = buffer
+						.getOffsetOfVirtualColumn(
+						caretLine + 1,startColumn,null);
+					if(offset == -1)
+					{
+						buffer.insertAtColumn(caretLine + 1,startColumn,"");
+						textArea.setCaretPosition(
+							buffer.getLineEndOffset(
+							caretLine + 1) - 1);
+					}
+					else
+					{
+						textArea.setCaretPosition(
+							buffer.getLineStartOffset(
+							caretLine + 1) + offset);
+					}
+				}
+			}
+			else /* Regular paste */
+			{
+				textArea.replaceSelection(selection);
+			}
+		}
+		finally
+		{
+			buffer.endCompoundEdit();
+		}
+
+		HistoryModel.getModel("clipboard").addItem(selection);
+	} //}}}
+
+	private static String getTextFromTransferable(Transferable transferable, DataFlavor dataFlavor)
+	{
+		try
+		{
+			Object data = transferable.getTransferData(dataFlavor);
+			if (dataFlavor.getRepresentationClass().equals(String.class))
+				return (String) data;
+			return data.toString();
+		}
+		catch (UnsupportedFlavorException e)
+		{
+			Log.log(Log.ERROR, Registers.class, e);
+		}
+		catch (IOException e)
+		{
+			Log.log(Log.ERROR, Registers.class, e);
+		}
+		return null;
+	}
 
 	//{{{ getRegister() method
 	/**
@@ -317,16 +521,31 @@ public class Registers
 	 */
 	public static void setRegister(char name, String value)
 	{
+		setRegister(name, new StringSelection(value));
+	} //}}}
+
+	//{{{ setRegister() method
+	/**
+	 * Sets the specified register.
+	 * @param name The name
+	 * @param transferable the transferable
+	 */
+	public static void setRegister(char name, Transferable transferable)
+	{
 		touchRegister(name);
 		Register register = getRegister(name);
 		if(register != null)
 		{
-			register.setValue(value);
+			register.setTransferable(transferable);
 			if (listener != null)
 				listener.registerChanged(name);
 		}
 		else
-			setRegister(name,new StringRegister(value));
+		{
+			DefaultRegister defaultRegister = new DefaultRegister();
+			defaultRegister.setTransferable(transferable);
+			setRegister(name, defaultRegister);
+		}
 	} //}}}
 
 	//{{{ clearRegister() method
@@ -488,12 +707,18 @@ public class Registers
 		/**
 		 * Converts to a string.
 		 */
+		@Deprecated
 		String toString();
 
 		/**
 		 * Sets the register contents.
 		 */
+		@Deprecated
 		void setValue(String value);
+
+		Transferable getTransferable();
+
+		void setTransferable(Transferable transferable);
 	} //}}}
 
 	//{{{ ClipboardRegister class
@@ -582,6 +807,16 @@ public class Registers
 				return null;
 			}
 		}
+
+		public Transferable getTransferable()
+		{
+			return clipboard.getContents(this);
+		}
+
+		public void setTransferable(Transferable transferable)
+		{
+			clipboard.setContents(transferable, null);
+		}
 	} //}}}
 
 	//{{{ debugListDataFlavors() method
@@ -604,46 +839,65 @@ public class Registers
 		}
 	} //}}}
 
+	//{{{ DefaultRegister class
+	private static class DefaultRegister implements Register
+	{
+		private Transferable transferable;
+
+		public void setValue(String value)
+		{
+			this.transferable = new StringSelection(value);
+		}
+
+		@Override
+		public String toString()
+		{
+			if (transferable == null)
+				return null;
+			if (transferable.isDataFlavorSupported(DataFlavor.stringFlavor))
+			{
+				try
+				{
+					return transferable.getTransferData(DataFlavor.stringFlavor).toString();
+				}
+				catch (UnsupportedFlavorException e)
+				{
+					Log.log(Log.ERROR, this, e);
+				}
+				catch (IOException e)
+				{
+					Log.log(Log.ERROR, this, e);
+				}
+			}
+			return transferable.toString();
+		}
+
+		public Transferable getTransferable()
+		{
+			return transferable;
+		}
+
+		public void setTransferable(Transferable transferable)
+		{
+			this.transferable = transferable;
+		}
+	} //}}}
 
 	//{{{ StringRegister class
 	/**
 	 * Register that stores a string.
 	 */
-	public static class StringRegister implements Register
+	@Deprecated
+	public static class StringRegister extends DefaultRegister
 	{
-		private String value;
-
 		/**
 		 * Creates a new string register.
 		 * @param value The contents
 		 */
 		public StringRegister(String value)
 		{
-			this.value = value;
+			setValue(value);
 		}
-
-		/**
-		 * Sets the register contents.
-		 */
-		public void setValue(String value)
-		{
-			this.value = value;
-		}
-
-		/**
-		 * Converts to a string.
-		 */
-		@Override
-		public String toString()
-		{
-			return value;
-		}
-
-		/**
-		 * Called when this register is no longer available. This
-		 * implementation does nothing.
-		 */
-		public void dispose() {}
 	} //}}}
 
 	//}}}

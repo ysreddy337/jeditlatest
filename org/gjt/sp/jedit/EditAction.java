@@ -37,7 +37,7 @@ import java.awt.event.ActionListener;
  * @see ActionSet
  *
  * @author Slava Pestov
- * @version $Id: EditAction.java 16334 2009-10-14 09:31:11Z kpouer $
+ * @version $Id: EditAction.java 17144 2010-01-30 00:32:11Z kpouer $
  */
 public abstract class EditAction extends JEditAbstractEditAction<View>
 {
@@ -98,6 +98,7 @@ public abstract class EditAction extends JEditAbstractEditAction<View>
 	/**
 	 * @deprecated Call <code>GUIUtilities.getView()</code> instead.
 	 */
+	 @Deprecated
 	public static View getView(Component comp)
 	{
 		// moved to GUIUtilities as it makes no sense being here.

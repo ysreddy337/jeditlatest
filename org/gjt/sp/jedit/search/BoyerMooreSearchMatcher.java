@@ -27,7 +27,7 @@ package org.gjt.sp.jedit.search;
 
 /**
  * Implements literal search using the Boyer-Moore algorithm.
- * @version $Id: BoyerMooreSearchMatcher.java 13837 2008-10-01 07:47:17Z shlomy $
+ * @version $Id: BoyerMooreSearchMatcher.java 19553 2011-06-09 01:23:57Z ezust $
  */
 public class BoyerMooreSearchMatcher extends SearchMatcher
 {
@@ -55,22 +55,7 @@ public class BoyerMooreSearchMatcher extends SearchMatcher
 	} //}}}
 
 	//{{{ nextMatch() method
-	/**
-	 * Returns the offset of the first match of the specified text
-	 * within this matcher.
-	 * @param text The text to search in
-	 * @param start True if the start of the segment is the beginning of the
-	 * buffer
-	 * @param end True if the end of the segment is the end of the buffer
-	 * @param firstTime If false and the search string matched at the start
-	 * offset with length zero, automatically find next match
-	 * @param reverse If true, searching will be performed in a backward
-	 * direction.
-	 * @return an array where the first element is the start offset
-	 * of the match, and the second element is the end offset of
-	 * the match
-	 * @since jEdit 4.2pre4
-	 */
+	@Override
 	public SearchMatcher.Match nextMatch(CharSequence text,
 		boolean start, boolean end, boolean firstTime,
 		boolean reverse)
@@ -254,7 +239,7 @@ public class BoyerMooreSearchMatcher extends SearchMatcher
 	 *  building a table that is over 2 orders of magnitude larger and very
 	 *  sparse).
 	 */
-	private static final int getSkipIndex(char ch)
+	private static int getSkipIndex(char ch)
 	{
 		return ch & 0x000000FF;
 	} //}}}

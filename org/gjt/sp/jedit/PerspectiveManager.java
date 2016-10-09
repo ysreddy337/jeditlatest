@@ -37,7 +37,7 @@ import org.xml.sax.helpers.DefaultHandler;
  * Manages persistence of open buffers and views across jEdit sessions.
  * @since jEdit 4.2pre1
  * @author Slava Pestov
- * @version $Id: PerspectiveManager.java 15613 2009-06-30 07:07:43Z voituk $
+ * @version $Id: PerspectiveManager.java 19168 2010-12-29 23:24:51Z ezust $
  */
 public class PerspectiveManager
 {
@@ -123,13 +123,17 @@ public class PerspectiveManager
 		if(jEdit.getBufferCount() == 0)
 			return;
 
+		boolean restoreFiles = jEdit.getBooleanProperty("restore", true);
 		Buffer[] buffers = jEdit.getBuffers();
 		Collection<Buffer> savedBuffers = new LinkedList<Buffer>();
-		for (Buffer buffer: buffers)
+		if (restoreFiles) 
 		{
-			if (!buffer.isNewFile())
+			for (Buffer buffer: buffers)
 			{
-				savedBuffers.add(buffer);
+				if (!buffer.isNewFile())
+				{
+					savedBuffers.add(buffer);
+				}
 			}
 		}
 
@@ -182,11 +186,26 @@ public class PerspectiveManager
 				out.write("<VIEW PLAIN=\"");
 				out.write(config.plainView ? "TRUE" : "FALSE");
 				out.write("\">");
+				out.write(lineSep);
+				
+				if (config.title != null)
+				{
+					out.write(lineSep);
+					out.write("<TITLE>");
+					out.write(XMLUtilities.charsToEntities(config.title,false));
+					out.write("</TITLE>");
+					out.write(lineSep);
+				}
 
 				out.write("<PANES>");
 				out.write(lineSep);
-				out.write(XMLUtilities.charsToEntities(
-					config.splitConfig,false));
+				// save the split config only if the user has
+				// elected to restore files on start up.
+				if (restoreFiles)
+				{					
+					out.write(XMLUtilities.charsToEntities(
+						config.splitConfig,false));
+				}
 				out.write(lineSep);
 				out.write("</PANES>");
 				out.write(lineSep);
@@ -332,8 +351,10 @@ public class PerspectiveManager
 					}
 				}
 			}
-			else if(name.equals("PANES"))
+			else if(name.equals("PANES") && restoreFiles)
+			{
 				config.splitConfig = charData.toString();
+			}
 			else if(name.equals("VIEW"))
 			{
 				if (config.docking != null)
@@ -342,6 +363,8 @@ public class PerspectiveManager
 				config = new View.ViewConfig();
 				config.docking = View.getDockingFrameworkProvider().createDockingLayout();
 			}
+			else if(name.equals("TITLE"))
+				config.title = charData.toString();
 		}
 
 		@Override

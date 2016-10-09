@@ -35,13 +35,13 @@ import org.gjt.sp.util.Log;
 
 /**
  * @author Slava Pestov
- * @version $Id: VFSFileNameField.java 16348 2009-10-14 10:40:15Z kpouer $
- * @since jEdit 4.2pre1
+ * @version $Id: VFSFileNameField.java 19319 2011-02-01 04:38:55Z ezust $
+ * @since jEdit 4.2pre1 (public since 4.4pre1)
  */
-class VFSFileNameField extends HistoryTextField
+public class VFSFileNameField extends HistoryTextField
 {
 	//{{{ VFSFileNameField constructor
-	VFSFileNameField(VFSBrowser browser, String model)
+	public VFSFileNameField(VFSBrowser browser, String model)
 	{
 		super(model);
 		setEnterAddsToHistory(false);
@@ -202,7 +202,7 @@ class VFSFileNameField extends HistoryTextField
 			dir = doComplete(VFSBrowser.getRootDirectory(),dir,false);
 			if(dir == null)
 				return;
-	
+
 			browser.setDirectory(dir);
 			VFSManager.waitForRequests();
 
@@ -221,10 +221,10 @@ class VFSFileNameField extends HistoryTextField
 				dir = doComplete(browser.getDirectory(),dir,false);
 				if(dir == null)
 					return;
-	
+
 				browser.setDirectory(dir);
 				VFSManager.waitForRequests();
-	
+
 				currentText = currentText.substring(index + 1);
 			}
 		}

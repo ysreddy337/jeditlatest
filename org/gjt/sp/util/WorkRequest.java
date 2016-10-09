@@ -25,8 +25,11 @@ package org.gjt.sp.util;
 /**
  * A subclass of the Runnable interface.
  * @since jEdit 2.6pre1
- * @version $Id: WorkRequest.java 12504 2008-04-22 23:12:43Z ezust $
+ * @deprecated
+ * @see org.gjt.sp.util.Task 
+ * @version $Id: WorkRequest.java 19045 2010-11-28 02:24:02Z ezust $
  */
+@Deprecated
 public abstract class WorkRequest implements Runnable, ProgressObserver
 {
 	/**
@@ -62,6 +65,7 @@ public abstract class WorkRequest implements Runnable, ProgressObserver
 	 * @param value The progress value.
 	 * @deprecated use {@link #setValue(long)}
 	 */
+	@Deprecated
 	public void setProgressValue(int value)
 	{
 		Thread thread = Thread.currentThread();
@@ -74,6 +78,7 @@ public abstract class WorkRequest implements Runnable, ProgressObserver
 	 * @param value The progress value.
 	 * @deprecated use {@link #setMaximum(long)}
 	 */
+	@Deprecated
 	public void setProgressMaximum(int value)
 	{
 		Thread thread = Thread.currentThread();

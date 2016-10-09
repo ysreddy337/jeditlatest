@@ -34,7 +34,7 @@ import org.gjt.sp.jedit.menu.MenuItemTextComparator;
 //}}}
 
 /**
- * @version $Id: BrowserCommandsMenu.java 14254 2008-12-30 10:15:37Z shlomy $
+ * @version $Id: BrowserCommandsMenu.java 17393 2010-02-27 12:13:39Z k_satoda $
  * @author Slava Pestov and Jason Ginchereau
  */
 public class BrowserCommandsMenu extends JPopupMenu
@@ -166,7 +166,7 @@ public class BrowserCommandsMenu extends JPopupMenu
 	//{{{ update() method
 	public void update()
 	{
-		if(encodingMenuItems != null)
+		if(encodingMenuItems != null && browser.currentEncoding != null)
 		{
 			JRadioButtonMenuItem mi = encodingMenuItems.get(
 				browser.currentEncoding);

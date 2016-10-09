@@ -27,7 +27,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 /**
  * Implements consumer/producer locking scemantics.
  * @author Peter Graves
- * @version $Id: ReadWriteLock.java 12504 2008-04-22 23:12:43Z ezust $
+ * @version $Id: ReadWriteLock.java 17144 2010-01-30 00:32:11Z kpouer $
  * The lock tries to be re-entrant when called from the same thread in some
  * cases.
  * 
@@ -58,6 +58,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * is available since J2SE 5.0 (1.5). This class was written for J2SE 1.4,
  * and is still here only for compatibility.
  */
+@Deprecated
 public class ReadWriteLock
 {
 	//{{{ readLock() method

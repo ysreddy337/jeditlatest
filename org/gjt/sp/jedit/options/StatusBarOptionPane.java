@@ -3,7 +3,7 @@
  * :tabSize=8:indentSize=8:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
- * Copyright (C) 2008 Matthieu Casanova
+ * Copyright (C) 2008-2010 Matthieu Casanova
  * Portions Copyright (C) 2000-2002 Slava Pestov
  *
  * This program is free software; you can redistribute it and/or
@@ -37,7 +37,7 @@ import org.gjt.sp.jedit.*;
 /**
  * Status bar editor.
  * @author Matthieu Casanova
- * @version $Id: StatusBarOptionPane.java 15589 2009-06-26 15:26:42Z daleanson $
+ * @version $Id: StatusBarOptionPane.java 17501 2010-03-19 21:30:21Z kpouer $
  */
 public class StatusBarOptionPane extends AbstractOptionPane
 {
@@ -385,8 +385,20 @@ public class StatusBarOptionPane extends AbstractOptionPane
 			labelField = new JTextField();
 
 			widgetLabel = new JLabel(jEdit.getProperty("options.status.edit.widgetLabel"));
-			widgetCombo = new JComboBox(ServiceManager.getServiceNames("org.gjt.sp.jedit.gui.statusbar.StatusWidget"));
 
+			String[] allWidgets = ServiceManager.getServiceNames("org.gjt.sp.jedit.gui.statusbar.StatusWidget");
+			Vector<String> widgets = new Vector<String>(allWidgets.length);
+			Set<String> usedWidget = new HashSet<String>(listModel.getSize());
+			for (int i = 0; i < listModel.getSize(); i++)
+			{
+				usedWidget.add((String) listModel.get(i));
+			}
+			for (String widget : allWidgets)
+			{
+				if (!usedWidget.contains(widget))
+					widgets.add(widget);
+			}
+			widgetCombo = new JComboBox(widgets);
 			ActionHandler actionHandler = new ActionHandler();
 			labelRadio.addActionListener(actionHandler);
 			widgetRadio.addActionListener(actionHandler);

@@ -31,6 +31,7 @@ import java.awt.event.*;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.gjt.sp.jedit.EditBus.EBHandler;
 import org.gjt.sp.jedit.browser.VFSBrowser;
 import org.gjt.sp.jedit.gui.*;
 import org.gjt.sp.jedit.io.*;
@@ -41,9 +42,9 @@ import org.gjt.sp.jedit.*;
 /**
  * Search and replace dialog.
  * @author Slava Pestov
- * @version $Id: SearchDialog.java 15502 2009-06-20 12:37:40Z daleanson $
+ * @version $Id: SearchDialog.java 18759 2010-10-10 13:17:07Z daleanson $
  */
-public class SearchDialog extends EnhancedDialog implements EBComponent
+public class SearchDialog extends EnhancedDialog
 {
 	//{{{ Constants
 	/**
@@ -245,14 +246,12 @@ public class SearchDialog extends EnhancedDialog implements EBComponent
 		setVisible(false);
 	} //}}}
 
-	//{{{ handleMessage() method
-	public void handleMessage(EBMessage msg)
+	//{{{ handleSearchSettingsChanged() method
+	@EBHandler
+	public void handleSearchSettingsChanged(EBMessage msg)
 	{
-		if(msg instanceof SearchSettingsChanged)
-		{
-			if(!saving)
-				load();
-		}
+		if(!saving)
+			load();
 	} //}}}
 
 	//{{{ dispose() method
@@ -293,7 +292,7 @@ public class SearchDialog extends EnhancedDialog implements EBComponent
 	private JButton synchronize;
 
 	// buttons
-	private JButton findBtn, /* replaceBtn, */ replaceAndFindBtn, replaceAllBtn,
+	private JButton findBtn, replaceBtn, replaceAndFindBtn, replaceAllBtn,
 		closeBtn;
 
 	private boolean saving;
@@ -656,11 +655,11 @@ public class SearchDialog extends EnhancedDialog implements EBComponent
 		grid.add(findBtn);
 		findBtn.addActionListener(actionHandler);
 
-		/* replaceBtn = new JButton(jEdit.getProperty("search.replaceBtn"));
-		replaceBtn.setMnemonic(jEdit.getProperty("search.replaceBtn.mnemonic")
-			.charAt(0));
+		replaceBtn = new JButton(jEdit.getProperty("search.replaceBtn", "Replace"));
+		/* replaceBtn.setMnemonic(jEdit.getProperty("search.replaceBtn.mnemonic")
+			.charAt(0)); */
 		grid.add(replaceBtn);
-		replaceBtn.addActionListener(actionHandler); */
+		replaceBtn.addActionListener(actionHandler);
 
 		replaceAndFindBtn = new JButton(jEdit.getProperty("search.replaceAndFindBtn"));
 		replaceAndFindBtn.setMnemonic(jEdit.getProperty("search.replaceAndFindBtn.mnemonic")
@@ -714,6 +713,8 @@ public class SearchDialog extends EnhancedDialog implements EBComponent
 
 		findBtn.setEnabled(!searchSelection.isSelected()
 			|| hyperSearch.isSelected());
+		replaceBtn.setEnabled(!hyperSearch.isSelected()
+			&& !searchSelection.isSelected());
 		replaceAndFindBtn.setEnabled(!hyperSearch.isSelected()
 			&& !searchSelection.isSelected());
 	} //}}}
@@ -1028,6 +1029,11 @@ public class SearchDialog extends EnhancedDialog implements EBComponent
 				|| source == replace)
 			{
 				ok();
+			}
+			else if (source == replaceBtn)
+			{
+				save(false);
+				SearchAndReplace.replace(view);
 			}
 			else if(source == replaceAndFindBtn)
 			{

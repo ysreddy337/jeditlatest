@@ -25,6 +25,7 @@ package org.gjt.sp.jedit;
 
 //{{{ Imports
 
+import org.gjt.sp.jedit.EditBus.EBHandler;
 import org.gjt.sp.jedit.msg.BufferUpdate;
 import org.gjt.sp.jedit.msg.DynamicMenuChanged;
 import org.gjt.sp.util.Log;
@@ -58,7 +59,7 @@ import java.util.regex.Pattern;
  * the methods in the {@link GUIUtilities} class instead.
  *
  * @author Slava Pestov
- * @version $Id: Macros.java 19538 2011-05-17 16:46:28Z jchoyt $
+ * @version $Id: Macros.java 16736 2009-12-26 06:24:49Z shlomy $
  */
 public class Macros
 {
@@ -252,10 +253,10 @@ file_loop:			for(int i = 0; i < paths.length; i++)
 	 */
 	public static void loadMacros()
 	{
-		jEdit.removeActionSet(macroActionSet);
 		macroActionSet.removeAllActions();
 		macroHierarchy.removeAllElements();
 		macroHash.clear();
+
 		// since subsequent macros with the same name are ignored,
 		// load user macros first so that they override the system
 		// macros.
@@ -274,7 +275,7 @@ file_loop:			for(int i = 0; i < paths.length; i++)
 				jEdit.getJEditHome(),"macros");
 			loadMacros(macroHierarchy,"",new File(systemMacroPath));
 		}
-		jEdit.addActionSet(macroActionSet);
+
 		EditBus.send(new DynamicMenuChanged("macros"));
 	} //}}}
 
@@ -294,6 +295,25 @@ file_loop:			for(int i = 0; i < paths.length; i++)
 		Log.log(Log.DEBUG,Macros.class,"Registered " + handler.getName()
 			+ " macro handler");
 		macroHandlers.add(handler);
+	} //}}}
+
+	//{{{ unregisterHandler() method
+	/**
+	 * Removes a macro handler from the handlers list
+	 * @since jEdit 4.4.1
+	 */
+	public static void unregisterHandler(Handler handler)
+	{
+		if (macroHandlers.remove(handler))
+		{
+			Log.log(Log.DEBUG, Macros.class, "Unregistered " + handler.getName()
+				+ " macro handler");
+		}
+		else
+		{
+			Log.log(Log.ERROR, Macros.class, "Cannot unregister " + handler.getName()
+				+ " macro handler - it is not registered.");
+		}
 	} //}}}
 
 	//{{{ getHandlers() method
@@ -749,7 +769,7 @@ file_loop:			for(int i = 0; i < paths.length; i++)
 	/**
 	 * Handles macro recording.
 	 */
-	public static class Recorder implements EBComponent
+	public static class Recorder
 	{
 		View view;
 		Buffer buffer;
@@ -850,17 +870,14 @@ file_loop:			for(int i = 0; i < paths.length; i++)
 			}
 		} //}}}
 
-		//{{{ handleMessage() method
-		public void handleMessage(EBMessage msg)
+		//{{{ handleBufferUpdate() method
+		@EBHandler
+		public void handleBufferUpdate(BufferUpdate bmsg)
 		{
-			if(msg instanceof BufferUpdate)
+			if(bmsg.getWhat() == BufferUpdate.CLOSED)
 			{
-				BufferUpdate bmsg = (BufferUpdate)msg;
-				if(bmsg.getWhat() == BufferUpdate.CLOSED)
-				{
-					if(bmsg.getBuffer() == buffer)
-						stopRecording(view);
-				}
+				if(bmsg.getBuffer() == buffer)
+					stopRecording(view);
 			}
 		} //}}}
 

@@ -4,6 +4,7 @@
  * :folding=explicit:collapseFolds=1:
  *
  * Copyright (C) 1999, 2005 Slava Pestov
+ * Copyright (C) 2010 Eric Le Lay
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -31,9 +32,13 @@ import java.util.*;
  * A history list. One history list can be used by several history text
  * fields. Note that the list model implementation is incomplete; no events
  * are fired when the history model changes.
+ * The max size of the history is defined globally via setDefaultMax(),
+ *  see jEdit.java for instance.
+ * It may be locally overriden by calling setMax() on a HistoryModel instance.
  *
  * @author Slava Pestov
- * @version $Id: HistoryModel.java 12504 2008-04-22 23:12:43Z ezust $
+ * @author Eric Le Lay
+ * @version $Id: HistoryModel.java 18200 2010-07-13 19:38:43Z daleanson $
  */
 public class HistoryModel extends DefaultListModel
 	implements MutableListModel
@@ -46,6 +51,7 @@ public class HistoryModel extends DefaultListModel
 	public HistoryModel(String name)
 	{
 		this.name = name;
+		this.max = -1;
 	} //}}}
 
 	//{{{ addItem() method
@@ -65,11 +71,14 @@ public class HistoryModel extends DefaultListModel
 
 		insertElementAt(text,0);
 
-		while(getSize() > max)
+		// use the local max unless it's not set
+		int myMax = max>=0 ? max : defaultMax;
+		while(getSize() > myMax)
 			removeElementAt(getSize() - 1);
 	} //}}}
 
 	//{{{ insertElementAt() method
+	@Override
 	public void insertElementAt(Object obj, int index)
 	{
 		modified = true;
@@ -87,6 +96,7 @@ public class HistoryModel extends DefaultListModel
 	} //}}}
 
 	//{{{ removeElement() method
+	@Override
 	public boolean removeElement(Object obj)
 	{
 		modified = true;
@@ -97,12 +107,15 @@ public class HistoryModel extends DefaultListModel
 	/**
 	 * @deprecated Call <code>removeAllElements()</code> instead.
 	 */
+	@Override
+	@Deprecated
 	public void clear()
 	{
 		removeAllElements();
 	} //}}}
 
 	//{{{ removeAllElements() method
+	@Override
 	public void removeAllElements()
 	{
 		modified = true;
@@ -155,9 +168,43 @@ public class HistoryModel extends DefaultListModel
 	} //}}}
 
 	//{{{ setMax() method
-	public static void setMax(int max)
+	/**
+	 * sets the maximum size of this history
+	 * @param max the new maximum size of this history of -1 to restore default
+	 */
+	public void setMax(int max)
 	{
-		HistoryModel.max = max;
+		this.max = max;
+	} //}}}
+
+	//{{{ getMax() method
+	/**
+	 * @return maximum size of this history or -1 is it's the default size
+	 */
+	public int getMax()
+	{
+		return max;
+	} //}}}
+
+	//{{{ setDefaultMax() method
+	/**
+	 * Sets the default size of all HistoryModels.
+	 * Affects the VFS path history, the hypersearch history, etc..
+	 * To change the max size of one history, call setMax() instead.
+	 */
+	public static void setDefaultMax(int max)
+	{
+		HistoryModel.defaultMax = max;
+	} //}}}
+
+	//{{{ getDefaultMax() method
+	/**
+	 * Gets the default size of all HistoryModels.
+	 * @return default size limit for HistoryModels
+	 */
+	public static int getDefaultMax()
+	{
+		return HistoryModel.defaultMax;
 	} //}}}
 
 	//{{{ setSaver() method
@@ -167,9 +214,10 @@ public class HistoryModel extends DefaultListModel
 	} //}}}
 
 	//{{{ Private members
-	private static int max;
+	private int max;
+	private static int defaultMax;
 
-	private String name;
+	private final String name;
 	private static Map<String, HistoryModel> models;
 
 	private static boolean modified;

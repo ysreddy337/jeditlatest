@@ -55,6 +55,7 @@ import org.gjt.sp.jedit.syntax.DefaultTokenHandler;
 import org.gjt.sp.jedit.syntax.Token;
 import org.gjt.sp.util.Log;
 import org.gjt.sp.util.StandardUtilities;
+import org.gjt.sp.util.ThreadUtilities;
 
 /** Abstract TextArea component.
  *
@@ -65,7 +66,7 @@ import org.gjt.sp.util.StandardUtilities;
  *
  * @author Slava Pestov
  * @author kpouer (rafactoring into standalone text area)
- * @version $Id: TextArea.java 18693 2010-09-30 23:53:52Z jchoyt $
+ * @version $Id: TextArea.java 19548 2011-06-08 20:50:08Z ezust $
  */
 public abstract class TextArea extends JComponent
 {
@@ -438,38 +439,6 @@ public abstract class TextArea extends JComponent
 	public final boolean isEditable()
 	{
 		return buffer.isEditable();
-	} //}}}
-
-	//{{{ isDragInProgress() method
-	/**
-	 * Drag and drop of text in jEdit is implementing using jEdit 1.4 APIs,
-	 * however since jEdit must run with Java 1.3, this class only has the
-	 * necessary support to call a hook method via reflection. This method
-	 * is called by the org.gjt.sp.jedit.Java14 class to signal that
-	 * a drag is in progress.
-	 * @since jEdit 4.2pre5
-	 * @deprecated the org.gjt.jedit.Java14 class no longer exists.
-	 */
-	@Deprecated
-	public boolean isDragInProgress()
-	{
-		return dndInProgress;
-	} //}}}
-
-	//{{{ setDragInProgress() method
-	/**
-	 * Drag and drop of text in jEdit is implementing using jEdit 1.4 APIs,
-	 * however since jEdit must run with Java 1.3, this class only has the
-	 * necessary support to call a hook method via reflection. This method
-	 * is called by the org.gjt.sp.jedit.Java14 class to signal that
-	 * a drag is in progress.
-	 * @since jEdit 4.2pre5
-	 * @deprecated the org.gjt.jedit.Java14 class no longer exists.
-	 */
-	@Deprecated
-	public void setDragInProgress(boolean dndInProgress)
-	{
-		this.dndInProgress = dndInProgress;
 	} //}}}
 
 	//{{{ isDragEnabled() method
@@ -1547,7 +1516,6 @@ public abstract class TextArea extends JComponent
 	 */
 	public void selectBlock()
 	{
-
 		Selection s = getSelectionAtOffset(caret);
 		int start, end;
 		if(s == null)
@@ -1574,7 +1542,7 @@ public abstract class TextArea extends JComponent
 		char openBracket = '\0';
 		char closeBracket = '\0';
 
-backward_scan:	while(--start > 0)
+backward_scan:	while(--start >= 0)
 		{
 			char c = text.charAt(start);
 			int index = openBrackets.indexOf(c);
@@ -2864,9 +2832,23 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 	//{{{ goToPrevWord() method
 	/**
 	 * Moves the caret to the start of the previous word.
+	 * @param eatWhitespace If true, will eat whitespace
 	 * @since jEdit 4.1pre5
 	 */
 	public void goToPrevWord(boolean select, boolean eatWhitespace)
+	{
+		goToPrevWord(select,eatWhitespace,false);
+	} //}}}
+
+	//{{{ goToPrevWord() method
+	/**
+	 * Moves the caret to the start of the previous word.
+	 * @param eatWhitespace If true, will eat whitespace
+	 * @param eatOnlyAfterWord Eat only whitespace after a word,
+	 * in effect this goes to actual word starts even if eating
+	 * @since jEdit 4.4pre1
+	 */
+	public void goToPrevWord(boolean select, boolean eatWhitespace, boolean eatOnlyAfterWord)
 	{
 		int lineStart = getLineStartOffset(caretLine);
 		int newCaret = caret - lineStart;
@@ -2896,7 +2878,8 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 			String noWordSep = buffer.getStringProperty("noWordSep");
 			boolean camelCasedWords = buffer.getBooleanProperty("camelCasedWords");
 			newCaret = TextUtilities.findWordStart(lineText,
-				newCaret - 1,noWordSep,true,camelCasedWords,eatWhitespace);
+				newCaret - 1,noWordSep,true,camelCasedWords,eatWhitespace,
+				eatOnlyAfterWord);
 
 			newCaret += lineStart;
 		}
@@ -3319,9 +3302,7 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 			return;
 		}
 
-		/* Null before addNotify() */
-		if(hiddenCursor != null)
-			getPainter().setCursor(hiddenCursor);
+		getPainter().hideCursor();
 
 		switch(ch)
 		{
@@ -3409,6 +3390,19 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 	 */
 	public void backspaceWord(boolean eatWhitespace)
 	{
+		backspaceWord(eatWhitespace,false);
+	} //}}}
+
+	//{{{ backspaceWord() method
+	/**
+	 * Deletes the word before the caret.
+	 * @param eatWhitespace If true, will eat whitespace
+	 * @param eatOnlyAfterWord Eat only whitespace after a word,
+	 * in effect this goes to actual word starts even if eating
+	 * @since jEdit 4.4pre1
+	 */
+	public void backspaceWord(boolean eatWhitespace, boolean eatOnlyAfterWord)
+	{
 		if(!buffer.isEditable())
 		{
 			getToolkit().beep();
@@ -3440,7 +3434,8 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 			String noWordSep = buffer.getStringProperty("noWordSep");
 			boolean camelCasedWords = buffer.getBooleanProperty("camelCasedWords");
 			_caret = TextUtilities.findWordStart(lineText,_caret-1,
-				noWordSep,true,camelCasedWords,eatWhitespace);
+				noWordSep,true,camelCasedWords,eatWhitespace,
+				eatOnlyAfterWord);
 		}
 
 		buffer.remove(_caret + lineStart, caret - (_caret + lineStart));
@@ -3868,24 +3863,7 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 	 */
 	public void collapseFold(int line)
 	{
-		int x = chunkCache.subregionOffsetToX(caretLine,
-			caret - getLineStartOffset(caretLine));
-
 		displayManager.collapseFold(line);
-
-		if(displayManager.isLineVisible(caretLine))
-			return;
-
-		line = displayManager.getPrevVisibleLine(caretLine);
-
-		if(!multi)
-		{
-			// cannot use selectNone() beacause the finishCaretUpdate method will reopen the fold
-			invalidateSelectedLines();
-			selectionManager.setSelection((Selection) null);
-		}
-		moveCaretPosition(buffer.getLineStartOffset(line)
-			+ chunkCache.xToSubregionOffset(line,0,x,true));
 	} //}}}
 
 	//{{{ expandFold() method
@@ -3997,7 +3975,8 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 
 			if (getSelectionCount() == 0)
 			{
-				addExplicitFold(caret, caret, caretLine, caretLine);
+				int caretBack = addExplicitFold(caret, caret, caretLine, caretLine);
+				setCaretPosition(caret - caretBack);
 			}
 			else
 			{
@@ -4578,12 +4557,6 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 		if(!buffer.isLoading())
 			recalculateLastPhysicalLine();
 		propertiesChanged();
-
-		hiddenCursor = getToolkit().createCustomCursor(
-			getGraphicsConfiguration()
-			.createCompatibleImage(16,16,
-			Transparency.BITMASK),
-			new Point(0,0),"Hidden");
 	} //}}}
 
 	//{{{ removeNotify() method
@@ -4912,6 +4885,22 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 	{
 		chunkCache.invalidateAll();
 		recalculateLastPhysicalLine();
+
+		if(!displayManager.isLineVisible(caretLine))
+		{
+			int x = chunkCache.subregionOffsetToX(caretLine,
+				caret - getLineStartOffset(caretLine));
+			int line = displayManager.getPrevVisibleLine(caretLine);
+
+			if(!multi)
+			{
+				// cannot use selectNone() because the finishCaretUpdate method will reopen the fold
+				invalidateSelectedLines();
+				selectionManager.setSelection((Selection) null);
+			}
+			moveCaretPosition(buffer.getLineStartOffset(line)
+				+ chunkCache.xToSubregionOffset(line,0,x,true));
+		}
 		repaint();
 	} //}}}
 
@@ -4934,13 +4923,20 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 		{
 			if(Debug.SCROLL_DEBUG)
 				Log.log(Log.DEBUG,this,"Vertical ok");
-			int lineCount = displayManager.getScrollLineCount();
-			int firstLine = getFirstLine();
-			int visible = visibleLines - (lastLinePartial ? 1 : 0);
+			final int lineCount = displayManager.getScrollLineCount();
+			final int firstLine = getFirstLine();
+			final int visible = visibleLines - (lastLinePartial ? 1 : 0);
 
-			vertical.setValues(firstLine,visible,0,lineCount);
-			vertical.setUnitIncrement(2);
-			vertical.setBlockIncrement(visible);
+			Runnable runnable = new Runnable()
+			{
+				public void run()
+				{
+					vertical.setValues(firstLine,visible,0,lineCount);
+					vertical.setUnitIncrement(2);
+					vertical.setBlockIncrement(visible);
+				}
+			};
+			ThreadUtilities.runInDispatchThread(runnable);
 		}
 	} //}}}
 
@@ -5068,7 +5064,6 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 	protected JPopupMenu popup;
 
 	private boolean popupEnabled;
-	protected Cursor hiddenCursor;
 
 	private final Gutter gutter;
 	protected final TextAreaPainter painter;
@@ -5118,7 +5113,6 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 	private boolean rectangularSelectionMode;
 
 	private boolean dndEnabled;
-	private boolean dndInProgress;
 
 	// see finishCaretUpdate() & _finishCaretUpdate()
 	private boolean queuedCaretUpdate;
@@ -5885,7 +5879,17 @@ loop:		for(int i = lineNo - 1; i >= 0; i--)
 		String line = buffer.getLineText(lineStart);
 		String whitespace = line.substring(0,
 			StandardUtilities.getLeadingWhiteSpace(line));
-		caretBack += whitespace.length(); 
+		caretBack += whitespace.length();
+		if (caretStart == caretEnd)
+		{
+			caretBack += end.length() + 1;
+			int lineStartOffset = buffer.getLineStartOffset(lineStart);
+			if (lineStartOffset  + whitespace.length() != caretStart)
+			{
+				caretBack++;
+			}
+		}
+
 		if (endLineComment != null)
 		{
 			// if we're inserting a line comment into a non-empty

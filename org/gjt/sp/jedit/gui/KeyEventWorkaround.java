@@ -36,7 +36,7 @@ import org.gjt.sp.util.Log;
  * Java's keyboard handling is crap, to put it mildly.
  *
  * @author Slava Pestov
- * @version $Id: KeyEventWorkaround.java 13655 2008-09-12 20:33:30Z k_satoda $
+ * @version $Id: KeyEventWorkaround.java 17503 2010-03-20 09:47:18Z k_satoda $
  */
 public class KeyEventWorkaround
 {
@@ -344,6 +344,11 @@ public class KeyEventWorkaround
 				// we consume this to work around the bug
 				// where A+TAB window switching activates
 				// the menu bar on Windows.
+				// http://bugs.sun.com/view_bug.do?bug_id=6458497
+				//
+				// This should be removed if the fix for the
+				// above problem became widely available, to
+				// allow the menu bar activation.
 				evt.consume();
 				break;
 			case KeyEvent.VK_ALT_GRAPH:

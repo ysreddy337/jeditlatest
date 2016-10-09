@@ -37,7 +37,7 @@ import org.gjt.sp.util.Log;
 /**
  * @since jEdit 4.2pre1
  * @author Slava Pestov
- * @version $Id: ServiceListHandler.java 14599 2009-02-07 19:06:52Z kpouer $
+ * @version $Id: ServiceListHandler.java 16676 2009-12-18 14:44:32Z shlomy $
  */
 class ServiceListHandler extends DefaultHandler
 {
@@ -69,7 +69,7 @@ class ServiceListHandler extends DefaultHandler
 	public void startElement(String uri, String localName,
 				 String tag, Attributes attrs)
 	{
-		tag = pushElement(tag);
+		pushElement(tag);
 		serviceName = attrs.getValue("NAME");
 		serviceClass = attrs.getValue("CLASS");
 	} //}}}

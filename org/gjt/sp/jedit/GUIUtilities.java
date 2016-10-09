@@ -42,6 +42,7 @@ import org.gjt.sp.util.SyntaxUtilities;
 import java.net.URL;
 import java.util.*;
 import java.util.List;
+import java.lang.ref.SoftReference;
 
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
@@ -85,7 +86,7 @@ import java.awt.event.*;
  * </ul>
  *
  * @author Slava Pestov
- * @version $Id: GUIUtilities.java 16406 2009-10-22 20:42:36Z shlomy $
+ * @version $Id: GUIUtilities.java 19158 2010-12-19 23:34:48Z ezust $
  */
 public class GUIUtilities
 {
@@ -136,8 +137,7 @@ public class GUIUtilities
 	public static void setIconPath(String iconPath)
 	{
 		GUIUtilities.iconPath = iconPath;
-		if(icons != null)
-			icons.clear();
+		iconCache = null;
 	} //}}}
 
 	//{{{ loadIcon() method
@@ -155,11 +155,18 @@ public class GUIUtilities
 		if(deprecatedIcons != null && deprecatedIcons.containsKey(iconName))
 			iconName = deprecatedIcons.get(iconName);
 
-		if(icons == null)
-			icons = new Hashtable<String, Icon>();
-
 		// check if there is a cached version first
-		Icon icon = icons.get(iconName);
+		Map<String, Icon> cache = null;
+		if(iconCache != null)
+		{
+			cache = iconCache.get();
+		}
+		if(cache == null)
+		{
+			cache = new Hashtable<String, Icon>();
+			iconCache = new SoftReference<Map<String, Icon>>(cache);
+		}
+		Icon icon = cache.get(iconName);
 		if(icon != null)
 			return icon;
 
@@ -190,7 +197,7 @@ public class GUIUtilities
 
 		icon = new ImageIcon(url);
 
-		icons.put(iconName,icon);
+		cache.put(iconName,icon);
 		return icon;
 	} //}}}
 
@@ -479,10 +486,10 @@ public class GUIUtilities
 	 */
 	public static Container loadToolBar(ActionContext context, String name)
 	{
-		JPanel toolBar = new JPanel(new BorderLayout());
 		JToolBar toolB = new JToolBar();
 		toolB.setFloatable(false);
-		toolB.setMargin(new Insets(0,0,0,0));
+		toolB.setName(name);
+		toolB.setLayout(new FlowLayout(FlowLayout.LEFT, 0, 0));
 
 		String buttons = jEdit.getProperty(name);
 		if(buttons != null)
@@ -503,9 +510,8 @@ public class GUIUtilities
 				}
 			}
 		}
-
-		toolBar.add(toolB);
-		return toolBar;
+		toolB.addSeparator(new Dimension(12,12));
+		return toolB;
 	} //}}}
 
 	//{{{ loadToolButton() method
@@ -766,14 +772,33 @@ public class GUIUtilities
 	 * JOptionPane.WARNING_MESSAGE
 	 * @since jEdit 3.1pre3
 	 */
-	public static int confirm(Component comp, String name,
-		Object[] args, int buttons, int type)
+	public static int confirm(final Component comp, final String name,
+		final Object[] args, final int buttons, final int type)
 	{
-		hideSplashScreen();
-
-		return JOptionPane.showConfirmDialog(comp,
-			jEdit.getProperty(name + ".message",args),
-			jEdit.getProperty(name + ".title"),buttons,type);
+		if (EventQueue.isDispatchThread())
+		{
+			hideSplashScreen();
+	
+			return JOptionPane.showConfirmDialog(comp,
+				jEdit.getProperty(name + ".message",args),
+				jEdit.getProperty(name + ".title"),buttons,type);
+		}
+		final int [] retValue = new int[1];
+		try
+		{
+			EventQueue.invokeAndWait(new Runnable()
+			{
+				public void run()
+				{
+					retValue[0] = confirm(comp, name, args, buttons, type);
+				}
+			});
+		}
+		catch (Exception e)
+		{
+			return JOptionPane.CANCEL_OPTION;
+		}
+		return retValue[0];
 	} //}}}
 
 	//{{{ listConfirm() method
@@ -1422,7 +1447,7 @@ public class GUIUtilities
 			@Override
 			public void windowGainedFocus(WindowEvent evt)
 			{
-				SwingUtilities.invokeLater(new Runnable()
+				EventQueue.invokeLater(new Runnable()
 				{
 						public void run()
 						{
@@ -1862,7 +1887,7 @@ public class GUIUtilities
 
 	//{{{ Private members
 	private static SplashScreen splash;
-	private static Map<String, Icon> icons;
+	private static SoftReference<Map<String, Icon>> iconCache;
 	private static String iconPath = "jeditresource:/org/gjt/sp/jedit/icons/themes/";
 	private static final String defaultIconPath = "jeditresource:/org/gjt/sp/jedit/icons/themes/";
 	private static final HashMap<String, String> deprecatedIcons = new HashMap<String, String>();
@@ -1872,6 +1897,7 @@ public class GUIUtilities
 	{
 
 		String label = jEdit.getProperty(name + ".label");
+		
 		if (label == null)
 		{
 			label = name;
@@ -1920,7 +1946,7 @@ public class GUIUtilities
 	 * For non-Frame's use {@link GUIUtilities#saveGeometry(Window,String)}
 	 *
 	 * @author Björn Kautler
-	 * @version $Id: GUIUtilities.java 16406 2009-10-22 20:42:36Z shlomy $
+	 * @version $Id: GUIUtilities.java 19158 2010-12-19 23:34:48Z ezust $
 	 * @since jEdit 4.3pre6
 	 * @see GUIUtilities#saveGeometry(Window,Container,String)
 	 */
@@ -2011,7 +2037,7 @@ public class GUIUtilities
 					catch (InterruptedException ie)
 					{
 					}
-					SwingUtilities.invokeLater(sizeSaver);
+					EventQueue.invokeLater(sizeSaver);
 				}
 			}.start();
 		} //}}}

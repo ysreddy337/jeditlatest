@@ -169,6 +169,12 @@ plugin.console.ConsolePlugin.depend.3=optional plugin projectviewer.ProjectPlugi
  * be added to the sub-menu by listing <code>-</code> in the property.</li>
  * </ul>
  *
+ * <p>Again, if the browser menu items need to be determined at runtime, define a
+ * property <code>plugin.<i>className</i>.browser-menu.code</code> to be BeanShell
+ * code that evaluates to an implementation of
+ * {@link org.gjt.sp.jedit.menu.DynamicMenuProvider}.</p>
+ *<p>
+ *
  *<p> In all cases, each action's
  * menu item label is taken from the <code><i>actionName</i>.label</code>
  * property. View actions are defined in an <code>actions.xml</code>
@@ -749,7 +755,9 @@ public abstract class EditPlugin
 		}
 
 		String menuProperty = "plugin." + getClassName() + ".browser-menu";
-		if(jEdit.getProperty(menuProperty) != null)
+		String codeProperty = "plugin." + getClassName() + ".browser-menu.code";
+		if(jEdit.getProperty(menuProperty) != null
+			|| jEdit.getProperty(codeProperty) != null)
 		{
 			String pluginName = jEdit.getProperty("plugin." +
 				getClassName() + ".name");
@@ -767,6 +775,7 @@ public abstract class EditPlugin
 	 * @deprecated Instead of overriding this method, define properties
 	 * as specified in the description of this class.
 	 */
+	@Deprecated
 	public void createMenuItems(Vector menuItems) {} //}}}
 
 	//{{{ createOptionPanes() method
@@ -774,6 +783,7 @@ public abstract class EditPlugin
 	 * @deprecated Instead of overriding this method, define properties
 	 * as specified in the description of this class.
 	 */
+	@Deprecated
 	public void createOptionPanes(OptionsDialog optionsDialog) {} //}}}
 
 	//}}}
@@ -791,6 +801,7 @@ public abstract class EditPlugin
 	 */
 	public static class Broken extends EditPlugin
 	{
+		@Override
 		public String getClassName()
 		{
 			return clazz;
@@ -804,7 +815,7 @@ public abstract class EditPlugin
 		}
 
 		// private members
-		private String clazz;
+		private final String clazz;
 	} //}}}
 
 	//{{{ Deferred class
@@ -816,6 +827,7 @@ public abstract class EditPlugin
 	 */
 	public static class Deferred extends EditPlugin
 	{
+		@Override
 		public String getClassName()
 		{
 			return clazz;
@@ -839,6 +851,6 @@ public abstract class EditPlugin
 		}
 
 		// private members
-		private String clazz;
+		private final String clazz;
 	} //}}}
 }

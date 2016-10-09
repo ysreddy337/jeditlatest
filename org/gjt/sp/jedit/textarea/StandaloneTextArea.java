@@ -44,6 +44,9 @@ import org.gjt.sp.jedit.IPropertyManager;
 import org.gjt.sp.jedit.JEditBeanShellAction;
 import org.gjt.sp.jedit.Mode;
 import org.gjt.sp.jedit.JEditActionSet;
+import org.gjt.sp.jedit.datatransfer.RichJEditTextTransferableService;
+import org.gjt.sp.jedit.datatransfer.StringTransferableService;
+import org.gjt.sp.jedit.datatransfer.TransferHandler;
 import org.gjt.sp.jedit.input.AbstractInputHandler;
 import org.gjt.sp.jedit.buffer.DefaultFoldHandlerProvider;
 import org.gjt.sp.jedit.buffer.DummyFoldHandler;
@@ -52,6 +55,7 @@ import org.gjt.sp.jedit.buffer.FoldHandler;
 import org.gjt.sp.jedit.buffer.IndentFoldHandler;
 import org.gjt.sp.jedit.buffer.JEditBuffer;
 import org.gjt.sp.jedit.buffer.KillRing;
+import org.gjt.sp.jedit.syntax.Chunk;
 import org.gjt.sp.jedit.syntax.ModeProvider;
 import org.gjt.sp.jedit.syntax.ParserRuleSet;
 import org.gjt.sp.jedit.syntax.SyntaxStyle;
@@ -96,7 +100,7 @@ import org.gjt.sp.util.SyntaxUtilities;
  *
  * @author Slava Pestov
  * @author John Gellene (API documentation)
- * @version $Id: StandaloneTextArea.java 16346 2009-10-14 10:35:10Z kpouer $
+ * @version $Id: StandaloneTextArea.java 17650 2010-04-16 10:43:16Z kpouer $
  */
 public class StandaloneTextArea extends TextArea
 {
@@ -296,7 +300,10 @@ public class StandaloneTextArea extends TextArea
 		painter.setAntiAlias(new AntiAlias(getProperty("view.antiAlias")));
 		painter.setFractionalFontMetricsEnabled(getBooleanProperty(
 			"view.fracFontMetrics"));
-
+		painter.setSelectionFgColor(getColorProperty(
+			"view.selectionFgColor"));
+		painter.setSelectionFgColorEnabled(getBooleanProperty(
+			"view.selectionFg"));
 		String defaultFont = getProperty("view.font");
 		int defaultFontSize = getIntegerProperty("view.fontsize",12);
 		painter.setStyles(SyntaxUtilities.loadStyles(defaultFont,defaultFontSize));
@@ -343,24 +350,14 @@ public class StandaloneTextArea extends TextArea
 		String value = getProperty(name);
 		if(value == null)
 			return def;
-		else if(value.equals("true") || value.equals("yes")
-			|| value.equals("on"))
+		else if("true".equals(value) || "yes".equals(value)
+			|| "on".equals(value))
 			return true;
-		else if(value.equals("false") || value.equals("no")
-			|| value.equals("off"))
+		else if("false".equals(value) || "no".equals(value)
+			|| "off".equals(value))
 			return false;
 		else
 			return def;
-	} //}}}
-
-	//{{{ getIntegerProperty() method
-	/**
-	 * Returns the value of an integer property.
-	 * @param name The property
-	 */
-	private int getIntegerProperty(String name)
-	{
-		return getIntegerProperty(name,0);
 	} //}}}
 
 	//{{{ getIntegerProperty() method
@@ -497,6 +494,7 @@ public class StandaloneTextArea extends TextArea
 		{
 			actionSet.initKeyBindings();
 		}
+		Chunk.propertiesChanged(propertyManager);
 		initBuffer();
 		initTextArea();
 		super.propertiesChanged();
@@ -664,7 +662,14 @@ public class StandaloneTextArea extends TextArea
 		}
 	} //}}}
 
+	static
+	{
+		TransferHandler.getInstance().registerTransferableService(new RichJEditTextTransferableService());
+		TransferHandler.getInstance().registerTransferableService(new StringTransferableService());
+	}
+
 	//{{{ main() method
+
 	public static void main(String[] args)
 	{
 		JFrame frame = new JFrame();

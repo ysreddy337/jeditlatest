@@ -50,7 +50,7 @@ import org.gjt.sp.util.Log;
  * </ul>
  *
  * @author Slava Pestov
- * @version $Id: BeanShell.java 14851 2009-03-26 10:34:42Z kpouer $
+ * @version $Id: BeanShell.java 18327 2010-08-11 15:00:49Z kpouer $
  */
 public class BeanShell
 {
@@ -553,11 +553,11 @@ public class BeanShell
 			if(view != null)
 			{
 				EditPane editPane = view.getEditPane();
-				namespace.setVariable("view",view, false);
-				namespace.setVariable("editPane",editPane, false);
-				namespace.setVariable("buffer",editPane.getBuffer(), false);
-				namespace.setVariable("textArea",editPane.getTextArea(), false);
-				namespace.setVariable("wm",view.getDockableWindowManager(), false);
+				setVariable(namespace, "view", view);
+				setVariable(namespace, "editPane",editPane);
+				setVariable(namespace, "buffer",editPane.getBuffer());
+				setVariable(namespace, "textArea",editPane.getTextArea());
+				setVariable(namespace, "wm",view.getDockableWindowManager());
 			}
 		}
 

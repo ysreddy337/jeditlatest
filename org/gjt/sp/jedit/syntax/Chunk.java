@@ -28,8 +28,12 @@ import javax.swing.text.*;
 import java.awt.font.*;
 import java.awt.geom.*;
 import java.awt.*;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 
 import org.gjt.sp.jedit.Debug;
+import org.gjt.sp.jedit.IPropertyManager;
 //}}}
 
 /**
@@ -80,8 +84,8 @@ public class Chunk extends Token
 					gfx.setFont(chunks.style.getFont());
 					gfx.setColor(chunks.style.getForegroundColor());
 
-					if(glyphVector && chunks.gv != null)
-						gfx.drawGlyphVector(chunks.gv,x + _x,y);
+					if (glyphVector && chunks.glyphs != null)
+						chunks.drawGlyphs(gfx, x + _x, y);
 					else if(chunks.str != null)
 					{
 						gfx.drawString(chunks.str,
@@ -203,19 +207,56 @@ public class Chunk extends Token
 		return -1;
 	} //}}}
 
+	//{{{ propertiesChanged() method
+	/**
+	 * Reload internal configuration based on the given properties.
+	 *
+	 * @param	props	Configuration properties.
+	 *
+	 * @since jEdit 4.4pre1
+	 */
+	public static void propertiesChanged(IPropertyManager props)
+	{
+		fontSubstList = null;
+		if (props == null)
+		{
+			fontSubstEnabled = false;
+			preferredFonts = null;
+		}
+		else
+		{
+			fontSubstEnabled = Boolean.parseBoolean(props.getProperty("view.enableFontSubst"));
+		}
+
+
+		int i = 0;
+		String family;
+		List<Font> userFonts = new ArrayList<Font>();
+
+		while ((family = props.getProperty("view.fontSubstList." + i)) != null)
+		{
+			/*
+			 * The default font is Font.DIALOG if the family
+			 * doesn't match any installed fonts. The following
+			 * check skips fonts that don't exist.
+			 */
+			Font f = new Font(family, Font.PLAIN, 12);
+			if (!f.getFamily().equalsIgnoreCase("dialog") ||
+			    family.equalsIgnoreCase("dialog"))
+				userFonts.add(f);
+			i++;
+		}
+
+		preferredFonts = userFonts.toArray(new Font[userFonts.size()]);
+	} //}}}
+
 	//{{{ Instance variables
 	public boolean accessable;
-	public boolean visible;
 	public boolean initialized;
 
 	// set up after init()
 	public SyntaxStyle style;
-	// this is either style.getBackgroundColor() or
-	// styles[defaultID].getBackgroundColor()
-	public Color background;
 	public float width;
-	public GlyphVector gv;
-	public String str;
 	//}}}
 
 	//{{{ Chunk constructor
@@ -237,31 +278,33 @@ public class Chunk extends Token
 			background = styles[defaultID].getBackgroundColor();
 	} //}}}
 
-	//{{{ getPositions() method
-	public final float[] getPositions()
-	{
-		if(gv == null)
-			return null;
-
-		if(positions == null)
-			positions = gv.getGlyphPositions(0,length,null);
-
-		return positions;
-	} //}}}
-
 	//{{{ offsetToX() method
 	public final float offsetToX(int offset)
 	{
-		if(!visible)
+		if(!visible || glyphs == null)
 			return 0.0f;
-		else
-			return getPositions()[offset * 2];
+
+		float x = 0.0f;
+		for (GlyphVector gv : glyphs)
+		{
+			if (offset < gv.getNumGlyphs())
+			{
+				x += (float) gv.getGlyphPosition(offset).getX();
+				return x;
+			}
+			x += (float) gv.getLogicalBounds().getWidth();
+			offset -= gv.getNumGlyphs();
+		}
+
+		/* Shouldn't reach this. */
+		assert false : "Shouldn't reach this.";
+		return -1;
 	} //}}}
 
 	//{{{ xToOffset() method
 	public final int xToOffset(float x, boolean round)
 	{
-		if (!visible)
+		if (!visible || glyphs == null)
 		{
 			if (round && width - x < x)
 				return offset + length;
@@ -269,24 +312,36 @@ public class Chunk extends Token
 				return offset;
 		}
 
-		float[] pos = getPositions();
-
-		for(int i = 0; i < length; i++)
+		int off = offset;
+		float myx = 0.0f;
+		for (GlyphVector gv : glyphs)
 		{
-			float glyphX = pos[i*2];
-			float nextX = (i == length - 1
-				? width : pos[i*2+2]);
-
-			if(nextX > x)
+			float gwidth = (float) gv.getLogicalBounds().getWidth();
+			if (myx + gwidth >= x)
 			{
-				if(!round || nextX - x > x - glyphX)
-					return offset + i;
-				else
-					return offset + i + 1;
+				float[] pos = gv.getGlyphPositions(0, gv.getNumGlyphs(), null);
+				for (int i = 0; i < gv.getNumGlyphs(); i++)
+				{
+					float glyphX = myx + pos[i * 2];
+					float nextX = (i == gv.getNumGlyphs() - 1)
+					            ? width
+					            : myx + pos[i * 2 + 2];
+
+					if (nextX > x)
+					{
+						if (!round || nextX - x > x - glyphX)
+							return off + i;
+						else
+							return off + i + 1;
+					}
+				}
 			}
+			myx += gwidth;
+			off += gv.getNumGlyphs();
 		}
 
-		// wtf?
+		/* Shouldn't reach this. */
+		assert false : "Shouldn't reach this.";
 		return -1;
 	} //}}}
 
@@ -314,60 +369,220 @@ public class Chunk extends Token
 
 			char[] textArray = seg.array;
 			int textStart = seg.offset + offset;
-			// {{{ Workaround for a bug in Sun Java 5
-			// http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6266084
-			if (SUN_JAVA_5)
-			{
-				// textLimit is used as a text count in
-				// layoutGlyphVector(). So it works only the
-				// case textStart is 0.
-				char[] copy = new char[length];
-				System.arraycopy(textArray, textStart,
-					copy, 0, length);
-				textArray = copy;
-				textStart = 0;
-			} //}}}
-			int textLimit = textStart + length;
-			// FIXME: Need BiDi support.
-			int layoutFlags = Font.LAYOUT_LEFT_TO_RIGHT
-				| Font.LAYOUT_NO_START_CONTEXT
-				| Font.LAYOUT_NO_LIMIT_CONTEXT;
-			Font font = style.getFont();
-			gv = font.layoutGlyphVector(
-				fontRenderContext,
-				textArray, textStart, textLimit, layoutFlags);
-			// This is necessary to work around a memory leak in Sun Java 6
-			// where the sun.font.GlyphLayout is cached and reused while holding
-			// an instance to the char array.
-			font.layoutGlyphVector(fontRenderContext, EMPTY_TEXT, 0, 0,
-			                       layoutFlags);
-			Rectangle2D logicalBounds = gv.getLogicalBounds();
-
-			width = (float)logicalBounds.getWidth();
+			width = layoutGlyphs(fontRenderContext,
+					     textArray,
+					     textStart,
+					     textStart + length);
 		}
 	} //}}}
 
 	//{{{ Private members
-	private float[] positions;
+	// this is either style.getBackgroundColor() or
+	// styles[defaultID].getBackgroundColor()
+	private Color background;
+	private String str;
+	//private GlyphVector gv;
+	private List<GlyphVector> glyphs;
+	private boolean visible;
 
-	// Flag to enable a workaround for a bug in Sun Java 5.
-	private static final boolean SUN_JAVA_5;
-	static
+	private static boolean fontSubstEnabled;
+	private static Font[] preferredFonts;
+	private static Font[] fontSubstList;
+
+	//{{{ getFonts() method
+	/**
+	 * Returns a list of fonts to be searched when applying font
+	 * substitution.
+	 */
+	private static Font[] getFonts()
 	{
-		boolean sun_java_5 = false;
-		String vendor = System.getProperty("java.vendor");
-		// Enable the workaround on Apple JVM, too, because the
-		// same problem was reported on Mac OS X.
-		if (vendor != null && (vendor.startsWith("Sun") ||
-					vendor.startsWith("Apple")))
+		if (fontSubstList == null)
 		{
-			String version = System.getProperty("java.version");
-			if (version != null && version.startsWith("1.5"))
+			Font[] systemFonts = GraphicsEnvironment.getLocalGraphicsEnvironment().getAllFonts();
+
+			fontSubstList = new Font[preferredFonts.length +
+						 systemFonts.length];
+
+			System.arraycopy(preferredFonts, 0, fontSubstList, 0,
+					 preferredFonts.length);
+
+			System.arraycopy(systemFonts, 0, fontSubstList,
+					 preferredFonts.length,
+					 systemFonts.length);
+		}
+		return fontSubstList;
+	} //}}}
+
+	//{{{ drawGlyphs() method
+	/**
+	 * Draws the internal list of glyph vectors into the given
+	 * graphics object.
+	 *
+	 * @param	gfx	Where to draw the glyphs.
+	 * @param	x	Starting horizontal position.
+	 * @param	y	Vertical position.
+	 */
+	private void drawGlyphs(Graphics2D gfx,
+				float x,
+				float y)
+	{
+		for (GlyphVector gv : glyphs)
+		{
+			gfx.drawGlyphVector(gv, x, y);
+			x += (float) gv.getLogicalBounds().getWidth();
+		}
+	} //}}}
+
+	//{{{ addGlyphVector() method
+	/**
+	 * Creates a glyph vector for the text with the given font,
+	 * and adds it to the internal list.
+	 *
+	 * @param	f	Font to use for rendering.
+	 * @param	frc	Font rendering context.
+	 * @param	text	Char array with text to render.
+	 * @param	start	Start index of text to render.
+	 * @param	end	End index of text to render.
+	 *
+	 * @return Width of the rendered text.
+	 */
+	private float addGlyphVector(Font f,
+				     FontRenderContext frc,
+				     char[] text,
+				     int start,
+				     int end)
+	{
+		// FIXME: Need BiDi support.
+		int layoutFlags = Font.LAYOUT_LEFT_TO_RIGHT
+			| Font.LAYOUT_NO_START_CONTEXT
+			| Font.LAYOUT_NO_LIMIT_CONTEXT;
+
+		GlyphVector gv = f.layoutGlyphVector(frc,
+						     text,
+						     start,
+						     end,
+						     layoutFlags);
+		// This is necessary to work around a memory leak in Sun Java 6 where
+		// the sun.font.GlyphLayout is cached and reused while holding an
+		// instance to the char array.
+		f.layoutGlyphVector(frc, EMPTY_TEXT, 0, 0, layoutFlags);
+		glyphs.add(gv);
+		return (float) gv.getLogicalBounds().getWidth();
+	} // }}}
+
+	//{{{ layoutGlyphs() method
+	/**
+	 * Layout the glyphs to render the given text, applying font
+	 * substitution if configured. GlyphVectors are created and
+	 * added to the internal glyph list.
+	 *
+	 * Font substitution works in the following manner:
+	 *	- All characters that can be rendered with the default
+	 *	  font will be.
+	 *	- For characters that can't be handled by the default
+	 *	  font, iterate over the list of available fonts to
+	 *	  find an appropriate one. The first match is chosen.
+	 *
+	 * The user can define his list of preferred fonts, which will
+	 * be tried before the system fonts.
+	 *
+	 * @param	frc	Font rendering context.
+	 * @param	text	Char array with text to render.
+	 * @param	start	Start index of text to render.
+	 * @param	end	End index of text to render.
+	 *
+	 * @return Width of the rendered text.
+	 */
+	private float layoutGlyphs(FontRenderContext frc,
+				   char text[],
+				   int start,
+				   int end)
+	{
+		float width = 0.0f;
+		int max = 0;
+		Font dflt = style.getFont();
+
+		glyphs = new LinkedList<GlyphVector>();
+
+		while (max != -1 && start < end)
+		{
+			max = fontSubstEnabled ? dflt.canDisplayUpTo(text, start, end)
+			                       : -1;
+			if (max == -1)
 			{
-				sun_java_5 = true;
+				width += addGlyphVector(dflt,
+							frc,
+							text,
+							start,
+							end);
+			}
+			else
+			{
+				/*
+				 * Draw as much as we can and update the
+				 * current offset.
+				 */
+				if (max > start)
+				{
+					width += addGlyphVector(dflt,
+								frc,
+								text,
+								start,
+								max);
+					start = max;
+				}
+
+				/*
+				 * Find a font that can display the next
+				 * characters.
+				 */
+				Font f = null;
+				for (Font candidate : getFonts())
+				{
+					 if (candidate.canDisplay(text[start]))
+					 {
+						 f = candidate;
+						 break;
+					 }
+				}
+
+				if (f != null)
+				{
+					f = f.deriveFont(dflt.getStyle(), dflt.getSize());
+
+					/*
+					 * Find out how many characters
+					 * the current font cannot
+					 * display, but the chosen one
+					 * can.
+					 */
+					int last = start;
+					while (last < end &&
+					       f.canDisplay(text[last]) &&
+					       !dflt.canDisplay(text[last]))
+						last++;
+
+					width += addGlyphVector(f,
+								frc,
+								text,
+								start,
+								last);
+
+					start = last;
+				}
+				else
+				{
+					width += addGlyphVector(dflt,
+								frc,
+								text,
+								start,
+								start + 1);
+					start++;
+				}
 			}
 		}
-		SUN_JAVA_5 = sun_java_5;
-	}
+		return width;
+	} //}}}
+
 	//}}}
 }

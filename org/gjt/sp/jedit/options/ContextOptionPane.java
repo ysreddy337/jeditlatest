@@ -19,20 +19,13 @@
 
 package org.gjt.sp.jedit.options;
 
-import javax.swing.border.*;
-import javax.swing.event.*;
-import javax.swing.*;
-import java.awt.event.*;
-import java.awt.*;
-import java.util.*;
 import org.gjt.sp.jedit.gui.*;
 import org.gjt.sp.jedit.*;
-import org.gjt.sp.util.StandardUtilities;
 
 /**
  * Right-click context menu editor.
  * @author Slava Pestov
- * @version $Id: ContextOptionPane.java 12504 2008-04-22 23:12:43Z ezust $
+ * @version $Id: ContextOptionPane.java 18968 2010-11-15 23:31:24Z ezust $
  */
 public class ContextOptionPane extends AbstractContextOptionPane
 {

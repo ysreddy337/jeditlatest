@@ -27,13 +27,11 @@ import java.io.*;
 import java.net.URL;
 import java.util.*;
 import java.util.zip.GZIPInputStream;
+
+import org.gjt.sp.util.*;
 import org.xml.sax.XMLReader;
 import org.xml.sax.InputSource;
 import org.xml.sax.helpers.XMLReaderFactory;
-import org.gjt.sp.util.Log;
-import org.gjt.sp.util.StandardUtilities;
-import org.gjt.sp.util.WorkRequest;
-import org.gjt.sp.util.IOUtilities;
 import org.gjt.sp.jedit.*;
 //}}}
 
@@ -41,7 +39,7 @@ import org.gjt.sp.jedit.*;
 /**
  * Plugin list downloaded from server.
  * @since jEdit 3.2pre2
- * @version $Id: PluginList.java 12504 2008-04-22 23:12:43Z ezust $
+ * @version $Id: PluginList.java 17948 2010-06-01 21:18:14Z kpouer $
  */
 class PluginList
 {
@@ -50,6 +48,7 @@ class PluginList
 	 */
 	public static final int GZIP_MAGIC_1 = 0x1f;
 	public static final int GZIP_MAGIC_2 = 0x8b;
+	public static final long MILLISECONDS_PER_MINUTE = 60L * 1000;
 
 	final List<Plugin> plugins = new ArrayList<Plugin>();
 	final Map<String, Plugin> pluginHash = new HashMap<String, Plugin>();
@@ -61,13 +60,13 @@ class PluginList
 	 */
 	private final String id;
 	private String cachedURL;
-	private WorkRequest workRequest;
+	private final Task task;
 	String gzipURL;
 	//{{{ PluginList constructor
-	PluginList(WorkRequest workRequest) 
+	PluginList(Task task)
 	{
 		id = jEdit.getProperty("plugin-manager.mirror.id");
-		this.workRequest = workRequest;
+		this.task = task;
 		readPluginList(true);
 	}
 	
@@ -97,7 +96,7 @@ class PluginList
 				long currentTime = System.currentTimeMillis();
 				long age = currentTime - f.lastModified();
 				/* By default only download plugin lists every 5 minutes */
-				long interval = jEdit.getIntegerProperty("plugin-manager.list-cache.minutes", 5) * 60 * 1000;
+				long interval = jEdit.getIntegerProperty("plugin-manager.list-cache.minutes", 5) * MILLISECONDS_PER_MINUTE;
 				if (age > interval)
 				{
 					Log.log(Log.MESSAGE, this, "PluginList cached copy too old. Downloading from mirror. ");
@@ -174,7 +173,7 @@ class PluginList
 		try
 		{
 			
-			workRequest.setStatus(jEdit.getProperty("plugin-manager.list-download"));
+			task.setStatus(jEdit.getProperty("plugin-manager.list-download"));
 			InputStream inputStream = new URL(gzipURL).openStream();
 			String fileName = cachedURL.replaceFirst("file:///", "");
 			out = new BufferedOutputStream(new FileOutputStream(fileName));
@@ -256,7 +255,6 @@ class PluginList
 	static class PluginSet
 	{
 		String name;
-		String description;
 		final List<String> plugins = new ArrayList<String>();
 
 		public String toString()

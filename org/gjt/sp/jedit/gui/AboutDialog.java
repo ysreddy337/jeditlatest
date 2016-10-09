@@ -24,6 +24,7 @@ package org.gjt.sp.jedit.gui;
 
 //{{{ Imports
 import javax.swing.*;
+
 import java.awt.event.*;
 import java.awt.*;
 import java.awt.geom.*;
@@ -129,7 +130,7 @@ public class AboutDialog extends JDialog implements ActionListener
 			}
 			else
 				mode = jEdit.getProperty("about.mode.standalone");
-			String[] args = { jEdit.getVersion(), mode, System.getProperty("java.version") };
+			String[] args = { jEdit.getVersion(), mode, System.getProperty("java.vendor"), System.getProperty("java.version") };
 			sBottomLine = jEdit.getProperty("about.version",args);
 			setFont(defaultFont);
 			fm = getFontMetrics(defaultFont);
@@ -183,9 +184,17 @@ public class AboutDialog extends JDialog implements ActionListener
 			}
 			else if ((e.getKeyCode() == KeyEvent.VK_LEFT) ||
 					(e.getKeyCode() == KeyEvent.VK_RIGHT) ||
-					(e.getKeyCode() == KeyEvent.VK_ESCAPE))
+					(e.getKeyCode() == KeyEvent.VK_SPACE)) 
 			{
 				skipDrain = ! skipDrain;
+				e.consume();
+			}
+			else if ((e.getKeyCode()) == KeyEvent.VK_ESCAPE) 
+			{
+				e.consume();
+				JDialog d = GUIUtilities.getParentDialog(this);
+				stopThread();
+				d.dispose();
 			}
 		}
 

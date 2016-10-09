@@ -32,11 +32,11 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
+import org.gjt.sp.util.ThreadUtilities;
 import org.xml.sax.Attributes;
 import org.xml.sax.helpers.DefaultHandler;
 
 import org.gjt.sp.jedit.browser.FileCellRenderer; // for icons
-import org.gjt.sp.jedit.io.VFSManager;
 import org.gjt.sp.jedit.*;
 import org.gjt.sp.util.Log;
 import org.gjt.sp.util.StandardUtilities;
@@ -53,7 +53,7 @@ public class HelpTOCPanel extends JPanel
 		super(new BorderLayout());
 
 		this.helpViewer = helpViewer;
-		nodes = new Hashtable();
+		nodes = new HashMap<String,DefaultMutableTreeNode>();
 
 		toc = new TOCTree();
 
@@ -76,15 +76,22 @@ public class HelpTOCPanel extends JPanel
 		if(tocModel == null)
 			return;
 
-		DefaultMutableTreeNode node = (DefaultMutableTreeNode)nodes.get(shortURL);
+		final DefaultMutableTreeNode node =
+			nodes.get(shortURL);
 
 		if(node == null)
 			return;
 
-		TreePath path = new TreePath(tocModel.getPathToRoot(node));
-		toc.expandPath(path);
-		toc.setSelectionPath(path);
-		toc.scrollPathToVisible(path);
+		EventQueue.invokeLater(new Runnable()
+		{
+			public void run()
+			{
+				TreePath path = new TreePath(tocModel.getPathToRoot(node));
+				toc.expandPath(path);
+				toc.setSelectionPath(path);
+				toc.scrollPathToVisible(path);
+			}
+		});
 	} //}}}
 
 	//{{{ load() method
@@ -96,7 +103,7 @@ public class HelpTOCPanel extends JPanel
 		toc.setModel(empty);
 		toc.setRootVisible(true);
 
-		VFSManager.runInWorkThread(new Runnable()
+		ThreadUtilities.runInBackground(new Runnable()
 		{
 			public void run()
 			{
@@ -123,7 +130,7 @@ public class HelpTOCPanel extends JPanel
 	private DefaultTreeModel tocModel;
 	private DefaultMutableTreeNode tocRoot;
 	private JTree toc;
-	private Hashtable nodes;
+	private Map<String, DefaultMutableTreeNode> nodes;
 
 	//{{{ createNode() method
 	private DefaultMutableTreeNode createNode(String href, String title)
@@ -159,7 +166,7 @@ public class HelpTOCPanel extends JPanel
 		tocRoot.add(createNode("COPYING.PLUGINS.txt",
 			jEdit.getProperty("helpviewer.toc.copying-plugins")));
 
-		loadTOC(tocRoot,"news43/toc.xml");
+		loadTOC(tocRoot,"news44/toc.xml");
 		loadTOC(tocRoot,"users-guide/toc.xml");
 		loadTOC(tocRoot,"FAQ/toc.xml");
 
@@ -175,16 +182,13 @@ public class HelpTOCPanel extends JPanel
 
 			String docs = jEdit.getProperty("plugin." + name + ".docs");
 			String label = jEdit.getProperty("plugin." + name + ".name");
-			if(docs != null)
+			if(label != null && docs != null)
 			{
-				if(label != null && docs != null)
-				{
-					String path = plugin.getPluginJAR()
-						.getClassLoader()
-						.getResourceAsPath(docs);
-					pluginTree.add(createNode(
-						path,label));
-				}
+				String path = plugin.getPluginJAR()
+					.getClassLoader()
+					.getResourceAsPath(docs);
+				pluginTree.add(createNode(
+					path,label));
 			}
 		}
 
@@ -262,7 +266,7 @@ public class HelpTOCPanel extends JPanel
 		//{{{ TOCHandler constructor
 		TOCHandler(DefaultMutableTreeNode root, String dir)
 		{
-			nodes = new Stack();
+			nodes = new Stack<DefaultMutableTreeNode>();
 			node = root;
 			this.dir = dir;
 		} //}}}
@@ -311,7 +315,7 @@ public class HelpTOCPanel extends JPanel
 			}
 			else if(name.equals("ENTRY"))
 			{
-				node = (DefaultMutableTreeNode)nodes.pop();
+				node = nodes.pop();
 				href = null;
 			}
 		} //}}}
@@ -321,7 +325,7 @@ public class HelpTOCPanel extends JPanel
 		private StringBuilder title = new StringBuilder();
 		private String href;
 		private DefaultMutableTreeNode node;
-		private Stack nodes;
+		private Stack<DefaultMutableTreeNode> nodes;
 		//}}}
 	} //}}}
 
@@ -451,7 +455,7 @@ public class HelpTOCPanel extends JPanel
 	} //}}}
 
 	//{{{ TOCCellRenderer class
-	class TOCCellRenderer extends DefaultTreeCellRenderer
+	static class TOCCellRenderer extends DefaultTreeCellRenderer
 	{
 		EmptyBorder border = new EmptyBorder(1,0,1,1);
 
@@ -471,12 +475,10 @@ public class HelpTOCPanel extends JPanel
 	} //}}}
 
 	//{{{ PluginCompare class
-	static class PluginCompare implements Comparator
+	static class PluginCompare implements Comparator<EditPlugin>
 	{
-		public int compare(Object o1, Object o2)
+		public int compare(EditPlugin p1, EditPlugin p2)
 		{
-			EditPlugin p1 = (EditPlugin)o1;
-			EditPlugin p2 = (EditPlugin)o2;
 			return StandardUtilities.compareStrings(
 				jEdit.getProperty("plugin." + p1.getClassName() + ".name"),
 				jEdit.getProperty("plugin." + p2.getClassName() + ".name"),

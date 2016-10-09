@@ -23,6 +23,7 @@
 package org.gjt.sp.jedit.browser;
 
 //{{{ Imports
+import org.gjt.sp.jedit.EditBus.EBHandler;
 import org.gjt.sp.jedit.bsh.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.*;
@@ -49,14 +50,14 @@ import org.gjt.sp.jedit.menu.MenuItemTextComparator;
  * VFSFileChooserDialog.
  * 
  * @author Slava Pestov
- * @version $Id: VFSBrowser.java 16560 2009-11-29 19:06:17Z kerik-sf $
+ * @version $Id: VFSBrowser.java 18962 2010-11-15 20:37:46Z ezust $
  */
-public class VFSBrowser extends JPanel implements EBComponent,
-	DefaultFocusComponent, DockableWindow
+public class VFSBrowser extends JPanel implements DefaultFocusComponent,
+	DockableWindow
 {
 	public static final String NAME = "vfs.browser";
 
-	//{{{ Browser types
+	//{{{ Browser modes
 	/**
 	 * Open file dialog mode. Equals JFileChooser.OPEN_DIALOG for
 	 * backwards compatibility.
@@ -78,7 +79,7 @@ public class VFSBrowser extends JPanel implements EBComponent,
 	public static final int CHOOSE_DIRECTORY_DIALOG = 3;
 
 	/**
-	 * Stand-alone browser mode.
+	 * Stand-alone dockable browser mode.
 	 */
 	public static final int BROWSER = 2;
 	//}}}
@@ -171,21 +172,17 @@ public class VFSBrowser extends JPanel implements EBComponent,
 		this.multipleSelection = multipleSelection;
 		this.view = view;
 
-		DockableWindowManager dwm = view.getDockableWindowManager();
-		KeyListener keyListener = dwm.closeListener(NAME);
-		addKeyListener(keyListener);
 		
-		currentEncoding = jEdit.getProperty("buffer.encoding",
-			System.getProperty("file.encoding"));
+		currentEncoding = null;
 		autoDetectEncoding = jEdit.getBooleanProperty(
 			"buffer.encodingAutodetect");
 
 		ActionHandler actionHandler = new ActionHandler();
 
 		topBox = new Box(BoxLayout.Y_AXIS);
-		horizontalLayout = (mode != BROWSER
+		horizontalLayout = mode != BROWSER
 			|| DockableWindowManager.TOP.equals(position)
-			|| DockableWindowManager.BOTTOM.equals(position));
+			|| DockableWindowManager.BOTTOM.equals(position);
 
 		toolbarBox = new Box(horizontalLayout
 			? BoxLayout.X_AXIS
@@ -211,24 +208,10 @@ public class VFSBrowser extends JPanel implements EBComponent,
 
 		pathField = new HistoryTextField("vfs.browser.path");
 		pathField.setName("path");
-		pathField.addKeyListener(keyListener);
 		pathField.setInstantPopups(true);
 		pathField.setEnterAddsToHistory(false);
 		pathField.setSelectAllOnFocus(true);
 		
-		if (mode == BROWSER)
-		{
-			pathField.addKeyListener(new KeyAdapter()
-			{
-				public void keyReleased(KeyEvent e)
-				{
-					if (e.getKeyCode() == KeyEvent.VK_ESCAPE)
-					{
-						pathField.setText(VFSBrowser.this.path);
-					}
-				}
-			});
-		}
 
 		// because its preferred size can be quite wide, we
 		// don't want it to make the browser way too big,
@@ -252,7 +235,6 @@ public class VFSBrowser extends JPanel implements EBComponent,
 			"vfs.browser.filter-enabled"));
 
 		filterCheckbox.addActionListener(actionHandler);
-		filterCheckbox.addKeyListener(keyListener);
 		filterCheckbox.setName("filter-checkbox");
 		if(mode != CHOOSE_DIRECTORY_DIALOG)
 		{
@@ -270,9 +252,30 @@ public class VFSBrowser extends JPanel implements EBComponent,
 		filterEditor.setInstantPopups(true);
 		filterEditor.setSelectAllOnFocus(true);
 		filterEditor.addActionListener(actionHandler);
-		filterEditor.addKeyListener(keyListener);
 		filterField.setName("filter-field");
 		String filter;
+		if (mode == BROWSER)
+		{
+			DockableWindowManager dwm = view.getDockableWindowManager();
+			KeyListener keyListener = dwm.closeListener(NAME);
+			filterCheckbox.addKeyListener(keyListener);	
+			addKeyListener(keyListener);
+			filterEditor.addKeyListener(keyListener);
+			pathField.addKeyListener(keyListener);
+			// save the location on close of dockable.
+			pathField.addKeyListener(new KeyAdapter()
+			{
+				@Override
+				public void keyReleased(KeyEvent e)
+				{
+					if (e.getKeyCode() == KeyEvent.VK_ESCAPE)
+					{
+						pathField.setText(VFSBrowser.this.path);
+					}
+				}
+			});
+		}
+
 		if(mode == BROWSER || !jEdit.getBooleanProperty(
 			"vfs.browser.currentBufferFilter"))
 		{
@@ -425,32 +428,41 @@ public class VFSBrowser extends JPanel implements EBComponent,
 		EditBus.removeFromBus(this);
 	} //}}}
 
-	//{{{ handleMessage() method
-	public void handleMessage(EBMessage msg)
+	//{{{ handlePropertiesChanged() method
+	@EBHandler
+	public void handlePropertiesChanged(PropertiesChanged msg)
 	{
-		if(msg instanceof PropertiesChanged)
-			propertiesChanged();
-		else if(msg instanceof BufferUpdate)
+		propertiesChanged();
+	} //}}}
+
+	//{{{ handleBufferUpdate() method
+	@EBHandler
+	public void handleBufferUpdate(BufferUpdate bmsg)
+	{
+		if (bmsg.getWhat() == BufferUpdate.CREATED ||
+			bmsg.getWhat() == BufferUpdate.CLOSED)
 		{
-			BufferUpdate bmsg = (BufferUpdate)msg;
-			if(bmsg.getWhat() == BufferUpdate.CREATED
-				|| bmsg.getWhat() == BufferUpdate.CLOSED)
-				browserView.updateFileView();
+			browserView.updateFileView();
 		}
-		else if(msg instanceof PluginUpdate)
+	} //}}}
+
+	//{{{ handlePluginUpdate() method
+	@EBHandler
+	public void handlePluginUpdate(PluginUpdate pmsg)
+	{
+		if((pmsg.getWhat() == PluginUpdate.LOADED ||
+		   pmsg.getWhat() == PluginUpdate.UNLOADED) &&
+		   plugins != null /* plugins can be null if the VFSBrowser menu bar is hidden */)
 		{
-			PluginUpdate pmsg = (PluginUpdate)msg;
-			if((pmsg.getWhat() == PluginUpdate.LOADED ||
-			   pmsg.getWhat() == PluginUpdate.UNLOADED) &&
-				plugins != null /* plugins can be null if the VFSBrowser menu bar is hidden */)
-			{
-				plugins.updatePopupMenu();
-			}
+			plugins.updatePopupMenu();
 		}
-		else if(msg instanceof VFSUpdate)
-		{
-			maybeReloadDirectory(((VFSUpdate)msg).getPath());
-		}
+	} //}}}
+
+	//{{{ handleVFSUpdate() method
+	@EBHandler
+	public void handleVFSUpdate(VFSUpdate msg)
+	{
+		maybeReloadDirectory(msg.getPath());
 	} //}}}
 
 	//{{{ getView() method
@@ -618,16 +630,15 @@ public class VFSBrowser extends JPanel implements EBComponent,
 
 		historyStack.push(path);
 		browserView.saveExpansionState();
-		browserView.loadDirectory(null,path,true);
-		this.path = path;
-
-		VFSManager.runInAWTThread(new Runnable()
+		Runnable delayedAWTRequest = new Runnable()
 		{
 			public void run()
 			{
 				endRequest();
 			}
-		});
+		};
+		browserView.loadDirectory(null,path,true, delayedAWTRequest);
+		this.path = path;
 	} //}}}
 
 	//{{{ getRootDirectory() method
@@ -763,7 +774,6 @@ public class VFSBrowser extends JPanel implements EBComponent,
 		VFS vfs = VFSManager.getVFSForPath(from);
 
 		String filename = vfs.getFileName(from);
-		String[] args = { filename };
 		String to = newname;
 		
 		if(to == null || filename.equals(newname))
@@ -922,8 +932,8 @@ public class VFSBrowser extends JPanel implements EBComponent,
 		{
 			String name = MiscUtilities.getFileName(path);
 			String ext = MiscUtilities.getFileExtension(name);
-			filter = (ext == null || ext.length() == 0
-				? filter : '*' + ext);
+			filter = ext == null || ext.length() == 0
+				? filter : '*' + ext;
 			path = MiscUtilities.getParentOfPath(path);
 		}
 
@@ -940,11 +950,48 @@ public class VFSBrowser extends JPanel implements EBComponent,
 
 	//{{{ getSelectedFiles() method
 	/**
+	 * Return the selected files in the lower browser tree.
 	 * @since jEdit 4.3pre2
 	 */
 	public VFSFile[] getSelectedFiles()
 	{
 		return browserView.getSelectedFiles();
+	} //}}}
+
+	//{{{ getSelectedFiles() method
+	/**
+	 * Return the selected files from the point of view of the
+	 * given component. This may be the selected directory from the
+	 * upper tree component of the browser (directory tree) or
+	 * the selected files in the bottom tree component.
+	 * This method is to be used by code running inside VFSBrowser
+	 * such as a DynamicMenuProvider. Use the other method otherwise.
+	 * The main difference is this function searches the component
+	 * hierarchy for a {@link BrowserView.ParentDirectoryList} to get
+	 * the list of currently selected files from there. Otherwise, it
+	 * returns what {@link #getSelectedFiles()} would return.
+	 * @param source the source component to start from when
+	 * 		navigating the component hierarchy
+	 * @since jEdit 4.4pre1
+	 */
+	public VFSFile[] getSelectedFiles(Component source)
+	{
+		if(GUIUtilities.getComponentParent(source, BrowserView.ParentDirectoryList.class)
+			!= null)
+		{
+			Object[] selected = getBrowserView()
+				.getParentDirectoryList()
+				.getSelectedValues();
+			VFSFile[] returnValue = new VFSFile[
+				selected.length];
+			System.arraycopy(selected,0,returnValue,0,
+				selected.length);
+			return returnValue;
+		}
+		else
+		{
+			return getSelectedFiles();
+		}
 	} //}}}
 
 	//{{{ locateFile() method
@@ -997,11 +1044,11 @@ public class VFSBrowser extends JPanel implements EBComponent,
 			if((vfs.getCapabilities() & VFS.BROWSE_CAP) == 0)
 				continue;
 
-				JMenuItem menuItem = new JMenuItem(jEdit.getProperty(
-						"vfs." + vfs.getName() + ".label"));
-				menuItem.setActionCommand(vfs.getName());
-				menuItem.addActionListener(actionHandler);
-				vec.add(menuItem);
+			JMenuItem menuItem = new JMenuItem(jEdit.getProperty(
+					"vfs." + vfs.getName() + ".label"));
+			menuItem.setActionCommand(vfs.getName());
+			menuItem.addActionListener(actionHandler);
+			vec.add(menuItem);
 		} //}}}
 
 		//{{{ new API
@@ -1086,9 +1133,12 @@ check_selected: for(int i = 0; i < selectedFiles.length; i++)
 				if(_buffer == null)
 				{
 					Hashtable<String, Object> props = new Hashtable<String, Object>();
-					props.put(JEditBuffer.ENCODING,currentEncoding);
+					if(currentEncoding != null)
+					{
+						props.put(JEditBuffer.ENCODING,currentEncoding);
+					}
 					props.put(Buffer.ENCODING_AUTODETECT,
-						  Boolean.valueOf(autoDetectEncoding));
+						autoDetectEncoding);
 					_buffer = jEdit.openFile(view, null,
 						file.getPath(),false,props);
 				}
@@ -1150,13 +1200,24 @@ check_selected: for(int i = 0; i < selectedFiles.length; i++)
 		}
 	} //}}}
 
+	//{{{ dispose() method
+	/** Disposes the browser, regardless of whether it is a dialog or a dockable
+	*/
+	public void dispose() {	
+		if (this.mode == BROWSER) {
+			view.getDockableWindowManager().hideDockableWindow(NAME);			
+		}
+		else {
+			GUIUtilities.getParentDialog(this).dispose();
+		}	
+	}//}}}
 
 	//{{{ move() method
 	public void move(String newPosition)
 	{
-		boolean horz = (mode != BROWSER
+		boolean horz = mode != BROWSER
 				|| DockableWindowManager.TOP.equals(newPosition)
-				|| DockableWindowManager.BOTTOM.equals(newPosition));
+				|| DockableWindowManager.BOTTOM.equals(newPosition);
 		if (horz == horizontalLayout)
 			return;
 		horizontalLayout = horz;
@@ -1169,15 +1230,107 @@ check_selected: for(int i = 0; i < selectedFiles.length; i++)
 	} //}}}
 	
 	//{{{ Package-private members
+
+	// This can be null untill an user explicitly selects an encoding
+	// so that this don't overwrite more accurate encoding information
+	// like buffer histories.
 	String currentEncoding;
+
 	boolean autoDetectEncoding;
 
 	//{{{ directoryLoaded() method
 	void directoryLoaded(Object node, Object[] loadInfo,
 		boolean addToHistory)
 	{
-		VFSManager.runInAWTThread(new DirectoryLoadedAWTRequest(
-			node,loadInfo,addToHistory));
+		String path = (String)loadInfo[0];
+		if(path == null)
+		{
+			// there was an error
+			return;
+		}
+
+		VFSFile[] list = (VFSFile[])loadInfo[1];
+
+		if(node == null)
+		{
+			// This is the new, canonical path
+			VFSBrowser.this.path = path;
+			if(!pathField.getText().equals(path))
+				pathField.setText(path);
+			if(path.endsWith("/") ||
+				path.endsWith(File.separator))
+			{
+				// ensure consistent history;
+				// eg we don't want both
+				// foo/ and foo
+				path = path.substring(0,
+					path.length() - 1);
+			}
+
+			if(addToHistory)
+			{
+				HistoryModel.getModel("vfs.browser.path")
+					.addItem(path);
+			}
+		}
+
+		boolean filterEnabled = filterCheckbox.isSelected();
+
+		List<VFSFile> directoryList = new ArrayList<VFSFile>();
+
+		int directories = 0;
+		int files = 0;
+		int invisible = 0;
+
+		if(list != null)
+		{
+			VFSFileFilter filter = getVFSFileFilter();
+
+			for(int i = 0; i < list.length; i++)
+			{
+				VFSFile file = list[i];
+				if(file.isHidden() && !showHiddenFiles)
+				{
+					invisible++;
+					continue;
+				}
+
+				if (filter != null && (filterEnabled || filter instanceof DirectoriesOnlyFilter)
+				    && !filter.accept(file))
+				{
+					invisible++;
+					continue;
+				}
+
+				if(file.getType() == VFSFile.FILE)
+					files++;
+				else
+					directories++;
+
+				directoryList.add(file);
+			}
+
+			Collections.sort(directoryList,
+				new VFS.DirectoryEntryCompare(
+				sortMixFilesAndDirs,
+				sortIgnoreCase));
+		}
+
+		browserView.directoryLoaded(node,path,
+			directoryList);
+
+		// to notify listeners that any existing
+		// selection has been deactivated
+
+		// turns out under some circumstances this
+		// method can switch the current buffer in
+		// BROWSER mode.
+
+		// in any case, this is only needed for the
+		// directory chooser (why?), so we add a
+		// check. otherwise poor Rick will go insane.
+		if(mode == CHOOSE_DIRECTORY_DIALOG)
+			filesSelected();
 	} //}}}
 
 	//{{{ filesSelected() method
@@ -1257,8 +1410,8 @@ check_selected: for(int i = 0; i < selectedFiles.length; i++)
 	private boolean requestRunning;
 	private boolean maybeReloadRequestRunning;
 	
-	private Stack<String> historyStack = new Stack<String>();
-	private Stack<String> nextDirectoryStack = new Stack<String>();
+	private final Stack<String> historyStack = new Stack<String>();
+	private final Stack<String> nextDirectoryStack = new Stack<String>();
 	//}}}
 
 	//{{{ createMenuBar() method
@@ -1302,12 +1455,7 @@ check_selected: for(int i = 0; i < selectedFiles.length; i++)
 		if(jEdit.getBooleanProperty("vfs.browser.showToolbar"))
 		{
 			Container toolbar = createToolBar();
-			if(horizontalLayout)
-				toolbarBox.add(toolbar);
-			else
-			{
-				toolbarBox.add(toolbar);
-			}
+			toolbarBox.add(toolbar);
 		}
 
 		if(jEdit.getBooleanProperty("vfs.browser.showMenubar"))
@@ -1779,161 +1927,19 @@ check_selected: for(int i = 0; i < selectedFiles.length; i++)
 		} //}}}
 	} //}}}
 
-	//{{{ DirectoryLoadedAWTRequest class
-	class DirectoryLoadedAWTRequest implements Runnable
-	{
-		private Object node;
-		private Object[] loadInfo;
-		private boolean addToHistory;
-
-		DirectoryLoadedAWTRequest(Object node, Object[] loadInfo,
-			boolean addToHistory)
-		{
-			this.node = node;
-			this.loadInfo = loadInfo;
-			this.addToHistory = addToHistory;
-		}
-
-		public void run()
-		{
-			String path = (String)loadInfo[0];
-			if(path == null)
-			{
-				// there was an error
-				return;
-			}
-
-			VFSFile[] list = (VFSFile[])loadInfo[1];
-
-			if(node == null)
-			{
-				// This is the new, canonical path
-				VFSBrowser.this.path = path;
-				if(!pathField.getText().equals(path))
-					pathField.setText(path);
-				if(path.endsWith("/") ||
-					path.endsWith(File.separator))
-				{
-					// ensure consistent history;
-					// eg we don't want both
-					// foo/ and foo
-					path = path.substring(0,
-						path.length() - 1);
-				}
-
-				if(addToHistory)
-				{
-					HistoryModel.getModel("vfs.browser.path")
-						.addItem(path);
-				}
-			}
-
-			boolean filterEnabled = filterCheckbox.isSelected();
-
-			List<VFSFile> directoryList = new ArrayList<VFSFile>();
-
-			int directories = 0;
-			int files = 0;
-			int invisible = 0;
-
-			if(list != null)
-			{
-				VFSFileFilter filter = getVFSFileFilter();
-
-				for(int i = 0; i < list.length; i++)
-				{
-					VFSFile file = list[i];
-					if(file.isHidden() && !showHiddenFiles)
-					{
-						invisible++;
-						continue;
-					}
-
-					if (filter != null && (filterEnabled || filter instanceof DirectoriesOnlyFilter)
-					    && !filter.accept(file))
-					{
-						invisible++;
-						continue;
-					}
-
-					if(file.getType() == VFSFile.FILE)
-						files++;
-					else
-						directories++;
-
-					directoryList.add(file);
-				}
-
-				Collections.sort(directoryList,
-					new VFS.DirectoryEntryCompare(
-					sortMixFilesAndDirs,
-					sortIgnoreCase));
-			}
-
-			browserView.directoryLoaded(node,path,
-				directoryList);
-
-			// to notify listeners that any existing
-			// selection has been deactivated
-
-			// turns out under some circumstances this
-			// method can switch the current buffer in
-			// BROWSER mode.
-
-			// in any case, this is only needed for the
-			// directory chooser (why?), so we add a
-			// check. otherwise poor Rick will go insane.
-			if(mode == CHOOSE_DIRECTORY_DIALOG)
-				filesSelected();
-		}
-
-		@Override
-		public String toString()
-		{
-			return (String)loadInfo[0];
-		}
-	} //}}}
-
 	//{{{ BrowserActionContext class
 	static class BrowserActionContext extends ActionContext
 	{
-		/**
-		 * If event source hierarchy contains a VFSDirectoryEntryTable,
-		 * this is the currently selected files there. Otherwise, this
-		 * is the currently selected item in the parent directory list.
-		 */
-		private static VFSFile[] getSelectedFiles(EventObject evt,
-			VFSBrowser browser)
-		{
-			Component source = (Component)evt.getSource();
-
-			if(GUIUtilities.getComponentParent(source, BrowserView.ParentDirectoryList.class)
-				!= null)
-			{
-				Object[] selected = browser.getBrowserView()
-					.getParentDirectoryList()
-					.getSelectedValues();
-				VFSFile[] returnValue = new VFSFile[
-					selected.length];
-				System.arraycopy(selected,0,returnValue,0,
-					selected.length);
-				return returnValue;
-			}
-			else
-			{
-				return browser.getSelectedFiles();
-			}
-		}
-
 		@Override
 		public void invokeAction(EventObject evt, EditAction action)
 		{
+			Component source = (Component)evt.getSource();
 			VFSBrowser browser = (VFSBrowser)
 				GUIUtilities.getComponentParent(
-				(Component)evt.getSource(),
+				source,
 				VFSBrowser.class);
 
-			VFSFile[] files = getSelectedFiles(evt,browser);
+			VFSFile[] files = browser.getSelectedFiles(source);
 
 			// in the future we will want something better,
 			// eg. having an 'evt' object passed to
@@ -2023,15 +2029,15 @@ check_selected: for(int i = 0; i < selectedFiles.length; i++)
 				return;
 			}
 
-			// this happens when changing the selected item
-			// in the combo; the combo has not yet fired an
-			// itemStateChanged() event, so it's not put into
-			// non-editable mode by the handler above.
-			if (!(item instanceof GlobVFSFileFilter))
-				return;
-
 			if (item != null)
 			{
+				// this happens when changing the selected item
+				// in the combo; the combo has not yet fired an
+				// itemStateChanged() event, so it's not put into
+				// non-editable mode by the handler above.
+				if (!(item instanceof GlobVFSFileFilter))
+					return;
+
 				GlobVFSFileFilter filter = (GlobVFSFileFilter) item;
 				filter = new GlobVFSFileFilter(filter.getGlob());
 				setText(filter.getGlob());

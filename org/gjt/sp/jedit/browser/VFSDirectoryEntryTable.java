@@ -44,11 +44,12 @@ import org.gjt.sp.jedit.MiscUtilities;
 import org.gjt.sp.jedit.GUIUtilities;
 import org.gjt.sp.jedit.jEdit;
 import org.gjt.sp.util.Log;
+import org.gjt.sp.util.ThreadUtilities;
 //}}}
 
 /**
  * @author Slava Pestov
- * @version $Id: VFSDirectoryEntryTable.java 16348 2009-10-14 10:40:15Z kpouer $
+ * @version $Id: VFSDirectoryEntryTable.java 18962 2010-11-15 20:37:46Z ezust $
  * @since jEdit 4.2pre1
  */
 public class VFSDirectoryEntryTable extends JTable
@@ -158,26 +159,29 @@ public class VFSDirectoryEntryTable extends JTable
 		if(entry.dirEntry.getType() == VFSFile.FILE)
 			return;
 
-		if(entry.expanded)
-		{
-			model.collapse(VFSManager.getVFSForPath(
-				entry.dirEntry.getPath()),row);
-			resizeColumns();
-		}
-		else
-		{
-			browserView.clearExpansionState();
-			browserView.loadDirectory(entry,entry.dirEntry.getPath(),
-				false);
-		}
-
-		VFSManager.runInAWTThread(new Runnable()
+		Runnable delayedAwtTask = new Runnable()
 		{
 			public void run()
 			{
 				setSelectedRow(row);
 			}
-		});
+		};
+		if(entry.expanded)
+		{
+			model.collapse(VFSManager.getVFSForPath(
+				entry.dirEntry.getPath()),row);
+			resizeColumns();
+			ThreadUtilities.runInDispatchThread(delayedAwtTask);
+		}
+		else
+		{
+			browserView.clearExpansionState();
+			browserView.loadDirectory(entry,entry.dirEntry.getPath(),
+				false, delayedAwtTask);
+		}
+
+
+
 	} //}}}
 
 	//{{{ setDirectory() method
@@ -359,9 +363,8 @@ public class VFSDirectoryEntryTable extends JTable
 				ac.invokeAction(evt, newDir);
 				break;
 			case KeyEvent.VK_ESCAPE:
-				EditAction cda = jac.getAction("close-docking-area");
-				cda.invoke(jEdit.getActiveView());
-				evt.consume();
+				EditAction cda = ac.getAction("vfs.browser.closedialog");
+				ac.invokeAction(evt, cda);
 				break;
 			case KeyEvent.VK_F2:
 				EditAction ren = ac.getAction("vfs.browser.rename");
@@ -593,6 +596,8 @@ public class VFSDirectoryEntryTable extends JTable
 		{
 			super.mouseClicked(e);
 			int ind = getSelectionModel().getMinSelectionIndex();
+			if (ind == -1)
+				return;
 			Entry node = (Entry) getModel().getValueAt(ind, 0);
 			boolean isDir = node.dirEntry.getType() == VFSFile.DIRECTORY;
 			EditBus.send(new VFSPathSelected(jEdit.getActiveView(),

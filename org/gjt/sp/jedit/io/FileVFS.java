@@ -32,13 +32,14 @@ import java.io.*;
 import java.text.*;
 import java.util.Date;
 import org.gjt.sp.jedit.*;
+import org.gjt.sp.util.IOUtilities;
 import org.gjt.sp.util.Log;
 //}}}
 
 /**
  * Local filesystem VFS.
  * @author Slava Pestov
- * @version $Id: FileVFS.java 15384 2009-06-03 13:49:06Z kpouer $
+ * @version $Id: FileVFS.java 17540 2010-03-27 01:09:11Z kpouer $
  */
 public class FileVFS extends VFS
 {
@@ -512,10 +513,6 @@ public class FileVFS extends VFS
 		throws IOException
 	{
 		// Fetch properties
-		int backups = jEdit.getIntegerProperty("backups",1);
-
-		if(backups == 0)
-			return;
 
 		String backupPrefix = jEdit.getProperty("backup.prefix");
 		String backupSuffix = jEdit.getProperty("backup.suffix");
@@ -535,7 +532,7 @@ public class FileVFS extends VFS
 		else
 		{
 			backupDirectory = MiscUtilities.constructPath(
-				System.getProperty("user.home"),backupDirectory);
+				System.getProperty("user.home"), backupDirectory);
 
 			// Perhaps here we would want to guard with
 			// a property for parallel backups or not.
@@ -548,7 +545,7 @@ public class FileVFS extends VFS
 				dir.mkdirs();
 		}
 
-		MiscUtilities.saveBackup(file,backups,backupPrefix,
+		MiscUtilities.saveBackup(file, jEdit.getIntegerProperty("backups",1), backupPrefix,
 			backupSuffix,backupDirectory,backupTimeDistance);
 	} //}}}
 
@@ -609,11 +606,13 @@ public class FileVFS extends VFS
 		{
 			String[] cmdarray = { "ls", "-ld", path };
 
+			InputStreamReader isr = null;
+			BufferedReader reader = null;
 			try
 			{
 				Process process = Runtime.getRuntime().exec(cmdarray);
-
-				BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+				isr = new InputStreamReader(process.getInputStream());
+				reader = new BufferedReader(isr);
 
 				String output = reader.readLine();
 
@@ -631,6 +630,10 @@ public class FileVFS extends VFS
 			// Kaffe's implementation of Runtime.exec throws java.lang.InternalError.
 			catch (Throwable t)
 			{
+			}
+			finally
+			{
+				IOUtilities.closeQuietly(reader);
 			}
 		}
 

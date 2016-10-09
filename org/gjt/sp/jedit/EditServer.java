@@ -54,7 +54,7 @@ import org.gjt.sp.util.Log;
  * complicated stuff can be done too.
  *
  * @author Slava Pestov
- * @version $Id: EditServer.java 16264 2009-10-03 06:29:29Z shlomy $
+ * @version $Id: EditServer.java 19384 2011-02-23 16:50:37Z k_satoda $
  */
 public class EditServer extends Thread
 {
@@ -202,24 +202,33 @@ public class EditServer extends Thread
 			// no views open.
 			// no buffers open if args empty.
 
-			Buffer buffer = jEdit.openFiles(null,parent,args);
+			boolean hasBufferArgs = false;
 
-			if(jEdit.getBufferCount() == 0)
-				jEdit.newFile((EditPane) null);
+			for (String arg : args)
+			{
+				if (arg != null)
+				{
+					hasBufferArgs = true;
+					break;
+				}
+			}
+
 
 			boolean restoreFiles = restore
 				&& jEdit.getBooleanProperty("restore")
-				&& (buffer == null
+				&& (!hasBufferArgs
 				|| jEdit.getBooleanProperty("restore.cli"));
 
 			View view = PerspectiveManager.loadPerspective(
 				restoreFiles);
 
+			Buffer buffer = jEdit.openFiles(view,parent,args);
+
 			if(view == null)
 			{
 				if(buffer == null)
 					buffer = jEdit.getFirstBuffer();
-				view = jEdit.newView(null,buffer);
+				jEdit.newView(null,buffer);
 			}
 			else if(buffer != null)
 				view.setBuffer(buffer,false);
@@ -262,7 +271,12 @@ public class EditServer extends Thread
 			view.setState(java.awt.Frame.NORMAL);
 			view.requestFocus();
 			view.toFront();
-
+			// In some platforms (e.g. Windows), only setAlwaysOnTop works
+			if (! view.isAlwaysOnTop())
+			{
+				view.setAlwaysOnTop(true);
+				view.setAlwaysOnTop(false);
+			}
 			return buffer;
 		}
 	} //}}}

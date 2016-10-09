@@ -23,17 +23,7 @@
 package org.gjt.sp.jedit;
 
 //{{{ Imports
-import java.awt.AWTEvent;
-import java.awt.BorderLayout;
-import java.awt.Component;
-import java.awt.Container;
-import java.awt.Cursor;
-import java.awt.Dimension;
-import java.awt.Frame;
-import java.awt.GraphicsConfiguration;
-import java.awt.GraphicsDevice;
-import java.awt.GraphicsEnvironment;
-import java.awt.Rectangle;
+import java.awt.*;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.awt.event.KeyEvent;
@@ -56,13 +46,15 @@ import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JSplitPane;
 import javax.swing.LayoutFocusTraversalPolicy;
-import javax.swing.SwingUtilities;
+import javax.swing.MenuSelectionManager;
 import javax.swing.event.CaretEvent;
 import javax.swing.event.CaretListener;
 
+import org.gjt.sp.jedit.EditBus.EBHandler;
 import org.gjt.sp.jedit.bufferset.BufferSet;
 import org.gjt.sp.jedit.bufferset.BufferSetManager;
 import org.gjt.sp.jedit.gui.ActionBar;
@@ -135,9 +127,9 @@ import org.gjt.sp.util.StandardUtilities;
  *
  * @author Slava Pestov
  * @author John Gellene (API documentation)
- * @version $Id: View.java 19537 2011-05-17 15:45:40Z jchoyt $
+ * @version $Id: View.java 19139 2010-12-14 21:44:18Z ezust $
  */
-public class View extends JFrame implements EBComponent, InputHandlerProvider
+public class View extends JFrame implements InputHandlerProvider
 {
 	//{{{ User interface
 
@@ -308,7 +300,7 @@ public class View extends JFrame implements EBComponent, InputHandlerProvider
 		return toolBar;
 	} //}}}
 
-	//{{{ addToolBar() method
+	//{{{ addToolBar() methods
 	/**
 	 * Adds a tool bar to this view.
 	 * @param toolBar The tool bar
@@ -316,9 +308,8 @@ public class View extends JFrame implements EBComponent, InputHandlerProvider
 	public void addToolBar(Component toolBar)
 	{
 		addToolBar(DEFAULT_GROUP, DEFAULT_LAYER, toolBar);
-	} //}}}
+	}
 
-	//{{{ addToolBar() method
 	/**
 	 * Adds a tool bar to this view.
 	 * @param group The tool bar group to add to
@@ -329,9 +320,8 @@ public class View extends JFrame implements EBComponent, InputHandlerProvider
 	public void addToolBar(int group, Component toolBar)
 	{
 		addToolBar(group, DEFAULT_LAYER, toolBar);
-	} //}}}
-
-	//{{{ addToolBar() method
+	}
+	
 	/**
 	 * Adds a tool bar to this view.
 	 * @param group The tool bar group to add to
@@ -705,13 +695,7 @@ public class View extends JFrame implements EBComponent, InputHandlerProvider
 
 		editPane.saveCaretInfo();
 		EditPane oldEditPane = editPane;
-		String action = jEdit.getProperty("editpane.bufferset.new");
-		BufferSetManager.NewBufferSetAction bufferSetAction = BufferSetManager.NewBufferSetAction.fromString(action);
-		EditPane newEditPane;
-		if (bufferSetAction == BufferSetManager.NewBufferSetAction.empty)
-			newEditPane = createEditPane(null);
-		else
-			newEditPane = createEditPane(oldEditPane.getBuffer());
+		EditPane newEditPane = createEditPane(oldEditPane);
 //		setEditPane(newEditPane);
 		newEditPane.loadCaretInfo();
 
@@ -758,7 +742,7 @@ public class View extends JFrame implements EBComponent, InputHandlerProvider
 
 		}
 
-		SwingUtilities.invokeLater(new Runnable()
+		EventQueue.invokeLater(new Runnable()
 		{
 			public void run()
 			{
@@ -783,12 +767,13 @@ public class View extends JFrame implements EBComponent, InputHandlerProvider
 			lastSplitConfig = getSplitConfig();
 
 			PerspectiveManager.setPerspectiveDirty(true);
-
+			BufferSet.Scope scope = jEdit.getBufferSetManager().getScope();
 			for(EditPane _editPane: getEditPanes())
 			{
 				if(editPane != _editPane)
 				{
-					mergeBufferSets(editPane, _editPane);
+					if (scope == BufferSet.Scope.editpane)
+						mergeBufferSets(editPane, _editPane);
 					_editPane.close();
 				}
 			}
@@ -824,6 +809,7 @@ public class View extends JFrame implements EBComponent, InputHandlerProvider
 				comp = comp.getParent();
 			}
 
+			BufferSet.Scope scope = jEdit.getBufferSetManager().getScope();
 			// get rid of any edit pane that is a child
 			// of the current edit pane's parent splitter
 			for(EditPane _editPane: getEditPanes())
@@ -831,7 +817,8 @@ public class View extends JFrame implements EBComponent, InputHandlerProvider
 				if(GUIUtilities.isAncestorOf(comp,_editPane)
 					&& _editPane != editPane)
 				{
-					mergeBufferSets(editPane, _editPane);
+					if (scope == BufferSet.Scope.editpane)
+						mergeBufferSets(editPane, _editPane);
 					_editPane.close();
 				}
 			}
@@ -1102,17 +1089,6 @@ public class View extends JFrame implements EBComponent, InputHandlerProvider
 		}
 	} //}}}
 
-	/**
-	 * Returns the view's local buffer set, which can be shared by
-	 * several editpanes.
-	 * @return the view's buffer set
-	 * @since jEdit 4.3pre17
-	 */
-	public BufferSet getLocalBufferSet()
-	{
-		return localBufferSet;
-	}
-
 	//{{{ getViewConfig() method
 	/**
 	 * @return a ViewConfig instance for the current view
@@ -1125,6 +1101,7 @@ public class View extends JFrame implements EBComponent, InputHandlerProvider
 		config.splitConfig = getSplitConfig();
 		config.extState = getExtendedState();
 		config.docking = dockableWindowManager.getDockingLayout(config);
+		config.title = userTitle;
 		String prefix = config.plainView ? "plain-view" : "view";
 		switch (config.extState)
 		{
@@ -1205,20 +1182,19 @@ public class View extends JFrame implements EBComponent, InputHandlerProvider
 		return prev;
 	} //}}}
 
-	//{{{ handleMessage() method
-	public void handleMessage(EBMessage msg)
+	//{{{ handlePropertiesChanged()
+	@EBHandler
+	public void handlePropertiesChanged(PropertiesChanged msg)
 	{
-		if(msg instanceof PropertiesChanged)
-			propertiesChanged();
-		else if(msg instanceof SearchSettingsChanged)
-		{
-			if(searchBar != null)
-				searchBar.update();
-		}
-		else if(msg instanceof BufferUpdate)
-			handleBufferUpdate((BufferUpdate)msg);
-		else if(msg instanceof EditPaneUpdate)
-			handleEditPaneUpdate((EditPaneUpdate)msg);
+		propertiesChanged();
+	} //}}}
+
+	//{{{ handleSearchSettingsChanged() method
+	@EBHandler
+	public void handleSearchSettingsChanged(SearchSettingsChanged msg)
+	{
+		if(searchBar != null)
+			searchBar.update();
 	} //}}}
 
 	//{{{ getMinimumSize() method
@@ -1267,7 +1243,12 @@ public class View extends JFrame implements EBComponent, InputHandlerProvider
 		/* On Mac OS X, apps are not supposed to show their name in the
 		title bar. */
 		if(!OperatingSystem.isMacOS())
-			title.append(jEdit.getProperty("view.title"));
+		{
+			if (userTitle != null)
+				title.append(userTitle);
+			else
+				title.append(jEdit.getProperty("view.title"));
+		}
 
 		for(int i = 0; i < buffers.size(); i++)
 		{
@@ -1282,6 +1263,29 @@ public class View extends JFrame implements EBComponent, InputHandlerProvider
 		}
 
 		setTitle(title.toString());
+	} //}}}
+
+	//{{{ setUserTitle() method
+	/**
+	 * Sets a user-defined title for this view instead of the "view.title" property.
+	 */
+	public void setUserTitle(String title)
+	{
+		userTitle = title + " - ";
+		updateTitle();
+	} //}}}
+
+	//{{{ showUserTitleDialog() method
+	/**
+	 * Shows a dialog for selecting a user-defined title for this view.
+	 */
+	public void showUserTitleDialog()
+	{
+		String title = JOptionPane.showInputDialog(this, jEdit.getProperty(
+			"view.title.select"));
+		if (title == null)
+			return;
+		setUserTitle(title);
 	} //}}}
 
 	//{{{ getPrefixFocusOwner() method
@@ -1313,6 +1317,16 @@ public class View extends JFrame implements EBComponent, InputHandlerProvider
 		}
 	} //}}}
 
+	// {{{ closeAllMenus()
+	/** closes any popup menus that may have been opened 
+	    @since jEdit 4.4pre1
+	*/
+	public void closeAllMenus()
+	{
+		MenuSelectionManager.defaultManager().clearSelectedPath();
+		KeyboardFocusManager.getCurrentKeyboardFocusManager().clearGlobalFocusOwner();
+	} // }}}
+	
 	//{{{ Package-private members
 	View prev;
 	View next;
@@ -1332,6 +1346,7 @@ public class View extends JFrame implements EBComponent, InputHandlerProvider
 		mainPanel.setLayout(new BorderLayout());
 		dockableWindowManager = getDockingFrameworkProvider().create(this,
 			DockableWindowFactory.getInstance(), config);
+		userTitle = config.title;
 		dockableWindowManager.setMainPanel(mainPanel);
 
 		topToolBars = new JPanel(new VariableGridLayout(
@@ -1347,8 +1362,6 @@ public class View extends JFrame implements EBComponent, InputHandlerProvider
 
 		inputHandler = new DefaultInputHandler(this,(DefaultInputHandler)
 			jEdit.getInputHandler());
-
-		localBufferSet = new BufferSet();
 
 		setSplitConfig(buffer,config.splitConfig);
 
@@ -1385,13 +1398,10 @@ public class View extends JFrame implements EBComponent, InputHandlerProvider
 		}
 		else if (menuBar != null)
 			setJMenuBar(menuBar);
+		// Note: Bottom toolbar is the action bar, which is always enabled
+		loadToolBars();
 		if (alternateLayout)
 		{
-			// Note: Bottom toolbar is the action bar, which is always enabled
-			if (! showToolbars)
-				getContentPane().remove(topToolBars);
-			else
-				getContentPane().add(BorderLayout.NORTH,topToolBars);
 			if (! showStatus)
 				removeToolBar(status);
 			else
@@ -1399,11 +1409,6 @@ public class View extends JFrame implements EBComponent, InputHandlerProvider
 		}
 		else
 		{
-			// Note: Bottom toolbar is the action bar, which is always enabled
-			if (! showToolbars)
-				mainPanel.remove(topToolBars);
-			else
-				mainPanel.add(topToolBars, BorderLayout.NORTH);
 			if (! showStatus)
 				getContentPane().remove(status);
 			else
@@ -1433,16 +1438,12 @@ public class View extends JFrame implements EBComponent, InputHandlerProvider
 				setJMenuBar(menuBar);
 			boolean alternateLayout = jEdit.getBooleanProperty(
 				"view.toolbar.alternateLayout");
-			if (alternateLayout)
+			loadToolBars();
+			if (showStatus)
 			{
-				getContentPane().add(BorderLayout.NORTH,topToolBars);
-				if (showStatus)
+				if (alternateLayout)
 					addToolBar(BOTTOM_GROUP,STATUS_BAR_LAYER,status);
-			}
-			else
-			{
-				mainPanel.add(topToolBars, BorderLayout.NORTH);
-				if (showStatus)
+				else
 					getContentPane().add(BorderLayout.SOUTH,status);
 			}
 			setUndecorated(false);
@@ -1450,6 +1451,7 @@ public class View extends JFrame implements EBComponent, InputHandlerProvider
 		}
 		setVisible(true);
 		toFront();
+		closeAllMenus();
 		// so you can keep typing in your editpane afterwards...
 		editPane.getTextArea().requestFocus();
 	} //}}}
@@ -1549,7 +1551,6 @@ public class View extends JFrame implements EBComponent, InputHandlerProvider
 	private EditPane editPane;
 	private JSplitPane splitPane;
 	private String lastSplitConfig;
-	private final BufferSet localBufferSet;
 
 	private StatusBar status;
 
@@ -1569,7 +1570,7 @@ public class View extends JFrame implements EBComponent, InputHandlerProvider
 	private boolean fullScreenMode;
 	private Rectangle windowedBounds;
 	private JMenuBar menuBar;
-
+	private String userTitle;
 	//}}}
 
 	//{{{ setMainContent() method
@@ -1579,11 +1580,12 @@ public class View extends JFrame implements EBComponent, InputHandlerProvider
 			mainPanel.remove(mainContent);
 		mainContent = c;
 		mainPanel.add(mainContent, BorderLayout.CENTER);
-		if (c instanceof JSplitPane) {
+		if (c instanceof JSplitPane)
+		{
 			splitPane = (JSplitPane)c;	
-			editPane = null;
 		}
-		else {
+		else
+		{
 			splitPane = null;
 			editPane = (EditPane)c;
 		}
@@ -1692,7 +1694,7 @@ public class View extends JFrame implements EBComponent, InputHandlerProvider
 				}
 			}
 			splitConfig.append(" \"");
-			splitConfig.append(editPane.getBufferSetScope());
+			splitConfig.append(jEdit.getBufferSetManager().getScope());
 			splitConfig.append("\" bufferset");
 		}
 	} //}}}
@@ -1707,9 +1709,15 @@ public class View extends JFrame implements EBComponent, InputHandlerProvider
 		{
 			return editPane = createEditPane(buffer);
 		}
-		else if(splitConfig == null)
+		else if(splitConfig == null || splitConfig.trim().length() == 0)
 		{
-			return editPane = createEditPane(jEdit.getFirstBuffer());
+
+			Buffer buf = jEdit.getFirstBuffer();
+			if (buf == null)
+			{
+				buf = BufferSetManager.createUntitledBuffer();
+			}
+			return editPane = createEditPane(buf);
 		}
 		Buffer[] buffers = jEdit.getBuffers();
 
@@ -1749,14 +1757,12 @@ loop:		while (true)
 					if (obj1 instanceof Buffer)
 					{
 						Buffer b1 = buffer = (Buffer) obj1;
-						jEdit.getGlobalBufferSet().addBufferAt(b1, -1);
-						obj1 = editPane = createEditPane(b1, BufferSet.Scope.global);
+						obj1 = editPane = createEditPane(b1);
 					}
 					if (obj2 instanceof Buffer)
 					{
 						Buffer b2 = (Buffer) obj2;
-						jEdit.getGlobalBufferSet().addBufferAt(b2, -1);
-						obj2 = createEditPane(b2, BufferSet.Scope.global);
+						obj2 = createEditPane(b2);
 					}
 					stack.push(splitPane = new JSplitPane(
 						orientation,
@@ -1784,18 +1790,19 @@ loop:		while (true)
 						buffer = jEdit.getBuffer(path);
 						if (buffer == null)
 						{
-							int untitledCount = jEdit.getNextUntitledBufferId();
-							buffer = jEdit.openFile(this,null,"Untitled-" + untitledCount,true,null);
+							buffer = jEdit.openTemporary(jEdit.getActiveView(), null,
+											    path, true, null);
+							jEdit.commitTemporary(buffer);
 						}
 					}
 
 					if(buffer == null)
 						buffer = jEdit.getFirstBuffer();
 					stack.push(buffer);
+					editPaneBuffers.add(buffer);
 				}
 				else if (st.sval.equals("buff"))
 				{
-
 					String path = (String)stack.pop();
 					buffer = jEdit.getBuffer(path);
 					if (buffer == null)
@@ -1809,19 +1816,17 @@ loop:		while (true)
 				}
 				else if (st.sval.equals("bufferset"))
 				{
-					BufferSet.Scope scope = BufferSet.Scope.fromString((String) stack.pop());
+					// pop the bufferset scope. Not used anymore but still here for compatibility
+					// with old perspectives
+					stack.pop();
 					buffer = (Buffer) stack.pop();
-					editPane = createEditPane(buffer, scope);
+					editPane = createEditPane(buffer);
 					stack.push(editPane);
-					BufferSetManager bufferSetManager = jEdit.getBufferSetManager();
 					BufferSet bufferSet = editPane.getBufferSet();
 					int i = 0;
 					for (Buffer buff : editPaneBuffers)
 					{
-						if (buff == buffer)
-							bufferSet.addBufferAt(buffer, i);
-						else
-							bufferSetManager.addBuffer(bufferSet, buff);
+						bufferSet.addBufferAt(buff,i);
 						i++;
 					}
 					editPaneBuffers.clear();
@@ -1840,9 +1845,7 @@ loop:		while (true)
 		Object obj = stack.peek();
 		if (obj instanceof Buffer)
 		{
-			jEdit.getGlobalBufferSet().addBufferAt((Buffer)obj, -1);
-			obj = editPane = createEditPane((Buffer)obj,
-				BufferSet.Scope.global);
+			obj = editPane = createEditPane((Buffer)obj);
 		}
 
 		updateGutterBorders();
@@ -1935,7 +1938,7 @@ loop:		while (true)
 				Component item = viewmenu.getMenuComponent(i);
 				if (item instanceof JMenuItem && ((JMenuItem)item).getText().equals(sbs_label))
 				{
-					((JMenuItem)item).setEnabled(show);
+					item.setEnabled(show);
 					// viewmenu.invalidate();
 				}
 			}
@@ -1950,7 +1953,9 @@ loop:		while (true)
 	//{{{ loadToolBars() method
 	private void loadToolBars()
 	{
-		if(jEdit.getBooleanProperty("view.showToolbar") && !plainView)
+		if((! plainView) && (fullScreenMode ?
+			jEdit.getBooleanProperty("fullScreenIncludesToolbar") :
+			jEdit.getBooleanProperty("view.showToolbar")))
 		{
 			if(toolBar != null)
 				toolBarManager.removeToolBar(toolBar);
@@ -1982,13 +1987,18 @@ loop:		while (true)
 	//{{{ createEditPane() methods
 	private EditPane createEditPane(Buffer buffer)
 	{
-		return createEditPane(buffer, BufferSet.Scope.fromString(
-			jEdit.getProperty("editpane.bufferset.default")));
+		EditPane editPane = new EditPane(this, null, buffer);
+		JEditTextArea textArea = editPane.getTextArea();
+		textArea.addFocusListener(new FocusHandler());
+		textArea.addCaretListener(new CaretHandler());
+		textArea.addScrollListener(new ScrollHandler());
+		EditBus.send(new EditPaneUpdate(editPane,EditPaneUpdate.CREATED));
+		return editPane;
 	}
 
-	private EditPane createEditPane(Buffer buffer, BufferSet.Scope scope)
+	private EditPane createEditPane(EditPane oldEditPane)
 	{
-		EditPane editPane = new EditPane(this,buffer, scope);
+		EditPane editPane = new EditPane(this, oldEditPane.getBufferSet(), oldEditPane.getBuffer());
 		JEditTextArea textArea = editPane.getTextArea();
 		textArea.addFocusListener(new FocusHandler());
 		textArea.addCaretListener(new CaretHandler());
@@ -2013,7 +2023,8 @@ loop:		while (true)
 	} //}}}
 
 	//{{{ handleBufferUpdate() method
-	private void handleBufferUpdate(BufferUpdate msg)
+	@EBHandler
+	public void handleBufferUpdate(BufferUpdate msg)
 	{
 		Buffer buffer = msg.getBuffer();
 		if(msg.getWhat() == BufferUpdate.DIRTY_CHANGED
@@ -2032,10 +2043,12 @@ loop:		while (true)
 	} //}}}
 
 	//{{{ handleEditPaneUpdate() method
-	private void handleEditPaneUpdate(EditPaneUpdate msg)
+	@EBHandler
+	public void handleEditPaneUpdate(EditPaneUpdate msg)
 	{
 		EditPane editPane = msg.getEditPane();
-		if(editPane.getView() == this
+		if(editPane !=  null &&
+			editPane.getView() == this
 			&& msg.getWhat() == EditPaneUpdate.BUFFER_CHANGED
 			&& editPane.getBuffer().isLoaded())
 		{
@@ -2051,28 +2064,30 @@ loop:		while (true)
 	{
 		if (!jEdit.getBooleanProperty("buffersets.exclusive"))
 			return;
-		EditPane ep = epu.getEditPane();
+		final BufferSet.Scope scope = jEdit.getBufferSetManager().getScope();
+		if (scope == BufferSet.Scope.global)
+			return;
+		final EditPane ep = epu.getEditPane();
 		/* Only one view needs to handle this message, since
 		   we iterate through all the other views */
-		if (ep.getView() != this) return;
-		Buffer b = ep.getBuffer();
-		for (View v: jEdit.getViews())
+		final View view = ep.getView();
+		if (view != this)
+			return;
+		final Buffer b = ep.getBuffer();
+
+		jEdit.visit(new JEditVisitorAdapter()
 		{
-			for (EditPane epc : v.getEditPanes())
+			@Override
+			public void visit(EditPane editPane)
 			{
-				// if it's my editpane, skip it.
-				if (epc == ep) continue;
-				// If it's view scope, it has to be of a different view
-				if ((epc.getBufferSetScope() == BufferSet.Scope.view)
-					&&  (v == this)) continue;
-				// If it's global, forget it.
-				if (epc.getBufferSet() == jEdit.getGlobalBufferSet()) continue;
-				// Is it in the bufferset?
-				if (epc.getBufferSet().indexOf(b) < 0) continue;
-				// found it open in a disjoint bufferset !
-				jEdit.getBufferSetManager().removeBuffer(epc, b);
+				if (editPane == ep ||
+					(scope == BufferSet.Scope.view && editPane.getView() == view))
+					return;
+				if (editPane.getBufferSet().indexOf(b) < 0)
+					return;
+				jEdit.getBufferSetManager().removeBuffer(editPane, b);
 			}
-		}
+		});
 	} //}}}
 
 	//{{{ updateGutterBorders() method
@@ -2104,15 +2119,15 @@ loop:		while (true)
 	/**
 	 * Merge a EditPane's BufferSet into another one.
 	 * This is used on unsplitting panes not to close buffers.
+	 * @param target the target bufferSet where we will merge buffers from source
+	 * @param source the source bufferSet
 	 */
-	static private void mergeBufferSets(EditPane target, EditPane source)
+	private static void mergeBufferSets(EditPane target, EditPane source)
 	{
-		BufferSet sourceBufferSet = source.getBufferSet();
-		BufferSet targetBufferSet = target.getBufferSet();
-		if (sourceBufferSet != targetBufferSet)
+		BufferSetManager manager = jEdit.getBufferSetManager();
+		for (Buffer buffer: source.getBufferSet().getAllBuffers())
 		{
-			jEdit.getBufferSetManager().mergeBufferSet(
-				targetBufferSet, sourceBufferSet);
+			manager.addBuffer(target, buffer);
 		}
 	} //}}}
 
@@ -2178,7 +2193,7 @@ loop:		while (true)
 			// People have reported hangs with JDK 1.4; might be
 			// caused by modal dialogs being displayed from
 			// windowActivated()
-			SwingUtilities.invokeLater(new Runnable()
+			EventQueue.invokeLater(new Runnable()
 			{
 				public void run()
 				{
@@ -2212,6 +2227,7 @@ loop:		while (true)
 		public boolean plainView;
 		public String splitConfig;
 		public DockingLayout docking;
+		public String title;
 
 		public ViewConfig()
 		{
@@ -2241,8 +2257,8 @@ loop:		while (true)
 		}
 	} //}}}
 
-	// Checks if the specified rectangle is within screen boundaries
-	private boolean isInsideScreen(View parent, Rectangle r)
+	//{{{ isInsideScreen() method
+	private static boolean isInsideScreen(View parent, Rectangle r)
 	{
 		Rectangle bounds;
 		if (parent == null)
@@ -2251,11 +2267,11 @@ loop:		while (true)
 			bounds = parent.getGraphicsConfiguration().getBounds();
 		int minWidth = jEdit.getIntegerProperty("view.minStartupWidth");
 		int minHeight = jEdit.getIntegerProperty("view.minStartupHeight");
-		return (r.x < bounds.width - minWidth &&
-				r.x + r.width > minWidth &&
-				r.y < bounds.height - minHeight &&
-				r.y + r.height > minHeight);
-	}
+		return  r.x + r.width	> bounds.x + minWidth &&		// right edge at minWidth pixels on the right of the left bound
+			r.x		< bounds.x + bounds.width - minWidth &&	// left edge at minWidth pixels on the left of the right bound
+			r.y + r.height	> bounds.y + minHeight &&		// bottom edge at minHeight pixels under the top bound
+			r.y		< bounds.y + bounds.height - minHeight;	// top edge at minHeight pixels on the top of the bottom bound
+	} //}}}
 
 	public void adjust(View parent, ViewConfig config)
 	{
@@ -2267,7 +2283,7 @@ loop:		while (true)
 				setLocationRelativeTo(parent);
 			else
 			{
-				if(OperatingSystem.isX11() && Debug.GEOMETRY_WORKAROUND)
+				if(OperatingSystem.isX11() && Debug.GEOMETRY_WORKAROUND) 
 					new GUIUtilities.UnixWorkaround(this,"view",desired,config.extState);
 				else
 				{

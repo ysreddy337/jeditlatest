@@ -3,7 +3,7 @@
  * :tabSize=8:indentSize=8:noTabs=false:
  * :folding=explicit:collapseFolds=1:
  *
- * Copyright (C) 2008 Matthieu Casanova
+ * Copyright (C) 2008, 2010 Matthieu Casanova
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,11 +23,11 @@ package org.gjt.sp.jedit.bufferset;
 
 //{{{ Imports
 import org.gjt.sp.jedit.*;
-import org.gjt.sp.jedit.msg.ViewUpdate;
 import org.gjt.sp.jedit.msg.EditPaneUpdate;
 import org.gjt.sp.jedit.msg.PropertiesChanged;
+import org.gjt.sp.jedit.visitors.JEditVisitorAdapter;
 import org.gjt.sp.util.Log;
-
+import org.gjt.sp.jedit.EditBus.EBHandler;
 import java.util.*;
 //}}}
 
@@ -38,100 +38,53 @@ import java.util.*;
  * @author Matthieu Casanova
  * @since jEdit 4.3pre15
  */
-public class BufferSetManager implements EBComponent
+public class BufferSetManager
 {
-	//{{{ NewBufferSetAction enum
-	public enum NewBufferSetAction
-	{
-		empty, copy, currentbuffer;
-
-		public static NewBufferSetAction fromString(String s)
-		{
-			NewBufferSetAction[] newBufferSetActions = values();
-			for (NewBufferSetAction newBufferSetAction : newBufferSetActions)
-			{
-				if (newBufferSetAction.getName().equals(s))
-					return newBufferSetAction;
-			}
-
-			return currentbuffer;
-		}
-
-		public String getName()
-		{
-			return super.toString();
-		}
-
-		@Override
-		public String toString()
-		{
-			return jEdit.getProperty("options.editpane.bufferset.newbufferset." + getName());
-		}
-	} //}}}
-
 	//{{{ BufferSetManager constructor
 	public BufferSetManager()
 	{
 		EditBus.addToBus(this);
+		try
+		{
+			scope = BufferSet.Scope.valueOf(jEdit.getProperty("bufferset.scope", "global"));
+		}
+		catch (IllegalArgumentException e)
+		{
+			Log.log(Log.ERROR, this, e);
+			scope = BufferSet.Scope.global;
+		}
 	} //}}}
 
-	//{{{ handleMessage() method
-	public void handleMessage(EBMessage message)
+	//{{{ handleEditPaneUpdate() method
+	@EBHandler
+	public void handleEditPaneUpdate(EditPaneUpdate message)
 	{
-		if (message instanceof ViewUpdate)
+		if (message.getWhat() == EditPaneUpdate.DESTROYED)
 		{
-			ViewUpdate viewUpdate = (ViewUpdate) message;
-			if (viewUpdate.getWhat() == ViewUpdate.CLOSED)
+			EditPane editPane = message.getEditPane();
+			BufferSet bufferSet = editPane.getBufferSet();
+			Buffer[] allBuffers = bufferSet.getAllBuffers();
+			for (Buffer buffer : allBuffers)
 			{
-				View view = viewUpdate.getView();
-				// Unlink the buffer from this bufferSet.
-				BufferSet viewBufferSet = view.getLocalBufferSet();
-				viewBufferSet.getAllBuffers(new BufferSetClosed(viewBufferSet));
+				_removeBuffer(bufferSet, buffer);
 			}
 		}
-		else if (message instanceof EditPaneUpdate)
-		{
-			EditPaneUpdate editPaneUpdate = (EditPaneUpdate) message;
-			if (editPaneUpdate.getWhat() == EditPaneUpdate.DESTROYED)
-			{
-				EditPane editPane = editPaneUpdate.getEditPane();
-				// If the editPane has own BufferSet, unlink the buffer from this bufferSet.
-				if (editPane.getBufferSetScope() == BufferSet.Scope.editpane)
-				{
-					BufferSet editPaneBufferSet = editPane.getBufferSet();
-					editPaneBufferSet.getAllBuffers(new BufferSetClosed(editPaneBufferSet));
-				}
-			}
-		}
-		else if (message instanceof PropertiesChanged)
-		{
-			// pass on PropertiesChanged message to BufferSets so
-			// they can resort themselves as needed.
-			visit(new BufferSetVisitor()
-			{
-				public void visit(BufferSet bufferSet)
-				{
-					bufferSet.handleMessage();
-				}
-			});
-		}
-
 	} //}}}
 
-	//{{{ mergeBufferSet() method
-	/**
-	 * Merge the content of the source bufferSet into the target bufferSet
-	 * @param target the target bufferSet
-	 * @param source the source bufferSet
-	 * @see org.gjt.sp.jedit.EditPane#setBuffer(org.gjt.sp.jedit.Buffer)
-	 */
-	public void mergeBufferSet(BufferSet target, BufferSet source)
+	//{{{ handlePropertiesChanged() method
+	@EBHandler
+	public void handlePropertiesChanged(PropertiesChanged msg)
 	{
-		Buffer[] buffers = source.getAllBuffers();
-		for (Buffer buffer : buffers)
+		// pass on PropertiesChanged message to BufferSets so
+		// they can resort themselves as needed.
+		jEdit.visit(new JEditVisitorAdapter()
 		{
-			addBuffer(target, buffer);
-		}
+			@Override
+			public void visit(EditPane editPane)
+			{
+				editPane.getBufferSet().propertiesChanged();
+			}
+		});
 	} //}}}
 
 	//{{{ countBufferSets() method
@@ -144,6 +97,75 @@ public class BufferSetManager implements EBComponent
 	public int countBufferSets(Buffer buffer)
 	{
 		return getOwners(buffer).size();
+	} //}}}
+
+	//{{{ setScope() method
+	public void setScope(BufferSet.Scope scope)
+	{
+		if (scope == this.scope)
+			return;
+		jEdit.setProperty("bufferset.scope", scope.name());
+		if (scope.compareTo(this.scope) > 0)
+		{
+			// The new scope is wider
+			if (scope == BufferSet.Scope.global)
+			{
+				final Buffer[] buffers = jEdit.getBuffers();
+				jEdit.visit(new JEditVisitorAdapter()
+				{
+					@Override
+					public void visit(EditPane editPane)
+					{
+						BufferSet bufferSet = editPane.getBufferSet();
+						for (Buffer buffer : buffers)
+						{
+							bufferSet.addBuffer(buffer);
+						}
+					}
+				});
+			}
+			else
+			{
+				final Map<View,Set<Buffer>> buffersMap = new HashMap<View, Set<Buffer>>();
+				jEdit.visit(new JEditVisitorAdapter()
+				{
+					@Override
+					public void visit(EditPane editPane)
+					{
+						BufferSet bufferSet = editPane.getBufferSet();
+						Buffer[] buffers = bufferSet.getAllBuffers();
+						Set<Buffer> set = buffersMap.get(editPane.getView());
+						if (set == null)
+						{
+							set = new HashSet<Buffer>();
+							buffersMap.put(editPane.getView(), set);
+						}
+						set.addAll(Arrays.asList(buffers));
+					}
+				});
+				jEdit.visit(new JEditVisitorAdapter()
+				{
+					@Override
+					public void visit(EditPane editPane)
+					{
+						BufferSet bufferSet = editPane.getBufferSet();
+						Set<Buffer> set = buffersMap.get(editPane.getView());
+						for (Buffer buffer : set)
+						{
+							bufferSet.addBuffer(buffer);
+						}
+					}
+				});
+			}
+		}
+		this.scope = scope;
+		EditBus.send(new PropertiesChanged(this));
+	} //}}}
+
+	//{{{ getScope() method
+	public BufferSet.Scope getScope()
+	{
+		return scope;
 	} //}}}
 
 	//{{{ addBuffer() methods
@@ -165,43 +187,38 @@ public class BufferSetManager implements EBComponent
 	 * @param editPane an EditPane (or null)
 	 * @param buffer the buffer to add
 	 */
-	public void addBuffer(EditPane editPane, Buffer buffer)
+	public void addBuffer(EditPane editPane, final Buffer buffer)
 	{
 		if (editPane == null)
 		{
-			addBuffer(jEdit.getGlobalBufferSet(), buffer);
+			editPane = jEdit.getActiveView().getEditPane();
 		}
-		else
+		BufferSet bufferSet = editPane.getBufferSet();
+		switch (scope)
 		{
-			BufferSet bufferSet = editPane.getBufferSet();
-			addBuffer(bufferSet, buffer);
-		}
-	}
-
-	/**
-	 * Add a buffer in the given bufferSet.
-	 *
-	 * @param bufferSet the bufferSet
-	 * @param buffer the buffer to add
-	 */
-	public void addBuffer(BufferSet bufferSet, Buffer buffer)
-	{
-		bufferSet.addBuffer(buffer);
-	} //}}}
-
-	//{{{ addAllBuffers() method
-	/**
-	 * Add all buffers to the bufferSet.
-	 *
-	 * @param bufferSet the bufferSet
-	 */
-	public void addAllBuffers(BufferSet bufferSet)
-	{
-		Buffer[] buffers = jEdit.getBuffers();
-		for (Buffer buffer : buffers)
-		{
-			if (!buffer.isClosed())
-				addBuffer(bufferSet, buffer);
+			case editpane:
+				bufferSet.addBuffer(buffer);
+				break;
+			case view:
+				EditPane[] editPanes = editPane.getView().getEditPanes();
+				for (EditPane pane:editPanes)
+				{
+					if (pane == null)
+						continue;
+					BufferSet bfs = pane.getBufferSet();
+					bfs.addBuffer(buffer);
+				}
+				break;
+			case global:
+				jEdit.visit(new JEditVisitorAdapter()
+				{
+					@Override
+					public void visit(EditPane editPane)
+					{
+						BufferSet bfs = editPane.getBufferSet();
+						bfs.addBuffer(buffer);
+					}
+				});
 		}
 	} //}}}
 
@@ -225,12 +242,28 @@ public class BufferSetManager implements EBComponent
 	 */
 	public void removeBuffer(EditPane editPane, Buffer buffer)
 	{
-		BufferSet bufferSet = editPane.getBufferSet();
-		removeBuffer(bufferSet, buffer);
+		switch (scope)
+		{
+			case editpane:
+				BufferSet bufferSet = editPane.getBufferSet();
+				removeBuffer(bufferSet, buffer);
+				break;
+			case view:
+				EditPane[] editPanes = editPane.getView().getEditPanes();
+				for (EditPane pane : editPanes)
+				{
+					removeBuffer(pane.getBufferSet(), buffer);
+				}
+				break;
+			case global:
+				jEdit._closeBuffer(null, buffer);
+				break;
+		}
 	}
 
 	/**
-	 * Remove a buffer from a View's BufferSet.
+	 * Remove a buffer from a bufferSet.
+	 * And make sure that the bufferSet is not empty after that
 	 *
 	 * @param bufferSet the bufferSet
 	 * @param buffer the buffer that will be removed
@@ -238,26 +271,10 @@ public class BufferSetManager implements EBComponent
 	void removeBuffer(BufferSet bufferSet, Buffer buffer)
 	{
 		Log.log(Log.DEBUG, this, "removeBuffer("+bufferSet+','+buffer+')');
-		Set<BufferSet> owners = getOwners(buffer);
-		owners.remove(bufferSet);
-		bufferSet.removeBuffer(buffer);
+		_removeBuffer(bufferSet, buffer);
+		bufferRemoved(bufferSet);
+	}
 
-		if (owners.isEmpty())
-		{
-			Log.log(Log.DEBUG, this, "Buffer:"+buffer+" is in no bufferSet anymore, closing it");
-			jEdit._closeBuffer(null, buffer);
-		}
-		if (bufferSet.size() == 0 && bufferSet.hasListeners())
-		{
-			int untitledCount = jEdit.getNextUntitledBufferId();
-			Buffer newEmptyBuffer = jEdit.openTemporary(jEdit.getActiveView(), null,
-								    "Untitled-" + untitledCount,true, null);
-			jEdit.commitTemporary(newEmptyBuffer);
-			jEdit.getBufferSetManager().addBuffer(bufferSet, newEmptyBuffer);
-		}
-	} //}}}
-
-	//{{{ removeBuffer() method
 	/**
 	 * remove a buffer from all bufferSets.
 	 *
@@ -268,61 +285,78 @@ public class BufferSetManager implements EBComponent
 		for (BufferSet bufferSet : getOwners(buffer))
 		{
 			bufferSet.removeBuffer(buffer);
-			if (bufferSet.size() == 0 && bufferSet.hasListeners())
-			{
-				int untitledCount = jEdit.getNextUntitledBufferId();
-				Buffer newEmptyBuffer = jEdit.openTemporary(jEdit.getActiveView(), null,
-									    "Untitled-" + untitledCount,true, null);
-				jEdit.commitTemporary(newEmptyBuffer);
-				jEdit.getBufferSetManager().addBuffer(bufferSet, newEmptyBuffer);
-			}
+			bufferRemoved(bufferSet);
 		}
-
 	} //}}}
 
-	//{{{ visit() method
+	//{{{ bufferRemoved() method
 	/**
-	 * This method will visit all buffersets.
-	 *
-	 * @param visitor the bufferset visitor
+	 * This method is called when a buffer has been removed from a bufferSet.
+	 * If it is empty, an untitled buffer is created and added to the bufferSet
+	 * @param bufferSet the bufferSet from which the buffer was removed
 	 */
-	public void visit(BufferSetVisitor visitor)
+	private void bufferRemoved(BufferSet bufferSet)
 	{
-		BufferSet global = jEdit.getGlobalBufferSet();
-		visitor.visit(jEdit.getGlobalBufferSet());
-		for (View view: jEdit.getViews())
+		if (bufferSet.size() == 0)
 		{
-			BufferSet viewLocal = view.getLocalBufferSet();
-			if (viewLocal != null)
-			{
-				visitor.visit(viewLocal);
-			}
-			for (EditPane editPane: view.getEditPanes())
-			{
-				BufferSet used = editPane.getBufferSet();
-				if (used != global && used != viewLocal)
-				{
-					visitor.visit(used);
-				}
-			}
+			Buffer newEmptyBuffer = createUntitledBuffer();
+			EditPane editPaneOwner = getOwner(bufferSet);
+			addBuffer(editPaneOwner, newEmptyBuffer);
 		}
+	} //}}}
+
+	//{{{ _removeBuffer() method
+	/**
+	 * Remove a buffer from a bufferSet.
+	 * Used when closing an EditPane
+	 *
+	 * @param bufferSet the bufferSet
+	 * @param buffer the buffer that will be removed
+	 */
+	private void _removeBuffer(BufferSet bufferSet, Buffer buffer)
+	{
+		Set<BufferSet> owners = getOwners(buffer);
+		owners.remove(bufferSet);
+		bufferSet.removeBuffer(buffer);
+
+		if (owners.isEmpty())
+		{
+			Log.log(Log.DEBUG, this, "Buffer:"+buffer+" is in no bufferSet anymore, closing it");
+			jEdit._closeBuffer(null, buffer);
+		}
+	} //}}}
+
+	//{{{ createUntitledBuffer() method
+	/**
+	 * Create an untitled buffer
+	 * @return the new untitled buffer
+	 */
+	public static Buffer createUntitledBuffer()
+	{
+		int untitledCount = jEdit.getNextUntitledBufferId();
+		Buffer newEmptyBuffer = jEdit.openTemporary(jEdit.getActiveView(), null,
+							    "Untitled-" + untitledCount,true, null);
+		jEdit.commitTemporary(newEmptyBuffer);
+		return newEmptyBuffer;
 	} //}}}
 
 	//{{{ Private members
 
 	//{{{ getOwners() method
 	/**
-	    @return set of BufferSets that contain buffer
-        */
-	private Set<BufferSet> getOwners(Buffer buffer)
+	 * @return set of BufferSets that contain buffer
+	 * @since 4.4pre1
+	 */
+	public Set<BufferSet> getOwners(Buffer buffer)
 	{
 		final Set<BufferSet> candidates = new HashSet<BufferSet>();
 		// Collect all BufferSets.
-		visit(new BufferSetVisitor()
+		jEdit.visit(new JEditVisitorAdapter()
 		{
-			public void visit(BufferSet bufferSet)
+			@Override
+			public void visit(EditPane editPane)
 			{
-				candidates.add(bufferSet);
+				candidates.add(editPane.getBufferSet());
 			}
 		});
 		// Remove all that doesn't contain the buffer.
@@ -338,39 +372,30 @@ public class BufferSetManager implements EBComponent
 		return candidates;
 	} //}}}
 
-	//{{{ BufferSetVisitor interface
-	public static interface BufferSetVisitor
+	//{{{ getOwner() method
+	/**
+	 * Return the editpane that owns the BufferSet
+	 * @param bufferSet the bufferSet
+	 * @return the owner of the given bufferSet
+	 */
+	private static EditPane getOwner(BufferSet bufferSet)
 	{
-		void visit(BufferSet bufferSet);
-	} //}}}
-
-	//{{{ BufferSetClosed class
-	private class BufferSetClosed extends BufferSetAdapter
-	{
-		/** The closed bufferSet. */
-		private final BufferSet closedBufferSet;
-
-		//{{{ BufferSetClosed constructors
-		private BufferSetClosed(BufferSet closedBufferSet)
+		View[] views = jEdit.getViews();
+		for (View view : views)
 		{
-			this.closedBufferSet = closedBufferSet;
-		} //}}}
-
-		//{{{ bufferAdded() method
-		@Override
-		public void bufferAdded(Buffer buffer, int index)
-		{
-			Set<BufferSet> owners = getOwners(buffer);
-			owners.remove(closedBufferSet);
-			if (owners.isEmpty())
+			EditPane[] editPanes = view.getEditPanes();
+			for (EditPane editPane : editPanes)
 			{
-				Log.log(Log.MESSAGE, this, "The buffer " +
-					buffer + " was removed from a BufferSet, closing it");
-				jEdit._closeBuffer(null, buffer);
+				if (editPane.getBufferSet() == bufferSet)
+				{
+					return editPane;
+				}
 			}
-		} //}}}
-
+		}
+		return null;
 	} //}}}
 
+	/** The scope of the bufferSets. */
+	private BufferSet.Scope scope;
 	//}}}
 }

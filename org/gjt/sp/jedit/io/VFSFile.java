@@ -31,6 +31,7 @@ import org.gjt.sp.jedit.browser.VFSBrowser;
 import org.gjt.sp.jedit.browser.FileCellRenderer;
 import org.gjt.sp.util.Log;
 import org.gjt.sp.util.IOUtilities;
+import org.gjt.sp.util.StandardUtilities;
 
 import javax.swing.*;
 //}}}
@@ -191,38 +192,47 @@ public class VFSFile implements Serializable
 	/**
 	 * @deprecated Use the accessor/mutator methods instead.
 	 */
+	@Deprecated
 	public String name;
 	/**
 	 * @deprecated Use the accessor/mutator methods instead.
 	 */
+	@Deprecated
 	public String path;
 	/**
 	 * @deprecated Use the accessor/mutator methods instead.
 	 */
+	@Deprecated
 	public String symlinkPath;
 	/**
 	 * @deprecated Use the accessor/mutator methods instead.
 	 */
+	@Deprecated
 	public String deletePath;
 	/**
 	 * @deprecated Use the accessor/mutator methods instead.
 	 */
+	@Deprecated
 	public int type;
 	/**
 	 * @deprecated Use the accessor/mutator methods instead.
 	 */
+	@Deprecated
 	public long length;
 	/**
 	 * @deprecated Use the accessor/mutator methods instead.
 	 */
+	@Deprecated
 	public boolean hidden;
 	/**
 	 * @deprecated Use the accessor/mutator methods instead.
 	 */
+	@Deprecated
 	public boolean canRead;
 	/**
 	 * @deprecated Use the accessor/mutator methods instead.
 	 */
+	@Deprecated
 	public boolean canWrite;
 	//}}}
 
@@ -448,7 +458,7 @@ public class VFSFile implements Serializable
 			if(getType() != FILE)
 				return null;
 			else
-				return MiscUtilities.formatFileSize(getLength());
+				return StandardUtilities.formatFileSize(getLength());
 		}
 		else
 			return null;

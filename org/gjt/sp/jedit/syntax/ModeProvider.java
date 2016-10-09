@@ -35,7 +35,9 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.LinkedHashMap;
 //}}}
 
 /**
@@ -49,12 +51,17 @@ public class ModeProvider
 {
 	public static ModeProvider instance = new ModeProvider();
 
-	private List<Mode> modes = new ArrayList<Mode>(180);
+	private LinkedHashMap<String, Mode> modes = new LinkedHashMap<String, Mode>(180);
+	
+	// any mode that is added that is already in the 'modes' map is added here. These
+	// 'override' modes are modes loaded from outside of the standard issue catalog files.
+	private LinkedHashMap<String, Mode> overrideModes = new LinkedHashMap<String, Mode>(20);
 
 	//{{{ removeAll() method
 	public void removeAll()
 	{
-		modes = new ArrayList<Mode>(180);
+		modes.clear();
+		overrideModes.clear();
 	} //}}}
 
 	//{{{ getMode() method
@@ -65,13 +72,12 @@ public class ModeProvider
 	 */
 	public Mode getMode(String name)
 	{
-		for(int i = 0; i < modes.size(); i++)
+		Mode mode = overrideModes.get(name);
+		if (mode == null) 
 		{
-			Mode mode = modes.get(i);
-			if(mode.getName().equals(name))
-				return mode;
+			mode = modes.get(name);
 		}
-		return null;
+		return mode;
 	} //}}}
 
 	//{{{ getModeForFile() method
@@ -86,17 +92,70 @@ public class ModeProvider
 	{
 		String nogzName = filename.substring(0,filename.length() -
 			(filename.endsWith(".gz") ? 3 : 0));
-		Mode[] modes = getModes();
 
-		// this must be in reverse order so that modes from the user
-		// catalog get checked first!
-		for(int i = modes.length - 1; i >= 0; i--)
+		List<Mode> acceptable = new ArrayList<Mode>();
+		
+		// First check overrideModes as these are user supplied modes.
+		// User modes have priority.
+		for(Mode mode : overrideModes.values())
 		{
-			if(modes[i].accept(nogzName,firstLine))
+			if(mode.accept(nogzName,firstLine))
 			{
-				return modes[i];
+				acceptable.add(mode);
 			}
 		}
+		if (acceptable.size() == 0)
+		{
+			// no user modes were acceptable, so check standard modes.
+			for(Mode mode : modes.values())
+			{
+				if(mode.accept(nogzName,firstLine))
+				{
+					acceptable.add(mode);
+				}
+			}
+		}
+		if (acceptable.size() == 1) 
+		{
+			return acceptable.get(0);	
+		}
+		if (acceptable.size() > 1) 
+		{
+			Collections.reverse(acceptable);
+			
+			// the very most acceptable mode is one whose file
+			// name doesn't only match the file name as regular
+			// expression but which is identical
+			for (Mode mode : acceptable)
+			{
+				if (mode.acceptFilenameIdentical(filename)) 
+				{
+					return mode;	
+				}
+			}
+
+			// most acceptable is a mode that matches both the
+			// filename and the first line glob
+			for (Mode mode : acceptable) 
+			{
+				if (mode.acceptFilename(filename) && 
+					mode.acceptFirstLine(firstLine)) 
+				{
+					return mode;	
+				}
+			}
+			// next best is filename match
+			for (Mode mode : acceptable) 
+			{
+				if (mode.acceptFilename(filename)) {
+					return mode;	
+				}
+			}
+			// all acceptable choices are by first line glob, and
+			// they all match, so just return the first one.
+			return acceptable.get(0);	
+		}
+		// no matching mode found for this file
 		return null;
 	} //}}}
 
@@ -108,8 +167,11 @@ public class ModeProvider
 	 */
 	public Mode[] getModes()
 	{
-		Mode[] array = new Mode[modes.size()];
-		modes.toArray(array);
+		Mode[] array = new Mode[modes.size() + overrideModes.size()];
+		Mode[] standard = modes.values().toArray(new Mode[0]);
+		Mode[] override = overrideModes.values().toArray(new Mode[0]);
+		System.arraycopy(standard, 0, array, 0, standard.length);
+		System.arraycopy(override, 0, array, standard.length, override.length);
 		return array;
 	} //}}}
 
@@ -118,11 +180,20 @@ public class ModeProvider
 	 * Do not call this method. It is only public so that classes
 	 * in the org.gjt.sp.jedit.syntax package can access it.
 	 * @since jEdit 4.3pre10
+	 * @see org.gjt.sp.jedit.jEdit#reloadModes reloadModes
 	 * @param mode The edit mode
 	 */
 	public void addMode(Mode mode)
 	{
-		modes.add(mode);
+		if (modes.get(mode.getName()) != null) 
+		{
+			overrideModes.put(mode.getName(), mode);	
+			modes.remove(mode.getName());
+		}
+		else 
+		{
+			modes.put(mode.getName(), mode);	
+		}
 	} //}}}
 
 	//{{{ loadMode() method

@@ -198,8 +198,6 @@ public class ManagePanel extends JPanel
 			{
 				String jarName = attrs.getValue("jar");
 				String name = attrs.getValue("name");
-				Entry e = new Entry(jarName);
-				e.name=name;
 				selectedPlugins.add(name);
 				jarNames.add(jarName);
 			}
@@ -235,7 +233,7 @@ public class ManagePanel extends JPanel
 					}
 					catch (Exception e)
 					{
-						Log.log(Log.WARNING, this, "Exception thrown loading: " + jarName);
+						Log.log(Log.WARNING, this, "Exception thrown loading: " + jarName, e);
 					}
 				}
 			}
@@ -289,16 +287,6 @@ public class ManagePanel extends JPanel
 	}//}}}
 
 	//{{{ Inner classes
-
-	//{{{ KeyboardCommand enum
-	private enum KeyboardCommand
-	{
-		NONE,
-		TAB_OUT_FORWARD,
-		TAB_OUT_BACK,
-		EDIT_PLUGIN,
-		CLOSE_PLUGIN_MANAGER
-	} //}}}
 
 	//{{{ Entry class
 	static class Entry
@@ -490,13 +478,13 @@ public class ManagePanel extends JPanel
 						}
 						if (pluginDirectory.exists())
 						{
-							entry.dataSize = MiscUtilities.formatFileSize(IOUtilities.fileLength(pluginDirectory));
+							entry.dataSize = StandardUtilities.formatFileSize(IOUtilities.fileLength(pluginDirectory));
 						}
 						else
 						{
 							if (jEdit.getBooleanProperty("plugin." + entry.clazz + ".usePluginHome"))
 							{
-								entry.dataSize = MiscUtilities.formatFileSize(0);
+								entry.dataSize = StandardUtilities.formatFileSize(0);
 							}
 							else
 							{

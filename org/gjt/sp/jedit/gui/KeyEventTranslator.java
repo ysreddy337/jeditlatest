@@ -37,7 +37,7 @@ import org.gjt.sp.util.StandardUtilities;
  * warts in the AWT key event API.
  *
  * @author Slava Pestov
- * @version $Id: KeyEventTranslator.java 16341 2009-10-14 10:05:51Z kpouer $
+ * @version $Id: KeyEventTranslator.java 17816 2010-05-12 15:00:13Z k_satoda $
  */
 public class KeyEventTranslator
 {
@@ -66,27 +66,6 @@ public class KeyEventTranslator
 	 * @since jEdit 4.2pre3
 	 */
 	public static Key translateKeyEvent(KeyEvent evt)
-	{
-		Key key = translateKeyEvent2(evt);
-
-		if (key!=null)
-		{
-			if (key.isPhantom())
-			{
-				key = null;
-			}
-		}
-
-		return key;
-	}
-
-	/**
-	 * Pass this an event from {@link
-	 * KeyEventWorkaround#processKeyEvent(java.awt.event.KeyEvent)}.
-	 * @param evt the KeyEvent to translate
-	 * @since jEdit 4.2pre3
-	 */
-	public static Key translateKeyEvent2(KeyEvent evt)
 	{
 		int modifiers = evt.getModifiers();
 		Key returnValue;
@@ -129,6 +108,8 @@ public class KeyEventTranslator
 					// do a "<space> to insert ".
 					if((modifiers & ~InputEvent.SHIFT_MASK) == 0)
 						returnValue = null;
+                    else if (Debug.ALTERNATIVE_DISPATCHER && (modifiers & ~InputEvent.META_MASK) == 0)
+                        returnValue = null;
 					else
 					{
 						returnValue = new Key(
@@ -157,7 +138,11 @@ public class KeyEventTranslator
 			case '\b':
 				return null;
 			case ' ':
-				if((modifiers & ~InputEvent.SHIFT_MASK) != 0)
+                if (Debug.ALTERNATIVE_DISPATCHER && (modifiers & ~InputEvent.META_MASK) == 0)
+                    returnValue = new Key(
+                        modifiersToString(modifiers),
+                        0,' ');
+				else if((modifiers & ~InputEvent.SHIFT_MASK) != 0)
 					return null;
 			}
 
@@ -212,6 +197,21 @@ public class KeyEventTranslator
 			return returnValue;
 		else
 			return trans;
+	}
+
+	/**
+	 * Pass this an event from {@link
+	 * KeyEventWorkaround#processKeyEvent(java.awt.event.KeyEvent)}.
+	 * @param evt the KeyEvent to translate
+	 * @since jEdit 4.2pre3
+	 * @deprecated
+	 *   This gives completely same result with translateKeyEvent()
+	 *   since jEdit 4.4pre1.
+	 */
+	@Deprecated
+	public static Key translateKeyEvent2(KeyEvent evt)
+	{
+		return translateKeyEvent(evt);
 	} //}}}
 
 	//{{{ parseKey() method
@@ -471,14 +471,6 @@ public class KeyEventTranslator
 		*/
 		protected boolean isFromGlobalContext;
 
-		/**
-			Wether this Key event is a phantom key event. A phantom key event is a kind of duplicate key event which
-			should not - due to its nature of being a duplicate - generate any action on data.
-			However, phantom key events may be necessary to notify the rest of the GUI that the key event, if it was not a phantom key event but a real key event,
-			would generate any action and thus would be consumed.
-		*/
-		protected boolean isPhantom;
-
 		public Key(String modifiers, int key, char input)
 		{
 			this.modifiers = modifiers;
@@ -531,14 +523,10 @@ public class KeyEventTranslator
 			return isFromGlobalContext;
 		}
 
-		public void setIsPhantom(boolean to)
-		{
-			isPhantom = to;
-		}
-
+		@Deprecated
 		public boolean isPhantom()
 		{
-			return isPhantom;
+			return false;
 		}
 	} //}}}
 }

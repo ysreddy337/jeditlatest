@@ -35,7 +35,7 @@ import org.gjt.sp.jedit.browser.VFSBrowser;
  * The Save and Backup option panel.
  *
  * @author Slava Pestov
- * @author $Id: SaveBackupOptionPane.java 16244 2009-09-28 18:39:41Z ezust $
+ * @author $Id: SaveBackupOptionPane.java 18147 2010-06-25 20:39:03Z ezust $
  */
 public class SaveBackupOptionPane extends AbstractOptionPane
 {
@@ -121,6 +121,8 @@ public class SaveBackupOptionPane extends AbstractOptionPane
 		/* Backup on every save */
 		backupEverySave = new JCheckBox(jEdit.getProperty(
 			"options.save-back.backupEverySave"));
+		backupEverySave.setToolTipText(jEdit.getProperty(
+			"options.save-back.backupEverySave.tooltip"));
 		backupEverySave.setSelected(jEdit.getBooleanProperty("backupEverySave"));
 		addComponent(backupEverySave);
 	} //}}}

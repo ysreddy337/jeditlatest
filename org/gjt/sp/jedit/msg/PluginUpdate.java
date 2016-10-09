@@ -27,7 +27,7 @@ import org.gjt.sp.jedit.*;
 /**
  * Message sent when plugins are loaded and unloaded.
  * @author Slava Pestov
- * @version $Id: PluginUpdate.java 12504 2008-04-22 23:12:43Z ezust $
+ * @version $Id: PluginUpdate.java 17313 2010-02-17 22:32:09Z kpouer $
  *
  * @since jEdit 4.2pre1
  */
@@ -77,6 +77,12 @@ public class PluginUpdate extends EBMessage
 		if(what == null)
 			throw new NullPointerException("What must be non-null");
 
+		EditPlugin plugin = jar.getPlugin();
+		if (plugin != null)
+		{
+			String clazz = plugin.getClassName();
+			version = jEdit.getProperty("plugin."+clazz+".version");
+		}
 		this.what = what;
 		this.exit = exit;
 	} //}}}
@@ -111,15 +117,28 @@ public class PluginUpdate extends EBMessage
 		return (PluginJAR)getSource();
 	} //}}}
 
+	//{{{ getPluginVersion() method
+	/**
+	 * Returns the plugin version.
+	 *
+	 * @return the plugin version. It may be null in some case like for the libraries
+	 * @since 4.4pre1
+	 */
+	public String getPluginVersion()
+	{
+		return version;
+	} //}}}
+
 	//{{{ paramString() method
 	public String paramString()
 	{
-		return "what=" + what + ",exit=" + exit + ","
+		return "what=" + what + ",exit=" + exit + ",version=" + version + ","
 			+ super.paramString();
 	} //}}}
 
 	//{{{ Private members
 	private Object what;
 	private boolean exit;
+	private String version;
 	//}}}
 }

@@ -198,6 +198,7 @@ file=new-file \
      - \
      close-buffer \
      global-close-buffer \
+     closeall-except-active \
      close-all \
      - \
      save \
@@ -220,12 +221,16 @@ open-file.label=$Open...
 open-file.icon.small=16x16/actions/document-open.png
 reload.label=$Reload
 reload.icon.small=16x16/actions/view-refresh.png
-reload-all.label=Reloa$d All...
+reload-all.label=Reloa$d All
 close-buffer.label=$Close
+close-buffer.tooltip=Close buffer in EditPane's BufferSet only.
 close-buffer.icon.small=16x16/actions/document-close.png
 global-close-buffer.label=Close (global)
-closeall-except-active.label=Clear BufferSet except active
+global-close-buffer.tooltip=Close buffer in all editpanes and views
+closeall-except-active.tooltip=Clear current editpane's BufferSet except for buffer(s) currently showing
+closeall-except-active.label=Close O$thers
 bufferset-toggle-exclusive.label=Toggle E$xclusive BufferSets
+bufferset-toggle-exclusive.tooltip=When a buffer is opened, close it in other non-intersecting buffersets.
 closeall-except-active.icon.small=16x16/actions/document-close.png
 global-close-buffer.icon.small=16x16/actions/document-close.png
 close-all.label=Clos$e All
@@ -234,6 +239,7 @@ save.label=$Save
 save.icon.small=16x16/actions/document-save.png
 save-as.label=S$ave As...
 save-a-copy-as.label=Save a Cop$y As...
+save-a-copy-as.tooltip=Does not change the current buffer's path
 save-all.label=Save A$ll...
 print.label=$Print...
 print.icon.small=16x16/actions/document-print.png
@@ -245,7 +251,7 @@ exit.label=E$xit
 #{{{ Recent Files menu
 recent-files.code=new RecentFilesProvider();
 recent-files.label=Recent $Files
-recent-files.textfield.tooltip=a filter prefix can be entered here
+recent-files.textfield.tooltip=a filter prefix or glob-pattern can be entered here
 no-recent-files.label=No Recent Files
 clear-recent-files.label=Clear Recent Files
 #}}}
@@ -297,6 +303,7 @@ goto-line.label=$Go to Line...
 clipboard=cut-append \
 	  copy-append \
 	  vertical-paste \
+	  paste-special \
 	  - \
 	  paste-previous \
 	  paste-deleted \
@@ -317,6 +324,7 @@ copy-append.label=C$opy Append
 vertical-paste.label=$Vertical Paste
 paste-previous.label=Paste Previo$us...
 paste-deleted.label=Paste $Deleted...
+paste-special.label=Paste Special...
 cut-string-register.label=Cu$t to Register
 copy-string-register.label=Co$py to Register
 paste-string-register.label=Paste $Register
@@ -533,6 +541,7 @@ view=new-view \
      %docking \
      %buffersets \
      - \
+     set-view-title \
      toggle-full-screen
 view.label=$View
 new-view.label=New $View
@@ -544,11 +553,13 @@ prev-buffer.label=Go to $Previous Buffer
 next-buffer.label=Go to $Next Buffer
 recent-buffer.label=Go to $Recent Buffer
 toggle-buffer-switcher.label=Toggle $Buffer Switcher
-focus-buffer-switcher.label=Focus Buffer S$witcher
-toggle-line-numbers.label=$Line Numbers
+focus-buffer-switcher.label=Focus on Buffer S$witcher
+toggle-line-numbers.label=Toggle $Line Numbers
 toggle-statusbar.label=Toggle S$tatus Bar
 toggle-gutter.label=Toggle $Gutter
 show-context-menu.label=Show Context Menu
+set-view-title.label=Set view title...
+set-view-title.tooltip=Set the title of the main window for easy identification from your desktop.
 toggle-full-screen.label=Toggle $full-screen mode
 
 #{{{ Scrolling menu
@@ -589,10 +600,13 @@ resplit.label=$Restore Split
 prev-textarea.label=Go to $Previous Text Area
 next-textarea.label=Go to $Next Text Area
 buffersets.label=$Buffer Sets
-buffersets=global-bufferset view-bufferset editpane-bufferset bufferset-toggle-exclusive - closeall-except-active
+buffersets=global-bufferset view-bufferset editpane-bufferset bufferset-toggle-exclusive
 global-bufferset.label=$Global Scope
+global-bufferset.tooltip=All EditPanes share the same BufferSet.
 view-bufferset.label=$View Scope
+view-bufferset.tooltip=EditPanes in the same View share the same BufferSet.
 editpane-bufferset.label=$EditPane Scope
+editpane-bufferset.tooltip=Each Editpane has its own BufferSet.
 
 
 #}}}
@@ -703,6 +717,7 @@ troubleshooting=log-viewer \
 		update-log \
 		- \
 		io-progress-monitor \
+		task-monitor \
 		keyboard-tester \
 		memory-status \
 		reload-modes
@@ -710,6 +725,7 @@ troubleshooting.label=$Troubleshooting
 log-viewer.label=$Activity Log
 update-log.label=$Update Activity Log on Disk
 io-progress-monitor.label=$I/O Progress
+task-monitor.label=$Task Monitor
 keyboard-tester.label=$Keyboard Tester...
 memory-status.label=$Memory Status...
 reload-modes.label=$Reload Edit Modes
@@ -788,6 +804,7 @@ macro.header=// This is a recorded macro. First, check over the\n\
 #{{{ Commands that don't appear in menus
 backspace-word.label=Delete Previous Word
 backspace-word-std.label=Delete Previous Word (Eat Whitespace)
+backspace-word-std-after.label=Delete Previous Word (Eat Whitespace after word)
 backspace.label=Delete Previous Character
 delete-word.label=Delete Next Word
 delete-word-std.label=Delete Next Word (Eat Whitespace)
@@ -818,6 +835,7 @@ prev-page.label=Go to Previous Page
 prev-paragraph.label=Go to Previous Paragraph
 prev-word.label=Go to Previous Word
 prev-word-std.label=Go to Previous Word (Eat Whitespace)
+prev-word-std-after.label=Go to Previous Word (Eat Whitespace after word)
 select-document-end.label=Select to End of Buffer
 select-document-home.label=Select to Start of Buffer
 select-end.label=Select to Smart End Position
@@ -836,6 +854,7 @@ select-prev-page.label=Select Previous Page
 select-prev-paragraph.label=Select Previous Paragraph
 select-prev-word.label=Select Previous Word
 select-prev-word-std.label=Select Previous Word (Eat Whitespace)
+select-prev-word-std-after.label=Select Previous Word (Eat Whitespace after word)
 select-visible-end.label=Select to Last Visible Line
 select-visible-home.label=Select to First Visible Line
 select-whitespace-end.label=Select to End of White Space
@@ -917,8 +936,11 @@ view.status.swap-marker=Shortcut of marker to swap caret position with? \
 view.status.vertical-paste-string-register=Register to vertical paste \
 	from? [{0}]
 view.status.wrap-changed=Word wrap mode is now "{0}"
-view.status.wrap-tooltip=Word wrap mode (click to change)
+view.status.wrap-tooltip=<html>Word wrap mode is {0} (click to change)</html>
 view.status.bufferset-tooltip=BufferSet scope is {0}
+wrap.none=disabled
+wrap.hard=hard
+wrap.soft=soft
 #}}}
 
 #{{{ Status bar component visibility
@@ -943,7 +965,7 @@ print-error.message=An error occurred while trying to print:\n\
 
 #{{{ About dialog
 about.title=About jEdit
-about.version=jEdit {0} {1} mode, using Java {2}
+about.version=jEdit {0} {1} mode, using {2} Java {3}
 about.mode.standalone=standalone
 about.mode.server=server
 about.mode.server-background=server-background
@@ -1411,6 +1433,7 @@ search.synchronize.mnemonic=z
 search.synchronize.tooltip=Sets filter and directory to current buffer's extension/location.
 search.findBtn=Find
 search.findBtn.mnemonic=f
+search.replaceBtn=Replace
 search.replaceAndFindBtn=Replace & Find
 search.replaceAndFindBtn.mnemonic=r
 search.replaceAllBtn=Replace All
@@ -1629,7 +1652,6 @@ plugin-error.dep-class=Requires the class {0}.\n\
 plugin-error.missing-jar=Requires JAR file {0}.\n\
 	This JAR file is part of this plugin, but it cannot be found.\n\
 	Try reinstalling this plugin.
-plugin-error.obsolete=This plugin is obsolete. Please remove it.
 plugin-error.not-42=This plugin does not support dynamic loading.\n\
 	You must restart jEdit after removing or installing this plugin.
 
@@ -1725,6 +1747,9 @@ syntax-style-no-token.message=The text under the caret has no associated \
 	syntax style to configure.
 #}}}
 
+#{{{ View title dialog
+view.title.select=Please enter a title for this view:
+#}}}
 #}}}
 
 #{{{ Buffer options dialog
@@ -1774,11 +1799,9 @@ options.general.resetUndo=Reset undo history on save
 options.general.restore=Restore previously open files on startup
 options.general.restore.remote=... including remote files over VFS
 options.general.restore.cli=... including file names specified on the command line
-options.general.newkeyhandling=Use simplified keyboard handling
-options.general.newkeyhandling.tooltip=(Experimental) some international Linux users prefer this mode, but it may go away soon since regular keyboard handling works better.
 options.general.encodingDetectors=List of encoding autodetectors:
 options.general.fallbackEncodings=List of fallback encodings:
-options.general.fallbackEncodings.tooltip=(Experimental) A whitespace-separated list of encodings to try against encoding errors on loading
+options.general.fallbackEncodings.tooltip=A whitespace-separated list of encodings to try against encoding errors on loading
 #}}}
 
 #{{{ Abbreviations pane
@@ -1805,6 +1828,7 @@ options.appearance.lf.note=Restart jEdit for look & feel changes to take effect
 options.appearance.lf=Swing look & feel:
 options.appearance.primaryFont=Button, menu and label font:
 options.appearance.secondaryFont=List and text field font:
+options.appearance.helpViewerFont=HelpViewer/Browser Text font:
 options.appearance.history=History text field entries to remember:
 options.appearance.menuSpillover=Number of items before menus spill over:
 options.appearance.startup.label=Startup options
@@ -1891,6 +1915,12 @@ options.editing.deepIndent=Deep indent
 options.encodings.label=Encodings
 options.encodings.code=new EncodingsOptionPane();
 options.encodings.selectEncodings=Select the encodings that should be shown in encoding dialogs:
+options.encodings.available=Available encoding(s)
+options.encodings.selected=Selected encoding(s)
+options.encodings.available.tooltip=<html>Encodings in this column will <b>not</b> be listed in encoding dialogs.\
+  Drag them to the right column to activate them</html>
+options.encodings.selected.tooltip=Encodings in this column be shown in encoding dialogs.\
+  Drag them to the left column to hide them
 options.encodings.selectAll=Select All
 options.encodings.selectNone=Select None
 #}}}
@@ -1993,8 +2023,9 @@ options.save-back.backupDirectory=Backup directory:
 options.save-back.backupPrefix=Backup filename prefix:
 options.save-back.backupSuffix=Backup filename suffix:
 options.save-back.backupEverySave=Backup on every save
-options.save-back.twoStageSave=Two-stage save (safer but resets file owner on Unix)
-options.save-back.twoStageSave.tooltip=Stage 1: Rename the old file. Stage 2: create a new file in its place.
+options.save-back.backupEverySave.tooltip=Resets file permissions on some file systems
+options.save-back.twoStageSave=Two-stage save (safer but resets file permissions owner on some filesystems)
+options.save-back.twoStageSave.tooltip=Stage 1: Create a temporary file and save to it. Stage 2: Rename the temporary file to the real name.
 options.save-back.confirmSaveAll="Save All Buffers" asks for confirmation
 options.save-back.autosaveUntitled=Autosave untitled buffers
 options.save-back.suppressNotSavedConfirmUntitled=Never mark Untitled buffers dirty.
@@ -2083,6 +2114,10 @@ options.syntax.foldLine.0=Collapsed fold line, level > 3
 options.textarea.label=Text Area
 options.textarea.code=new TextAreaOptionPane();
 options.textarea.font=Text font:
+options.textarea.fontsubst=Automatic font substitution
+options.textarea.fontsubst.tooltip=Automatically select the appropriate font \
+if the chosen one can't display characters.
+options.textarea.fontsubstlist=Preferred fonts:
 options.textarea.foreground=Text color:
 options.textarea.background=Background color:
 options.textarea.caret=Caret:
@@ -2091,6 +2126,7 @@ options.textarea.blockCaret=block
 options.textarea.thickCaret=thick
 options.textarea.selection=Single selection:
 options.textarea.multipleSelection=Multiple selection:
+options.textarea.selectionFg=Selection foreground:
 options.textarea.lineHighlight=Highlight current line:
 options.textarea.structureHighlight=Highlight matching elements:
 options.textarea.eolMarkers=End of line markers:
@@ -2098,10 +2134,10 @@ options.textarea.wrapGuide=Wrap guide:
 options.textarea.electricBorders=Electric (auto scroll) borders
 options.textarea.stdNextPrevWord=Go to next/previous word commands eat whitespace
 options.textarea.antiAlias=Anti Aliased smooth text
-options.textarea.antiAlias.tooltip=Anti-aliased fonts slow down display on some systems. \
-Subpixel supported in JDK 1.6 and later.
+options.textarea.antiAlias.tooltip=Slows down display on some systems. 
 options.textarea.fracFontMetrics=Fractional font metrics (for better smooth \
 	text display)
+options.textarea.fracFontMetrics.tooltip=Not recommended with subpixel antialiasing
 options.textArea.stripTrailingEOL=Hide final end of line (if any)
 options.textArea.completeFromAllBuffers=Complete words from all open buffers (default is \
     to limit search to currently visible buffers)
@@ -2153,7 +2189,7 @@ options.view.sortByName=Sort buffer sets by file name, instead of path name
 options.view.fullScreenIncludesMenu=Show the menu bar in full-screen mode
 options.view.fullScreenIncludesToolbar=Show the toolbars in full-screen mode
 options.view.fullScreenIncludesStatus=Show the status bar in full-screen mode
-options.editpane.bufferset.default=BufferSet scope for new EditPanes:
+options.bufferset.scope=BufferSet scope:
 options.editpane.bufferset.contain=New BufferSets contain:
 options.editpane.bufferset.newbufferset.copy=copy of current BufferSet
 options.editpane.bufferset.newbufferset.empty=an empty buffer
@@ -2295,6 +2331,10 @@ abort.message=Are you sure you want to abort the currently executing\n\
 
 #}}}
 
+#{{{ Task  monitor
+task-monitor.title=Task Monitor
+#}}}
+
 #{{{ VFS browser
 vfs.browser.title=File Browser
 vfs.browser.longtitle=File System Browser
@@ -2333,7 +2373,7 @@ vfs.browser.file_filter.dir_only=Directories Only
 vfs.browser.browse-window.label=Browse in New Window
 vfs.browser.browse.label=Browse
 vfs.browser.close.label=Close
-vfs.browser.copy-path.label=Copy Path Name
+vfs.browser.copy-path.label=Copy
 vfs.browser.delete.label=Delete...
 vfs.browser.delete.shortcut=DELETE
 vfs.browser.home.icon=22x22/actions/go-home.png
@@ -2368,7 +2408,7 @@ vfs.browser.synchronize.shortcut=-
 vfs.browser.up.icon=22x22/actions/go-parent.png
 vfs.browser.up.label=Parent Directory
 vfs.browser.up.shortcut=A+Up
-vfs.browser.paste.label=Paste File Here
+vfs.browser.paste.label=Paste
 vfs.browser.previous.label=Previous Directory
 vfs.browser.previous.shortcut=A+Left
 vfs.browser.next.label=Next Directory
@@ -2521,21 +2561,6 @@ plugin-manager.list-download-connect=Connecting to plugins.jedit.org
 plugin-manager.list-download=Downloading plugin list from plugins.jedit.org
 plugin-manager.filterField=Show only plugins whose name contains this text
 
-#{{{ Error while loading plugin list
-plugin-list.ioerror.title=I/O Error
-plugin-list.ioerror.message=Could not download the plugin list.\n\
-	({0})\n\
-	\n\
-	If you are behind an HTTP or SOCKS proxy, click\n\
-	"Proxy Servers" to configure proxy server settings\n\
-	and try again.
-plugin-list.ioerror.proxy-servers=Proxy Servers...
-
-plugin-list.xmlerror.title=XML Parser Error
-plugin-list.xmlerror.message=An error occurred while parsing {0}, line {1}:\n\
-	{2}
-#}}}
-
 #{{{ Plugin management
 manage-plugins.title=Manage
 
@@ -2557,6 +2582,7 @@ install-plugins.title=Install
 
 install-plugins.info.name=Name
 install-plugins.info.size=Size
+install-plugins.info.releaseDate=Release date
 install-plugins.info.version=Version
 install-plugins.info.category=Category
 
@@ -2600,6 +2626,18 @@ fileprop.selectedFiles=Selected files
 fileprop.selectedDirectories=Selected directories
 #}}}
 
+#{{{ Activity log viewer
+log-viewer.dialog.title=Activity Log Settings
+log-viewer.settings.label=Settings
+log-viewer.message.label=Message Display:
+log-viewer.message.debug.label=Debug
+log-viewer.message.message.label=Message
+log-viewer.message.notice.label=Notice
+log-viewer.message.warning.label=Warning
+log-viewer.message.error.label=Error
+#}}}
+
 errorwidget.popupmenu=logs-remove-all-errors
 logs-remove-all-errors.label=Remove all errors
 
+taskmanager.remainingtasks.label={0} remaining task(s)

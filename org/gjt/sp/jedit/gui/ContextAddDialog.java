@@ -28,6 +28,7 @@ import java.awt.Component;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.TreeSet;
 import java.util.Vector;
@@ -49,6 +50,7 @@ import org.gjt.sp.jedit.ActionSet;
 import org.gjt.sp.jedit.EditAction;
 import org.gjt.sp.jedit.GUIUtilities;
 import org.gjt.sp.jedit.jEdit;
+import org.gjt.sp.jedit.gui.AbstractContextOptionPane.MenuItem;
 //}}}
 
 
@@ -60,6 +62,8 @@ import org.gjt.sp.jedit.jEdit;
  */
 public class ContextAddDialog extends EnhancedDialog
 {
+	private static final String CONTEXT_ADD_DIALOG_LAST_SELECTION = "contextAddDialog.lastSelection";
+
 	//{{{ ContextAddDialog constructor
 	public ContextAddDialog(Component comp)
 	{
@@ -97,15 +101,28 @@ public class ContextAddDialog extends EnhancedDialog
 		JPanel actionPanel = new JPanel(new BorderLayout(6,6));
 
 		ActionSet[] actionsList = jEdit.getActionSets();
-		TreeSet<ActionSet> actionSets = new TreeSet<ActionSet>();
-		for(int i = 0; i < actionsList.length; i++)
+		Collection<ActionSet> actionSets = new TreeSet<ActionSet>();
+		String lastSelectionLabel = jEdit.getProperty(CONTEXT_ADD_DIALOG_LAST_SELECTION);
+		for (ActionSet actionSet : actionsList)
 		{
-			ActionSet actionSet = actionsList[i];
-			if(actionSet.getActionCount() != 0)
+			if (actionSet.getActionCount() != 0)
+			{
 				actionSets.add(actionSet);
+			}
+		}
+		int selectionIndex = 0;
+		int i = 0;
+		for (ActionSet actionSet : actionSets)
+		{
+			if (actionSet.getLabel().equals(lastSelectionLabel))
+			{
+				selectionIndex = i;
+				break;
+			}
+			i++;
 		}
 		combo = new JComboBox(actionSets.toArray());
-		combo.setSelectedIndex(jEdit.getIntegerProperty("contextAddDialog.lastSelection",1));
+		combo.setSelectedIndex(selectionIndex);
 		combo.addActionListener(actionHandler);
 		actionPanel.add(BorderLayout.NORTH,combo);
 
@@ -162,8 +179,9 @@ public class ContextAddDialog extends EnhancedDialog
 			return "-";
 		else if(action.isSelected())
 		{
-			return ((AbstractContextOptionPane.MenuItem)list.getSelectedValue())
-			.actionName;
+			AbstractContextOptionPane.MenuItem selectedValue =
+				(AbstractContextOptionPane.MenuItem) list.getSelectedValue();
+			return selectedValue == null ? null : selectedValue.actionName;
 		}
 		else
 			throw new InternalError();
@@ -181,10 +199,10 @@ public class ContextAddDialog extends EnhancedDialog
 	private void updateList()
 	{
 		ActionSet actionSet = (ActionSet)combo.getSelectedItem();
-		jEdit.setIntegerProperty("contextAddDialog.lastSelection", combo.getSelectedIndex());
+		jEdit.setProperty(CONTEXT_ADD_DIALOG_LAST_SELECTION, actionSet.getLabel());
 
 		EditAction[] actions = actionSet.getActions();
-		Vector listModel = new Vector(actions.length);
+		Vector<MenuItem> listModel = new Vector<MenuItem>(actions.length);
 
 		for(int i = 0; i < actions.length; i++)
 		{
@@ -193,8 +211,7 @@ public class ContextAddDialog extends EnhancedDialog
 			if(label == null)
 				continue;
 
-			listModel.addElement(new AbstractContextOptionPane.MenuItem(
-										    action.getName(),label));
+			listModel.addElement(new MenuItem(action.getName(),label));
 		}
 
 		Collections.sort(listModel,new AbstractContextOptionPane.MenuItemCompare());

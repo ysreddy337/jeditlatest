@@ -28,7 +28,6 @@ import javax.swing.*;
 
 import org.gjt.sp.jedit.textarea.Selection;
 import org.gjt.sp.jedit.textarea.JEditTextArea;
-import org.gjt.sp.jedit.io.VFSManager;
 import org.gjt.sp.jedit.Buffer;
 import org.gjt.sp.jedit.GUIUtilities;
 import org.gjt.sp.jedit.jEdit;
@@ -39,9 +38,9 @@ import org.gjt.sp.util.*;
 /**
  * HyperSearch results window.
  * @author Slava Pestov
- * @version $Id: HyperSearchRequest.java 16331 2009-10-13 13:35:10Z kpouer $
+ * @version $Id: HyperSearchRequest.java 18456 2010-08-31 11:11:08Z kpouer $
  */
-class HyperSearchRequest extends WorkRequest
+class HyperSearchRequest extends Task
 {
 	//{{{ HyperSearchRequest constructor
 	HyperSearchRequest(View view, SearchMatcher matcher,
@@ -58,7 +57,8 @@ class HyperSearchRequest extends WorkRequest
 	} //}}}
 
 	//{{{ run() method
-	public void run()
+	@Override
+	public void _run()
 	{
 		setStatus(jEdit.getProperty("hypersearch-status"));
 
@@ -66,7 +66,7 @@ class HyperSearchRequest extends WorkRequest
 		String[] files = fileset.getFiles(view);
 		if(files == null || files.length == 0)
 		{
-			SwingUtilities.invokeLater(new Runnable()
+			ThreadUtilities.runInDispatchThread(new Runnable()
 			{
 				public void run()
 				{
@@ -97,13 +97,14 @@ class HyperSearchRequest extends WorkRequest
 			{
 				int current = 0;
 
-				long lastStatusTime = 0;
+				long lastStatusTime = 0L;
 				int resultCount = 0;
 				boolean asked = false;
 				int maxResults = jEdit.getIntegerProperty("hypersearch.maxWarningResults");
-loop:				for(int i = 0; i < files.length; i++)
+				for(int i = 0; i < files.length; i++)
 				{
-					if(jEdit.getBooleanProperty("hyperSearch-stopButton"))
+					if(jEdit.getBooleanProperty("hyperSearch-stopButton") ||
+						Thread.currentThread().isInterrupted())
 					{
 						jEdit.setTemporaryProperty("hyperSearch-stopButton", "false");
 						Log.log(Log.MESSAGE, this, "Search stopped by user action (stop button)");
@@ -128,7 +129,7 @@ loop:				for(int i = 0; i < files.length; i++)
 					current++;
 
 					long currentTime = System.currentTimeMillis();
-					if(currentTime - lastStatusTime > 250)
+					if(currentTime - lastStatusTime > 250L)
 					{
 						setValue(current);
 						lastStatusTime = currentTime;
@@ -136,10 +137,8 @@ loop:				for(int i = 0; i < files.length; i++)
 					}
 
 					Buffer buffer = jEdit.openTemporary(null,null,file,false);
-					if(buffer == null)
-						continue loop;
-
-					resultCount += doHyperSearch(buffer, 0, buffer.getLength());
+					if(buffer != null)
+						resultCount += doHyperSearch(buffer, 0, buffer.getLength());
 				}
 				Log.log(Log.MESSAGE, this, resultCount +" OCCURENCES");
 			}
@@ -147,7 +146,7 @@ loop:				for(int i = 0; i < files.length; i++)
 		catch(final Exception e)
 		{
 			Log.log(Log.ERROR,this,e);
-			SwingUtilities.invokeLater(new Runnable()
+			ThreadUtilities.runInDispatchThread(new Runnable()
 			{
 				public void run()
 				{
@@ -155,12 +154,9 @@ loop:				for(int i = 0; i < files.length; i++)
 				}
 			});
 		}
-		catch(WorkThread.Abort a)
-		{
-		}
 		finally
 		{
-			VFSManager.runInAWTThread(new Runnable()
+			ThreadUtilities.runInDispatchThread(new Runnable()
 			{
 				public void run()
 				{
@@ -173,19 +169,19 @@ loop:				for(int i = 0; i < files.length; i++)
 	//{{{ Private members
 
 	//{{{ Instance variables
-	private View view;
-	private SearchMatcher matcher;
-	private HyperSearchResults results;
-	private DefaultMutableTreeNode rootSearchNode;
-	private Selection[] selection;
-	private String searchString;
+	private final View view;
+	private final SearchMatcher matcher;
+	private final HyperSearchResults results;
+	private final DefaultMutableTreeNode rootSearchNode;
+	private final Selection[] selection;
+	private final String searchString;
 	private DefaultMutableTreeNode selectNode;
 	//}}}
 
 	//{{{ searchInSelection() method
 	private int searchInSelection(Buffer buffer) throws Exception
 	{
-		setAbortable(false);
+		setCancellable(false);
 
 		int resultCount = 0;
 
@@ -217,8 +213,7 @@ loop:				for(int i = 0; i < files.length; i++)
 		{
 			buffer.readUnlock();
 		}
-
-		setAbortable(true);
+		setCancellable(true);
 
 		return resultCount;
 	} //}}}
@@ -227,7 +222,7 @@ loop:				for(int i = 0; i < files.length; i++)
 	private int doHyperSearch(Buffer buffer, int start, int end)
 		throws Exception
 	{
-		setAbortable(false);
+		setCancellable(false);
 
 		HyperSearchFileNode hyperSearchFileNode = new HyperSearchFileNode(buffer.getPath());
 		DefaultMutableTreeNode bufferNode = new DefaultMutableTreeNode(hyperSearchFileNode);
@@ -237,7 +232,7 @@ loop:				for(int i = 0; i < files.length; i++)
 		if(resultCount != 0)
 			rootSearchNode.insert(bufferNode,rootSearchNode.getChildCount());
 
-		setAbortable(true);
+		setCancellable(true);
 
 		return resultCount;
 	} //}}}
@@ -259,7 +254,7 @@ loop:				for(int i = 0; i < files.length; i++)
 			int offset = start;
 
 			HyperSearchResult lastResult = null;
-loop:			for(int counter = 0; ; counter++)
+			for(int counter = 0; ; counter++)
 			{
 				boolean startOfLine = buffer.getLineStartOffset(
 					buffer.getLineOfOffset(offset)) == offset;
@@ -269,7 +264,7 @@ loop:			for(int counter = 0; ; counter++)
 					startOfLine,endOfLine,counter == 0,
 					false);
 				if(match == null)
-					break loop;
+					break;
 
 				int newLine = buffer.getLineOfOffset(
 					offset + match.start);

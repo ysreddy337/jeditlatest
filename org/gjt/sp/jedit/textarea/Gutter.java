@@ -49,7 +49,7 @@ import org.gjt.sp.util.Log;
  * @see TextArea
  *
  * @author Mike Dillon and Slava Pestov
- * @version $Id: Gutter.java 16346 2009-10-14 10:35:10Z kpouer $
+ * @version $Id: Gutter.java 18110 2010-06-18 19:21:38Z shlomy $
  */
 public class Gutter extends JComponent implements SwingConstants
 {
@@ -655,6 +655,11 @@ public class Gutter extends JComponent implements SwingConstants
 	public void setSelectionPopupHandler(GutterPopupHandler handler)
 	{
 		mouseHandler.selectionPopupHandler = handler;
+	}
+
+	public GutterPopupHandler getSelectionPopupHandler()
+	{
+		return mouseHandler.selectionPopupHandler;
 	}
 
 	public void setMouseActionsProvider(MouseActionsProvider mouseActionsProvider)

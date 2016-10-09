@@ -49,7 +49,7 @@ import java.util.Vector;
 /**
  * Key binding editor.
  * @author Slava Pestov
- * @version $Id: ShortcutsOptionPane.java 16348 2009-10-14 10:40:15Z kpouer $
+ * @version $Id: ShortcutsOptionPane.java 16676 2009-12-18 14:44:32Z shlomy $
  */
 public class ShortcutsOptionPane extends AbstractOptionPane
 {
@@ -318,7 +318,7 @@ public class ShortcutsOptionPane extends AbstractOptionPane
 	} //}}}
 
 	//{{{ ShortcutsModel class
-	private class ShortcutsModel extends AbstractTableModel
+	static private class ShortcutsModel extends AbstractTableModel
 	{
 		private List<GrabKeyDialog.KeyBinding[]> bindings;
 		private String name;
@@ -419,7 +419,7 @@ public class ShortcutsOptionPane extends AbstractOptionPane
 			return name;
 		}
 
-		private class KeyCompare implements Comparator<GrabKeyDialog.KeyBinding[]>
+		static private class KeyCompare implements Comparator<GrabKeyDialog.KeyBinding[]>
 		{
 			private int col;
 

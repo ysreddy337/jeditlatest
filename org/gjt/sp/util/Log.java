@@ -56,7 +56,7 @@ import static java.text.DateFormat.MEDIUM;
  * This class can also optionally redirect standard output and error to the log.
  *
  * @author Slava Pestov
- * @version $Id: Log.java 12789 2008-06-04 21:23:10Z kpouer $
+ * @version $Id: Log.java 18221 2010-07-19 16:19:45Z daleanson $
  */
 public class Log
 {
@@ -65,7 +65,7 @@ public class Log
 	 * The maximum number of log messages that will be kept in memory.
 	 * @since jEdit 2.6pre5
 	 */
-	public static final int MAXLINES = 500;
+	public static int MAXLINES = 500;
 
 	/**
 	 * Debugging message urgency. Should be used for messages only

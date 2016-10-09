@@ -6,23 +6,17 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.io.File;
 import java.io.FilenameFilter;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-import java.util.Vector;
+import java.util.*;
 import java.util.Map.Entry;
 
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 
-import org.gjt.sp.jedit.EBComponent;
-import org.gjt.sp.jedit.EBMessage;
 import org.gjt.sp.jedit.EditBus;
 import org.gjt.sp.jedit.PluginJAR;
 import org.gjt.sp.jedit.View;
 import org.gjt.sp.jedit.jEdit;
+import org.gjt.sp.jedit.EditBus.EBHandler;
 import org.gjt.sp.jedit.View.ViewConfig;
 import org.gjt.sp.jedit.gui.KeyEventTranslator.Key;
 import org.gjt.sp.jedit.msg.DockableWindowUpdate;
@@ -118,11 +112,11 @@ import org.gjt.sp.util.Log;
  * @author Slava Pestov
  * @author John Gellene (API documentation)
  * @author Shlomy Reinstein (refactoring into a base and an impl)
- * @version $Id: DockableWindowManager.java 16341 2009-10-14 10:05:51Z kpouer $
+ * @version $Id: DockableWindowManager.java 18578 2010-09-21 19:59:41Z ezust $
  * @since jEdit 2.6pre3
  *
  */
- public abstract class DockableWindowManager extends JPanel implements EBComponent
+ public abstract class DockableWindowManager extends JPanel
 {
 
 	//{{{ Constants
@@ -158,7 +152,7 @@ import org.gjt.sp.util.Log;
 	//}}}
 
 	// {{{ data members
-	private final Map<PluginJAR, Set<String>> plugins = new HashMap<PluginJAR, Set<String>>(); 
+	private final Map<PluginJAR, Set<String>> plugins = new HashMap<PluginJAR, Set<String>>();
 	private final Map<String, String> positions = new HashMap<String, String>();
 	protected View view;
 	protected DockableWindowFactory factory;
@@ -317,6 +311,7 @@ import org.gjt.sp.util.Log;
 			if (tRight) getRightDockingArea().showMostRecent();
 			if (tTop) getTopDockingArea().showMostRecent();
 		}
+        view.closeAllMenus();
 		closeToggle = !closeToggle;
 		view.getTextArea().requestFocus();
 	} // }}}
@@ -328,13 +323,17 @@ import org.gjt.sp.util.Log;
 
 	// {{{ closeListener() method
 	/**
-	 *
 	 * The actionEvent "close-docking-area" by default only works on
-	 * windows that are docked. If you want your floatable plugins to also
-	 * respond to this event, you need to add key listeners to each component
-	 * in your plugin that usually has keyboard focus.
-	 * This function returns a key listener which does exactly that.
-	 * You should not need to call this method - it is used by FloatingWindowContainer.
+	 * dockable windows that have no special keyboard handling.
+
+	 * If you have dockable widgets with input widgets and/or other fancy
+	 * keyboard handling, those components may not respond to close docking area.
+
+	 * You can add key listeners to each keyboard-handling component
+	 * in your dockable that usually has keyboard focus.
+	 *
+	 * This function creates and returns a key listener which does exactly that.
+	 * It is also used by FloatingWindowContainer when creating new floating windows.
 	 *
 	 * @param dockableName the name of your dockable
 	 * @return a KeyListener you can add to that plugin's component.
@@ -434,51 +433,56 @@ import org.gjt.sp.util.Log;
 		dockables.add(name);
 	}
 	// }}}
-	
-	// {{{ handleMessage() method
-	public void handleMessage(EBMessage msg)
+
+	// {{{ handleDockableWindowUpdate() method
+	@EBHandler
+	public void handleDockableWindowUpdate(DockableWindowUpdate msg)
 	{
-		if (msg instanceof DockableWindowUpdate)
-		{
-			if(((DockableWindowUpdate)msg).getWhat() == DockableWindowUpdate.PROPERTIES_CHANGED)
-				propertiesChanged();
-		}
-		else if (msg instanceof PropertiesChanged)
+		if(msg.getWhat() == DockableWindowUpdate.PROPERTIES_CHANGED)
 			propertiesChanged();
-		else if(msg instanceof PluginUpdate)
+	} // }}}
+
+	// {{{ handlePropertiesChanged() method
+	@EBHandler
+	public void handlePropertiesChanged(PropertiesChanged msg)
+	{
+		propertiesChanged();
+	} // }}}
+
+	// {{{ handlePluginUpdate() method
+	@EBHandler
+	public void handlePluginUpdate(PluginUpdate pmsg)
+	{
+		if (pmsg.getWhat() == PluginUpdate.LOADED)
 		{
-			PluginUpdate pmsg = (PluginUpdate)msg;
-			if (pmsg.getWhat() == PluginUpdate.LOADED)
+			Iterator<DockableWindowFactory.Window> iter = factory.getDockableWindowIterator();
+			while (iter.hasNext())
 			{
-				Iterator<DockableWindowFactory.Window> iter = factory.getDockableWindowIterator();
-				while (iter.hasNext())
+				DockableWindowFactory.Window w = iter.next();
+				if (w.plugin == pmsg.getPluginJAR())
 				{
-					DockableWindowFactory.Window w = iter.next();
-					if (w.plugin == pmsg.getPluginJAR())
-					{
-						String position = getDockablePosition(w.name);
-						positions.put(w.name, position);
-						addPluginDockable(w.plugin, w.name);
-						dockableLoaded(w.name, position);
-					}
+					String position = getDockablePosition(w.name);
+					positions.put(w.name, position);
+					addPluginDockable(w.plugin, w.name);
+					dockableLoaded(w.name, position);
 				}
-				propertiesChanged();
 			}
-			else if(pmsg.isExiting())
+			propertiesChanged();
+		}
+		else if(pmsg.isExiting())
+		{
+			// we don't care
+		}
+		else if(pmsg.getWhat() == PluginUpdate.DEACTIVATED ||
+				pmsg.getWhat() == PluginUpdate.UNLOADED)
+		{
+			Set<String> dockables = plugins.remove(pmsg.getPluginJAR());
+			if (dockables != null)
 			{
-				// we don't care
-			}
-			else if(pmsg.getWhat() == PluginUpdate.DEACTIVATED ||
-					pmsg.getWhat() == PluginUpdate.UNLOADED)
-			{
-				Set<String> dockables = plugins.remove(pmsg.getPluginJAR());
-				if (dockables != null)
+				for (String dockable: dockables)
 				{
-					for (String dockable: dockables)
-					{
-						disposeDockableWindow(dockable);
-						windows.remove(dockable);
-					}
+					disposeDockableWindow(dockable);
+					windows.remove(dockable);
 				}
 			}
 		}
@@ -515,7 +519,7 @@ import org.gjt.sp.util.Log;
 	{
 	}
 	// }}}
-	
+
 	// {{{
 	protected void dockingPositionChanged(String dockableName,
 		String oldPosition, String newPosition)
@@ -619,11 +623,13 @@ import org.gjt.sp.util.Log;
 	class KeyHandler extends KeyAdapter
 	{
 		static final String action = "close-docking-area";
-		Vector<Key> b1, b2;
-		String name;
-		int match1, match2;
+		private List<Key> b1;
+		private List<Key> b2;
+		private final String name;
+		private int match1;
+		private int match2;
 
-		public KeyHandler(String dockableName)
+		KeyHandler(String dockableName)
 		{
 			String shortcut1=jEdit.getProperty(action + ".shortcut");
 			String shortcut2=jEdit.getProperty(action + ".shortcut2");
@@ -650,7 +656,7 @@ import org.gjt.sp.util.Log;
 			}
 		}
 
-		private int match(KeyEvent e, Vector<Key> shortcut, int index)
+		private int match(KeyEvent e, List<Key> shortcut, int index)
 		{
 			char c = e.getKeyChar();
 			if (shortcut != null && c == shortcut.get(index).key)
@@ -658,10 +664,10 @@ import org.gjt.sp.util.Log;
 			return 0;
 		}
 
-		private Vector<Key> parseShortcut(String shortcut)
+		private List<Key> parseShortcut(String shortcut)
 		{
-			Vector<Key> keys = new Vector<Key>();
 			String [] parts = shortcut.split("\\s+");
+			List<Key> keys = new ArrayList<Key>(parts.length);
 			for (String part: parts)
 			{
 				if (part.length() > 0)

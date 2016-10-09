@@ -32,7 +32,7 @@ import org.gjt.sp.util.Log;
 
 /**
  * @author Slava Pestov
- * @version $Id: TextAreaDropHandler.java 15570 2009-06-25 00:43:57Z ezust $
+ * @version $Id: TextAreaDropHandler.java 17040 2010-01-23 14:19:47Z k_satoda $
  */
 class TextAreaDropHandler extends DropTargetAdapter
 {
@@ -52,7 +52,6 @@ class TextAreaDropHandler extends DropTargetAdapter
 	{
 		Log.log(Log.DEBUG,this,"Drag enter");
 		savedBuffer = textArea.getBuffer();
-		textArea.setDragInProgress(true);
 		//textArea.getBuffer().beginCompoundEdit();
 		savedCaret = textArea.getCaretPosition();
 	} //}}}
@@ -79,7 +78,6 @@ class TextAreaDropHandler extends DropTargetAdapter
 	public void dragExit(DropTargetEvent dtde)
 	{
 		Log.log(Log.DEBUG,this,"Drag exit");
-		textArea.setDragInProgress(false);
 		//textArea.getBuffer().endCompoundEdit();
 		if(textArea.getBuffer() == savedBuffer)
 		{
@@ -93,7 +91,6 @@ class TextAreaDropHandler extends DropTargetAdapter
 	public void drop(DropTargetDropEvent dtde)
 	{
 		Log.log(Log.DEBUG,this,"Drop");
-		textArea.setDragInProgress(false);
 		//textArea.getBuffer().endCompoundEdit();
 		savedBuffer = null;
 	} //}}}

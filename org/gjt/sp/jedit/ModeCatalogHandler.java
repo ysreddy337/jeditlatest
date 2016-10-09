@@ -67,12 +67,12 @@ class ModeCatalogHandler extends DefaultHandler
 
 
 			Mode mode = ModeProvider.instance.getMode(modeName);
-			if(mode == null)
+			if (mode == null)
 			{
-				mode = instantiateMode(modeName);
-				ModeProvider.instance.addMode(mode);
+			    mode = instantiateMode(modeName);
 			}
-
+			ModeProvider.instance.addMode(mode);
+			
 			Object path;
 			if(resource)
 				path = jEdit.class.getResource(directory + file);
@@ -80,16 +80,14 @@ class ModeCatalogHandler extends DefaultHandler
 				path = MiscUtilities.constructPath(directory,file);
 			mode.setProperty("file",path);
 
+			mode.unsetProperty("filenameGlob");
 			if(filenameGlob != null)
-				mode.setProperty("filenameGlob",filenameGlob);
-			else
-				mode.unsetProperty("filenameGlob");
-
+			    mode.setProperty("filenameGlob",filenameGlob);
+			    
+			mode.unsetProperty("firstlineGlob");
 			if(firstlineGlob != null)
-				mode.setProperty("firstlineGlob",firstlineGlob);
-			else
-				mode.unsetProperty("firstlineGlob");
-
+			    mode.setProperty("firstlineGlob",firstlineGlob);
+			    
 			mode.init();
 		}
 	} //}}}

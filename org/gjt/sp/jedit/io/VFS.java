@@ -41,6 +41,7 @@ import org.gjt.sp.util.Log;
 import org.gjt.sp.util.ProgressObserver;
 import org.gjt.sp.util.IOUtilities;
 import org.gjt.sp.util.StandardUtilities;
+import org.gjt.sp.util.ThreadUtilities;
 import org.gjt.sp.util.WorkThread;
 //}}}
 
@@ -101,7 +102,7 @@ import org.gjt.sp.util.WorkThread;
  * @see VFSManager#getVFSForProtocol(String)
  *
  * @author Slava Pestov
- * @author $Id: VFS.java 15834 2009-08-01 05:35:05Z shlomy $
+ * @author $Id: VFS.java 18758 2010-10-10 12:19:07Z voituk $
  */
 public abstract class VFS
 {
@@ -452,12 +453,14 @@ public abstract class VFS
 		if((getCapabilities() & WRITE_CAP) == 0)
 			buffer.setReadOnly(true);
 
-		BufferIORequest request = new BufferLoadRequest(
-			view,buffer,session,this,path);
+		BufferIORequest request = new BufferLoadRequest(view, buffer, session, this, path);
 		if(buffer.isTemporary())
 			// this makes HyperSearch much faster
 			request.run();
 		else
+			// BufferLoadRequest can cause UI interations (for example FTP connection dialog),
+			// so it should be runned in Dispatch thread
+			//ThreadUtilities.runInDispatchThread(request); 
 			VFSManager.runInWorkThread(request);
 
 		return true;
@@ -504,10 +507,12 @@ public abstract class VFS
 	 *                  you should probably launch this command in a WorkThread
 	 * @param sourceVFS the source VFS
 	 * @param sourceSession the VFS session
-	 * @param sourcePath the source path
+	 * @param sourcePath the source path. It must be a file and must exists
 	 * @param targetVFS the target VFS
 	 * @param targetSession the target session
-	 * @param targetPath the target path
+	 * @param targetPath the target path.
+	 * If it is a path, it must exists, if it is a file, the parent must
+	 * exists
 	 * @param comp comp The component that will parent error dialog boxes
 	 * @param canStop could this copy be stopped ?
 	 * @return true if the copy was successful
@@ -527,13 +532,30 @@ public abstract class VFS
 		{
 			VFSFile sourceVFSFile = sourceVFS._getFile(sourceSession, sourcePath, comp);
 			if (sourceVFSFile == null)
-				throw new FileNotFoundException(sourcePath);
+				throw new FileNotFoundException("source path " + sourcePath + " doesn't exists");
 			if (progress != null)
 			{
 				progress.setMaximum(sourceVFSFile.getLength());
 			}
 			VFSFile targetVFSFile = targetVFS._getFile(targetSession, targetPath, comp);
-			if (targetVFSFile.getType() == VFSFile.DIRECTORY)
+			if (targetVFSFile == null)
+			{
+				String parentTargetPath = MiscUtilities.getParentOfPath(targetPath);
+				VFSFile parentTargetVFSFile = targetVFS._getFile(targetSession, parentTargetPath, comp);
+				if (parentTargetVFSFile == null)
+					throw new FileNotFoundException("target path " + parentTargetPath +
+						" doesn't exists");
+				if (parentTargetVFSFile.getType() == VFSFile.DIRECTORY)
+				{
+					String targetFilename = MiscUtilities.getFileName(targetPath);
+					targetPath = MiscUtilities.constructPath(parentTargetPath, targetFilename);
+				}
+				else
+				{
+					throw new IOException("The parent of target path is a file");
+				}
+			}
+			else if (targetVFSFile.getType() == VFSFile.DIRECTORY)
 			{
 				if (targetVFSFile.getPath().equals(sourceVFSFile.getPath()))
 					return false;
@@ -1093,7 +1115,8 @@ public abstract class VFS
 
 		Thread ct = Thread.currentThread();
 		WorkThread wt = null;
-		if (ct instanceof WorkThread) {
+		if (ct instanceof WorkThread)
+		{
 			wt = (WorkThread) ct;
 		}
 
@@ -1105,7 +1128,8 @@ public abstract class VFS
 
 		for(int i = 0; i < _files.length; i++)
 		{
-			if (wt != null && wt.isAborted()) break;
+			if (wt != null && wt.isAborted() || ct.isInterrupted())
+				break;
 			VFSFile file = _files[i];
 			if (skipHidden && (file.isHidden() || MiscUtilities.isBackup(file.getName())))
 				continue;
@@ -1171,8 +1195,7 @@ public abstract class VFS
 				}
 				catch(PatternSyntaxException e)
 				{
-					Log.log(Log.ERROR,VFS.class,"Invalid regular expression: "
-						+ glob);
+					Log.log(Log.ERROR,VFS.class,"Invalid regular expression: " + glob);
 					Log.log(Log.ERROR,VFS.class,e);
 				}
 

@@ -50,7 +50,7 @@ import org.gjt.sp.util.StandardUtilities;
  * {@link #waitForRequests()}.
  *
  * @author Slava Pestov
- * @version $Id: VFSManager.java 14125 2008-12-01 10:06:24Z kpouer $
+ * @version $Id: VFSManager.java 18333 2010-08-12 08:44:46Z kpouer $
  */
 public class VFSManager
 {
@@ -111,6 +111,7 @@ public class VFSManager
 	/**
 	 * @deprecated Use <code>getVFSForProtocol()</code> instead.
 	 */
+	@Deprecated
 	public static VFS getVFSByName(String name)
 	{
 		// in new api, protocol always equals name
@@ -163,6 +164,7 @@ public class VFSManager
 	 * @deprecated Write a <code>services.xml</code> file instead;
 	 * see {@link org.gjt.sp.jedit.ServiceManager}.
 	 */
+	@Deprecated
 	public static void registerVFS(String protocol, VFS vfs)
 	{
 		Log.log(Log.DEBUG,VFSManager.class,"Registered "
@@ -176,6 +178,7 @@ public class VFSManager
 	/**
 	 * @deprecated Use <code>getVFSs()</code> instead.
 	 */
+	@Deprecated
 	public static Enumeration<VFS> getFilesystems()
 	{
 		return vfsHash.elements();
@@ -252,6 +255,7 @@ public class VFSManager
 	 * pending I/O requests are complete.
 	 * @since jEdit 2.5pre1
 	 */
+	@Deprecated
 	public static void runInAWTThread(Runnable run)
 	{
 		ioThreadPool.addWorkRequest(run,true);
@@ -262,6 +266,7 @@ public class VFSManager
 	 * Executes the specified runnable in one of the I/O threads.
 	 * @since jEdit 2.6pre2
 	 */
+	@Deprecated
 	public static void runInWorkThread(Runnable run)
 	{
 		ioThreadPool.addWorkRequest(run,false);
@@ -284,6 +289,7 @@ public class VFSManager
 	/**
 	 * @deprecated Call the other <code>error()</code> method instead.
 	 */
+	@Deprecated
 	public static void error(final Component comp, final String error, final Object[] args)
 	{
 		// if we are already in the AWT thread, take a shortcut

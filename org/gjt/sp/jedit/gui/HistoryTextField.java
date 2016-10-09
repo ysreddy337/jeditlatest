@@ -36,7 +36,7 @@ import org.gjt.sp.jedit.*;
 /**
  * Text field with an arrow-key accessable history.
  * @author Slava Pestov
- * @version $Id: HistoryTextField.java 12504 2008-04-22 23:12:43Z ezust $
+ * @version $Id: HistoryTextField.java 17625 2010-04-12 23:10:57Z ezust $
  */
 public class HistoryTextField extends JTextField
 {
@@ -90,6 +90,8 @@ public class HistoryTextField extends JTextField
 	public HistoryTextField(String name, boolean instantPopups,
 		boolean enterAddsToHistory)
 	{
+		// set sane minumum number of columns
+		super(4);
 		controller = new HistoryText(this,null)
 		{
 			public void fireActionPerformed()

@@ -22,9 +22,13 @@
 
 package org.gjt.sp.jedit;
 
+import java.awt.*;
 import java.lang.annotation.*;
 import java.lang.reflect.Method;
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
+import java.util.List;
+
 import org.gjt.sp.util.Log;
 
 /**
@@ -37,7 +41,7 @@ import org.gjt.sp.util.Log;
  *
  * The EditBus maintains a list of objects that have requested to receive
  * messages. When a message is sent using this class, all registered
- * components receive it in turn. Classes for objects that sourceibe to
+ * components receive it in turn. Classes for objects that subscribe to
  * the EditBus must implement the {@link EBComponent} interface, which
  * defines the single method {@link EBComponent#handleMessage(EBMessage)}.<p>
  *
@@ -75,7 +79,7 @@ import org.gjt.sp.util.Log;
  *
  * @author Slava Pestov
  * @author John Gellene (API documentation)
- * @version $Id: EditBus.java 16473 2009-11-12 06:32:01Z vanza $
+ * @version $Id: EditBus.java 18566 2010-09-15 09:07:34Z kpouer $
  *
  * @since jEdit 2.2pre6
  */
@@ -95,10 +99,16 @@ public class EditBus
 	 * delivering an EBMessage, the bus will search for and invoke
 	 * all handlers matching the outgoing message type.<p>
 	 *
+	 * Since jEdit 4.4pre1, this annotation can also be added to
+	 * classes extending EditPlugin. This will make the plugin
+	 * be added to the bus automatically, similarly to how
+	 * EBPlugin works, but without having to implement the
+	 * EBComponent interface.
+	 *
 	 * @since jEdit 4.3pre19
 	 */
 	@Retention(RetentionPolicy.RUNTIME)
-	@Target(ElementType.METHOD)
+	@Target({ElementType.TYPE, ElementType.METHOD})
 	public static @interface EBHandler
 	{
 		/**
@@ -176,21 +186,56 @@ public class EditBus
 	//{{{ send() method
 	/**
 	 * Sends a message to all components on the bus in turn.
+	 * The message is delivered to components in the AWT thread,
+	 * and this method will wait until all handlers receive the
+	 * message before returning.
+	 *
 	 * @param message The message
 	 */
 	public static void send(EBMessage message)
 	{
-		Log.log(Log.DEBUG,EditBus.class,message.toString());
+		Runnable sender = new SendMessage(message);
 
-		components.lock();
+		if (EventQueue.isDispatchThread())
+		{
+			sender.run();
+			return;
+		}
+
+		/*
+		 * We can't throw any checked exceptions from this
+		 * method. It will break all source that currently
+		 * expects this method to not throw them. So we catch
+		 * them and log them instead.
+		 */
 		try
 		{
-			sendImpl(message);
+			EventQueue.invokeAndWait(sender);
 		}
-		finally
+		catch (InterruptedException ie)
 		{
-			components.unlock();
+			Log.log(Log.ERROR, EditBus.class, ie);
 		}
+		catch (InvocationTargetException ite)
+		{
+			Log.log(Log.ERROR, EditBus.class, ite);
+		}
+	} //}}}
+
+	//{{{ sendAsync() method
+	/**
+	 * Schedules a message to be sent on the edit bus as soon as
+	 * the AWT thread is done processing current events. The
+	 * method returns immediately (i.e., before the message is
+	 * sent).
+	 *
+	 * @param message The message
+	 *
+	 * @since jEdit 4.4pre1
+	 */
+	public static void sendAsync(EBMessage message)
+	{
+		EventQueue.invokeLater(new SendMessage(message));
 	} //}}}
 
 	//{{{ Private members
@@ -330,9 +375,10 @@ public class EditBus
 				return;
 			}
 
-			for (Class<?> msg : keySet())
+			for (Map.Entry<Class<?>, List<EBMessageHandler>> entry: entrySet())
 			{
-				List<EBMessageHandler> handlers = get(msg);
+				Class<?> msg = entry.getKey();
+				List<EBMessageHandler> handlers = entry.getValue();
 				if (handlers == null)
 					continue;
 				for (Iterator<EBMessageHandler> it = handlers.iterator();
@@ -398,6 +444,34 @@ public class EditBus
 		private int lock;
 		private List<Object> add = new LinkedList<Object>();
 		private List<Object> remove = new LinkedList<Object>();
+	} //}}}
+
+	//{{{ SendMessage class
+	private static class SendMessage implements Runnable
+	{
+
+		public SendMessage(EBMessage message)
+		{
+			this.message = message;
+		}
+
+
+		public void run()
+		{
+			Log.log(Log.DEBUG,EditBus.class,message.toString());
+
+			components.lock();
+			try
+			{
+				sendImpl(message);
+			}
+			finally
+			{
+				components.unlock();
+			}
+		}
+
+		private EBMessage message;
 	} //}}}
 
 }
